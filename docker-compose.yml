@@ -1,0 +1,51 @@
+# +------------------------------------------------+
+# |            REDTETRIS DOCKER-COMPOSE            |
+# +------------------------------------------------+
+
+# +------------------- SERVICES -------------------+
+
+services:
+    backend:
+        container_name: ${BACKEND_NAME}
+        env_file: .env
+        build:
+            context: ${BACKEND_PATH}
+            args:
+                - BACKEND_PORT=${BACKEND_PORT}
+        volumes:
+            - ${BACKEND_PATH}:/usr/src/app/backend
+            - /usr/src/app/backend/node_modules
+        ports:
+            - ${BACKEND_PORT}:${BACKEND_PORT}
+        networks:
+            - ${NETWORK_NAME}
+        command: npm run dev
+
+    frontend:
+        container_name: ${FRONTEND_NAME}
+        env_file: .env
+        build:
+            context: ${FRONTEND_PATH}
+            args:
+                - FRONTEND_PORT=${FRONTEND_PORT}
+        volumes:
+            - ${FRONTEND_PATH}:/app
+            - /app/node_modules
+        ports:
+            - ${FRONTEND_PORT}:${FRONTEND_PORT}
+        networks:
+            - ${NETWORK_NAME}
+        command: npm dev start
+
+# +------------------- NETWORKS -------------------+
+
+networks:
+    redtetris-network:
+        name: ${NETWORK_NAME}
+        driver: bridge
+
+# +------------------- VOLUMES --------------------+
+
+volumes:
+    backend:
+    frontend:
