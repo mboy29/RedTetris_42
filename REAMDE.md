@@ -4,6 +4,8 @@
 
 1. **Language**: 
    - Entire project must be written in JavaScript, using the latest versions available.
+   - Bonuses require React JS as frontend
+   - Node JS for backend
 
 2. **Client-Side Code**: 
    - Must be functional (no use of `this`), except for defining custom subclasses of `Error`.
@@ -41,7 +43,10 @@
 
 3. **Piece Movements**:
    - Pieces move down at a constant speed.
-   - Player-initiated movements include left, right, down, and rotation.
+   - Player-initiated movements include:
+      - Left and right arrows: Horizontal move to the right or left
+      - Top arrow: Rotation (only one direction is enough)
+      - Down arrow: Fall towards the pile
    - Spacebar allows direct placement of a piece.
 
 ## Technical Architecture (V.2)
@@ -66,7 +71,7 @@
    - Client must handle graphical rendering and application logic independently.
    - Use Redux for state management, with support for immutability and asynchronous actions.
 
-## Testing Requirements (V.2.5)
+## Testing Requirements 
 
 - Tests should ensure reliability and reduce development cycles.
 - Minimum coverage required:
@@ -77,3 +82,10 @@
 ## Security Considerations
 
 - Store credentials, API keys, and environment variables locally in a `.env` file and exclude them from version control (e.g., using `.gitignore`).
+
+### Bonuses
+
+- Add a scoring system during the game.
+- Have a persistence of these scores for each player.
+- Have several game modes (invisible parts, increased gravity, etc ...)
+- Use React JS

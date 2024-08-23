@@ -1,6 +1,7 @@
 import React from 'react';
-import axios from 'axios';
 import './scss/styles.scss';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 function App() {
   return (

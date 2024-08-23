@@ -30,9 +30,11 @@ stop:
 	@echo "---------------------------------${RESET}"
 	$(DOCKER_COMPOSE) down
 
-restart: stop start
+restart:
 	@echo "${GREEN}Restarting the docker containers..."
 	@echo "-----------------------------------${RESET}"
+	$(DOCKER_COMPOSE) restart
+	@make logs
 
 logs: 
 	@echo "${GREEN}Checking logs of the docker containers..."
@@ -42,18 +44,25 @@ logs:
 clean:
 	@echo "${GREEN}Removing the docker containers..."
 	@echo "---------------------------------${RESET}"
-	$(DOCKER_COMPOSE) down -v || true
-	docker system prune -f || true
+	$(DOCKER_COMPOSE) down -v --remove-orphans
+
 
 fclean: clean
 	@echo "${GREEN}Removing all elements relative to the docker containers..."
 	@echo "----------------------------------------------------------${RESET}"
-	$(DOCKER_COMPOSE) down --rmi all -v --remove-orphans || true
-	$(DOCKER) volume prune -f || true
-	$(DOCKER) network prune -f || true
-	$(DOCKER) image prune -f || true
-	$(DOCKER) image prune -a -f || true
-	$(DOCKER) builder prune -f || true
+	$(DOCKER_COMPOSE) down --rmi all -v --remove-orphans
+	@if [ "$$( $(DOCKER) ps -aq )" ]; then \
+			$(DOCKER) rm $$( $(DOCKER) ps -aq ) || true; \
+	fi
+	$(DOCKER) volume prune -f
+	$(DOCKER) network prune -f
+	$(DOCKER) image prune -f
+	$(DOCKER) image prune -a -f
+	$(DOCKER) builder prune -f
+	rm -rf ./app/frontend/node_modules
+	rm -rf ./app/backend/node_modules
+	rm -rf ./app/backend/redtetris.db
+
 
 test:
 	@echo "${GREEN}Running the tests..."
@@ -70,6 +79,9 @@ test-coverage:
 	cd $(FRONTEND_DIR) && npm run coverage
 	@echo "${GREEN}For the backend...${RESET}"
 	cd $(BACKEND_DIR) && npm run coverage
+
+db:
+	docker exec -it redtetris-backend sqlite3 /usr/src/app/backend/redtetris.db
 
 all: start logs
 

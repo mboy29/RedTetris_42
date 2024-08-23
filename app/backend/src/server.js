@@ -2,10 +2,20 @@
 // |               REDTETRIS SERVER JS              |
 // +------------------------------------------------+
 
+// +------------------- SUMMARY --------------------+
+
+/*
+    This module is the entry point for the RedTetris
+    server. It creates an HTTP server that listens on 
+    the port specified in the configuration file.
+*/
+
 // +----------------- REQUIREMENTS -----------------+
 
 const http = require('http');
 const config = require('./config');
+
+require('./database/init').init()
 
 // +----------------- SERVER CONFIG -----------------+
 
