@@ -89,3 +89,65 @@
 - Have a persistence of these scores for each player.
 - Have several game modes (invisible parts, increased gravity, etc ...)
 - Use React JS
+
+## Allowed Libraries and Tools
+
+### Backend Libraries (Node.js)
+
+- **Authentication Libraries:**
+  - `bcrypt` - For hashing and comparing passwords securely.
+    ```bash
+    npm install bcrypt
+    ```
+  - `passport` - For handling authentication strategies.
+    ```bash
+    npm install passport passport-local
+    ```
+  - `express-session` - For managing sessions if using session-based authentication.
+    ```bash
+    npm install express-session
+    ```
+
+- **Server Framework:**
+  - `Express.js` - A minimal and flexible Node.js web application framework.
+    ```bash
+    npm install express
+    ```
+
+- **WebSocket Library:**
+  - `socket.io` - For real-time, bi-directional communication between clients and server.
+    ```bash
+    npm install socket.io
+    ```
+
+### Frontend Libraries (React-based Client)
+
+- **React Framework:**
+  - `React` - For building the user interface.
+    ```bash
+    npm install react react-dom
+    ```
+
+- **State Management:**
+  - `Redux` - For managing the application state.
+    ```bash
+    npm install redux react-redux
+    ```
+
+- **Asynchronous Actions:**
+  - `redux-thunk` - Middleware for handling asynchronous actions in Redux.
+    ```bash
+    npm install redux-thunk
+    ```
+
+- **Routing:**
+  - `react-router-dom` - For handling client-side routing.
+    ```bash
+    npm install react-router-dom
+    ```
+
+### Testing Libraries
+
+- **Jest** - For running unit tests and measuring code coverage.
+  ```bash
+  npm install jest

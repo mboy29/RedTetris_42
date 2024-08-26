@@ -2,9 +2,11 @@
 # |         REDTETRIS FRONTEND DOCKERFILE          |
 # +------------------------------------------------+
 
-FROM    node:19-alpine
+FROM    node:18
 
 WORKDIR /app
+
+ENV NODE_OPTIONS=--openssl-legacy-provider
 
 COPY    package*.json ./
 

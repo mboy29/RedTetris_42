@@ -24,14 +24,15 @@ function init() {
     db.serialize(() => {
         db.run(`CREATE TABLE IF NOT EXISTS players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
+            username TEXT NOT NULL CHECK(length(username) >= 4 AND length(username) <= 12) UNIQUE,
             socket TEXT,
-            game TEXT
+            connect BOOLEAN NOT NULL,
+            password TEXT NOT NULL
         )`, (err) => {
             if (err) {
-                console.error('Error creating table:', err.message);
+                console.error('[DATABASE] Error creating table:', err.message);
             } else {
-                console.log('Table created or already exists.');
+                console.log('[DATABASE] Table created or already exists.');
             }
         });
     });

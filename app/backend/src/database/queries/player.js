@@ -5,73 +5,107 @@
 // +------------------- SUMMARY --------------------+
 
 /*
-    This module is designed to initialize the SQLite 
-    database for the RedTetris project with the
-    necessary tables. 
+    This module is designed to handle operations on the `players` 
+    table in the SQLite database for the RedTetris project. 
 
-    This includes :
-        - players
+    This includes:
+        - Creating a player
+        - Finding a player by username
+        - Finding a player by socket
+        - Updating a player
+        - Deleting a player by ID
 */
 
 // +----------------- REQUIREMENTS -----------------+ 
 
-// const db = require('./database').connect();
+const db = require('./../database').connect();
 
-// function createPlayer(player) {
-//     return new Promise((resolve, reject) => {
-//         const sql = 'INSERT INTO players (name, socket, game) VALUES (?, ?, ?)';
-//         db.run(sql, [player.name, player.socket, player.game], function (err) {
-//             if (err) {
-//                 reject(err);
-//             } else {
-//                 resolve({ id: this.lastID });
-//             }
-//         });
-//     });
-// }
+// +------------------- FUNCTIONS ------------------+
 
-// function getPlayerByName(name) {
-//     return new Promise((resolve, reject) => {
-//         const sql = 'SELECT * FROM players WHERE name = ?';
-//         db.get(sql, [name], (err, row) => {
-//             if (err) {
-//                 reject(err);
-//             } else {
-//                 resolve(row);
-//             }
-//         });
-//     });
-// }
+async function createPlayer(username, socket, connect, password) {
+    return new Promise((resolve, reject) => {
+        const query = 'INSERT INTO players (username, socket, connect, password) VALUES (?, ?, ?, ?)';
+        db.run(query, [username, socket, connect, password], function(err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(this.lastID); // Return the inserted ID
+            }
+        });
+    });
+}
 
-// function updatePlayerByName(name, updatedPlayer) {
-//     return new Promise((resolve, reject) => {
-//         const sql = 'UPDATE players SET socket = ?, game = ? WHERE name = ?';
-//         db.run(sql, [updatedPlayer.socket, updatedPlayer.game, name], function (err) {
-//             if (err) {
-//                 reject(err);
-//             } else {
-//                 resolve({ changes: this.changes });
-//             }
-//         });
-//     });
-// }
+async function getPlayerByUsername(username) {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM players WHERE username = ?';
+        db.get(query, [username], (err, row) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
 
-// function deletePlayerByName(name) {
-//     return new Promise((resolve, reject) => {
-//         const sql = 'DELETE FROM players WHERE name = ?';
-//         db.run(sql, [name], function (err) {
-//             if (err) {
-//                 reject(err);
-//             } else {
-//                 resolve({ changes: this.changes });
-//             }
-//         });
-//     });
-// }
+async function getPlayerBySocket(socket) {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM players WHERE socket = ?';
+        db.get(query, [socket], (err, row) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
 
-// module.exports = {
-//     createPlayer,
-//     getPlayerByName,
-//     updatePlayerByName,
-//     deletePlayerByName
-// };
+async function getAllPlayers() {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM players';
+        db.all(query, (err, rows) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(rows);
+            }
+        });
+    });
+}
+
+async function updatePlayer(username, socket, connect) {
+    return new Promise((resolve, reject) => {
+        const query = 'UPDATE players SET socket = ?, connect = ? WHERE username = ?';
+        db.run(query, [socket, connect, username], function(err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(this.changes);
+            }
+        });
+    });
+}
+
+async function deletePlayerById(id) {
+    return new Promise((resolve, reject) => {
+        const query = 'DELETE FROM players WHERE id = ?';
+        db.run(query, [id], function(err) {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(this.changes);
+            }
+        });
+    });
+}
+
+// +-------------------- EXPORTS -------------------+ 
+
+module.exports = {
+    createPlayer,
+    getPlayerByUsername,
+    getPlayerBySocket,
+    updatePlayer,
+    deletePlayerById
+};
