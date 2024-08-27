@@ -1,5 +1,5 @@
 // +------------------------------------------------+
-// |         REDTETRIS SESSION MIDDLEWARE           |
+// |            REDTETRIS SESSION ROUTES            |
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
@@ -11,18 +11,24 @@
 
 // +----------------- REQUIREMENTS -----------------+ 
 
-const session = require('express-session');
-const config = require('./../config');
+const express = require('express');
+const router = express.Router();
 
 // +------------------- FUNCTIONS ------------------+
 
-const sessionMiddleware = session({
-    secret: config.session_secret,
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false }
+router.get('/session', (req, res) => {
+    if (req.session.user) {
+        res.json({
+            user: req.session.user
+        });
+    } else {
+        res.json({
+            user: null
+        });
+    }
 });
+
 
 // +-------------------- EXPORTS -------------------+ 
 
-module.exports = sessionMiddleware;
+module.exports = router;

@@ -1,11 +1,26 @@
+// +------------------------------------------------+
+// |            REDTETRIS INDEX.JS FILE             |
+// +------------------------------------------------+
+
+// +------------------- SUMMARY --------------------+
+
+/*
+    This module is the entry point for the RedTetris
+    frontend application. 
+*/
+
+// +----------------- REQUIREMENTS -----------------+
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
-// import './index.css'; // Ensure you have the CSS file
+import { BrowserRouter } from 'react-router-dom';
+
+// +------------------- FUNCTIONS ------------------+
 
 ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+    <BrowserRouter>
+        <App />
+    </BrowserRouter>,
+    document.getElementById('root')
 );

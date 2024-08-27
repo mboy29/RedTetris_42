@@ -1,6 +1,5 @@
-// src/middleware/auth.js
 // +------------------------------------------------+
-// |            REDTETRIS SESSION ROUTES            |
+// |         REDTETRIS SESSION MIDDLEWARE           |
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
@@ -12,15 +11,18 @@
 
 // +----------------- REQUIREMENTS -----------------+ 
 
-const express = require('express');
-const router = express.Router();
+const session = require('express-session');
+const config = require('./../config');
 
 // +------------------- FUNCTIONS ------------------+
 
-router.get('/session', (req, res) => {
-    res.json({ user: req.session.user });
+const sessionMiddleware = session({
+    secret: config.session_secret,
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false, httpOnly: true }  
 });
 
 // +-------------------- EXPORTS -------------------+ 
 
-module.exports = router;
+module.exports = sessionMiddleware;

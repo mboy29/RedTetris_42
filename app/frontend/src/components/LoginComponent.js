@@ -5,10 +5,11 @@
 // +------------------- SUMMARY --------------------+
 
 /*
-    This module defines the `Login` component for the RedTetris
-    frontend. The component provides a login form for users to
-    enter their username and password. The component uses a
-    socket connection to authenticate the user.
+    This module defines the `Login` component for the 
+    RedTetris frontend. The component provides a login 
+    form for users to enter their username and 
+    password. The component uses a socket connection
+    to authenticate the user.
 */
 
 // +----------------- REQUIREMENTS -----------------+

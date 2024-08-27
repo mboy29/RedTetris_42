@@ -5,16 +5,16 @@
 // +------------------- SUMMARY --------------------+
 
 /*
-    This module contains the WebSocket handlers for the RedTetris
-    server. It handles the registration, login, and disconnection
-    of players.
+    This module contains the WebSocket handlers for 
+    the RedTetris server. It handles the registration, 
+    login, and disconnection of players.
 */
 
 // +----------------- REQUIREMENTS -----------------+
 
-const Player = require('./models/player');
+const Player = require('./models/playerModel');
 
-// +------------------- FUNCTIONS ------------------+
+// +------------------- MANAGEMENT ------------------+
 
 const socketManager = (io, sessionMiddleware) => {
     io.use((socket, next) => {
@@ -27,11 +27,12 @@ const socketManager = (io, sessionMiddleware) => {
         socket.on('register', async ({ username, password, passwordConfirm }) => {
             try {
                 const player = await Player.create(username, password, passwordConfirm);
-                socket.request.session.user = { user: player };
+                socket.request.session.user = player;
                 socket.request.session.save((err) => {
                     if (err) {
                         console.error('[REGISTER] Session save error', err);
                     }
+                    console.log('[REGISTER] Session saved');
                 });
                 console.log('[REGISTER] Successful registration for', player.username);
                 socket.emit('register_success');
@@ -44,11 +45,12 @@ const socketManager = (io, sessionMiddleware) => {
         socket.on('login', async ({ username, password }) => {
             try {
                 const player = await Player.authenticate(username, password, socket.id);
-                socket.request.session.user = { user: player };
+                socket.request.session.user = player;
                 socket.request.session.save((err) => {
                     if (err) {
                         console.error('[LOGIN] Session save error', err);
                     }
+                    console.log('[LOGIN] Session user:', socket.request.session);
                 });
                 console.log('[LOGIN] Successful login for', player.username);
                 socket.emit('login_success');
@@ -59,18 +61,19 @@ const socketManager = (io, sessionMiddleware) => {
         });
 
         socket.on('disconnect', async () => {
-            try {
-                const user = socket.request.session.user ? socket.request.session.user.user : null;
-                if (user) {
-                    await Player.disconnect(socket.id);
-                    console.log('[DISCONNECT]', user.username);
-                } else {
-                    console.log('[DISCONNECT] Unknown user');
-                }
-                socket.request.session.destroy();
-            } catch (err) {
-                console.error('[DISCONNECT]', err.message);
-            }
+            console.log("[DISCONNECT]");
+            // try {
+            //     const user = socket.request.session.user ? socket.request.session.user.user : null;
+            //     if (user) {
+            //         await Player.disconnect(socket.id);
+            //         console.log('[DISCONNECT]', user.username);
+            //     } else {
+            //         console.log('[DISCONNECT] Unknown user');
+            //     }
+            //     socket.request.session.destroy();
+            // } catch (err) {
+            //     console.error('[DISCONNECT]', err.message);
+            // }
         });
     });
 };

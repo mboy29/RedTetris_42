@@ -16,7 +16,6 @@ import config from './config';
 // +----------------- CONFIGURATION ----------------+
 
 axios.defaults.withCredentials = true;
-
 axios.defaults.baseURL = config.api_url;
 
 // +------------------- EXPORTS --------------------+

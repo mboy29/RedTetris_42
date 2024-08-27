@@ -14,24 +14,24 @@
 
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
 const cors = require('cors');
+const socketIo = require('socket.io');
 const cookieParser = require('cookie-parser');
 
 const config = require('./config');
 const socketManager = require('./sockets');
 
-const sessionMiddleware = require('./middlewares/session');
-const sessionRouter = require('./routes/session');
+const sessionMiddleware = require('./middlewares/sessionMiddleware');
+const sessionRouter = require('./routes/sessionRoutes');
 
-require('./database/init').init();
+require('./database/initDatabase').init();
 
 // +------------------- GLOBALS --------------------+
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-    transports: ['websocket'], // Ensure WebSocket transport is enabled
+    transports: ['websocket'], 
     cors: {
         origin: config.react_url,
         methods: ["GET", "POST", "PUT", "DELETE"],
@@ -39,8 +39,11 @@ const io = socketIo(server, {
     }
 });
 
-// +------------------ MIDDLEWARE -------------------+
+// +-------------------- SOCKETS --------------------+
 
+socketManager(io, sessionMiddleware);
+
+// +------------------ MIDDLEWARE -------------------+
 
 app.use(cors({
     origin: config.react_url,
@@ -54,10 +57,6 @@ app.use(sessionMiddleware);
 // +------------------- ROUTES ---------------------+
 
 app.use('', sessionRouter);
-
-// +----------------- WEB SOCKET HANDLING -----------+
-
-socketManager(io, sessionMiddleware);
 
 // +------------------- SERVER ---------------------+
 

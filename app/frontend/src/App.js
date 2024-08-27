@@ -14,29 +14,30 @@
 // +----------------- REQUIREMENTS -----------------+
 
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import Home from './components/Home';
-import Register from './components/Register';
-import Login from './components/Login';
-import Logout from './components/Logout';
+import Home from './components/HomeComponent';
+import Register from './components/RegisterComponent';
+import Login from './components/LoginComponent';
+import Logout from './components/LogoutComponent';
+import { SessionProvider } from './contexts/sessionContext';
 
 // +--------------------- APP ----------------------+
 
 const App = () => {
     return (
-        <Router>
+        <SessionProvider>
             <div className="container">
                 <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/register" element={<Register />} />
-                    <Route path="/Login" element={<Login />} />
+                    <Route path="/login" element={<Login />} />
                     <Route path="/logout" element={<Logout />} />
                 </Routes>
             </div>
-        </Router>
+        </SessionProvider>
     );
 };
 

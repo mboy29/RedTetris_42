@@ -38,7 +38,7 @@
 // +----------------- REQUIREMENTS -----------------+ 
 
 const bcrypt = require('bcrypt');
-const queries = require('./../database/queries/player');
+const queries = require('./../database/queries/playerQuery');
 
 // +--------------------- CLASS ---------------------+
 
