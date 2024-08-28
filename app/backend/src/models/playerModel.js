@@ -38,7 +38,7 @@
 // +----------------- REQUIREMENTS -----------------+ 
 
 const bcrypt = require('bcrypt');
-const queries = require('./../database/queries/playerQuery');
+const queries = require('./../database/queries/playerQueries');
 
 // +--------------------- CLASS ---------------------+
 
@@ -81,6 +81,38 @@ class Player {
 
     getConnect() { return this.connect; }
 
+    static async getByUsername(username) {
+        const playerData = await queries.getPlayerByUsername(username);
+        if (!playerData) {
+            return null;
+        }
+        return new Player(playerData.username, playerData.socket, playerData.connect);
+    }
+
+    static async getBySocket(socket) {
+        const playerData = await queries.getPlayerBySocket(socket);
+        if (!playerData) {
+            return null;
+        }
+        return new Player(playerData.username, playerData.socket, playerData.connect);
+    }
+
+    static async getPlayerPassword(username) {
+        const password = await queries.getPlayerPassword(username);
+        if (!password) {
+            return null;
+        }
+        return password;
+    }
+
+    static async getAll() {
+        const playersData = await queries.getAllPlayers();
+        if (!playersData) {
+            return null;
+        }
+        return playersData.map(playerData => new Player(playerData.username, playerData.socket, playerData.connect));
+    }
+
     static async create(username, password, passwordConfirm) {
         let errors = [];
 
@@ -90,10 +122,10 @@ class Player {
             errors.push('Passwords do not match.');
         } if (password.length < 6 || password.length > 20) {
             errors.push('Password must be between 6 and 20 characters long.');
-        } if (await queries.getPlayerByUsername(username)) {
+        } if (await Player.getByUsername(username)) {
             errors.push('Username already taken.');
         } try {
-            const player = new Player(username);
+            new Player(username);
         } catch (err) {
             errors.push(err.message);
         }
@@ -107,49 +139,49 @@ class Player {
         return new Player(username, null, false, hashedPassword);
     }
 
+    async authenticate(password, socketId) {
+        const passwordHash = await Player.getPlayerPassword(this.getUsername());
+        const isPasswordValid = bcrypt.compareSync(password, passwordHash);
+        if (!isPasswordValid) {
+            throw new Error('Invalid password.');
+        }
+        this.setSocket(socketId);
+        this.setConnect(true);
+        await queries.updatePlayer(this.getUsername(), socketId, true);
+    }
+
     static async authenticate(username, password, socketId) {
-        let errors = [];
-        const playerData = await queries.getPlayerByUsername(username);
-        
-        if (!playerData) {
-            errors.push('User does not exist.');
+        const player = await Player.getByUsername(username);
+
+        if (!player) {
+            throw new Error('Player not found.');
         } else {
-            const isPasswordValid = bcrypt.compareSync(password, playerData.password);
-            if (!isPasswordValid) {
-                errors.push('Invalid password.');
-            }
+            await player.authenticate(password, socketId);
         }
-        if (errors.length > 0) {
-            throw new Error(errors.join('; '));
-        }
-        const player = new Player(playerData.username, socketId, true, playerData.password);
         await queries.updatePlayer(username, socketId, true);
-        return player;
+        return new Player(player.username, socketId, true, player.password);;
+    }
+
+    async disconnect() {
+        this.setConnect(false);
+        this.setSocket(null);
+        await queries.updatePlayer(this.getUsername(), null, false);
     }
 
     static async disconnect(socketId) {
-        const player = await Player.getBySocket(socketId);
-        if (player) {
-            player.setConnect(false);
-            player.setSocket(null);
-            await queries.updatePlayer(player.getUsername(), null, false);
+        let errors = [];
+
+        console.log('socketId', socketId);
+        let player = await Player.getBySocket(socketId);
+        if (!player) {
+            throw new Error('Player not found.');
+        } else {
+            await player.disconnect();
+            player = null;
         }
     }
 
-    static async getByUsername(username) {
-        const playerData = await queries.getPlayerByUsername(username);
-        return new Player(playerData.username, playerData.socket, playerData.connect);
-    }
 
-    static async getBySocket(socket) {
-        const playerData = await queries.getPlayerBySocket(socket);
-        return new Player(playerData.username, playerData.socket, playerData.connect);
-    }
-
-    static async getAll() {
-        const playersData = await queries.getAllPlayers();
-        return playersData.map(playerData => new Player(playerData.username, playerData.socket, playerData.connect));
-    }
 }
 
 

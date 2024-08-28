@@ -24,8 +24,8 @@ const Logout = () => {
     useEffect(() => {
     const logout = async () => {
         try {
-        await axios.get('/logout');
-        navigate('/login');
+        await axios.get('/auth/logout');
+        navigate('/');
         } catch (err) {
         console.error(err);
         }

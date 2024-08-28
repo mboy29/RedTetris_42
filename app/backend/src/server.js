@@ -23,6 +23,7 @@ const socketManager = require('./sockets');
 
 const sessionMiddleware = require('./middlewares/sessionMiddleware');
 const sessionRouter = require('./routes/sessionRoutes');
+const authRouter = require('./routes/authRoutes');
 
 require('./database/initDatabase').init();
 
@@ -57,6 +58,7 @@ app.use(sessionMiddleware);
 // +------------------- ROUTES ---------------------+
 
 app.use('', sessionRouter);
+app.use('/auth', authRouter);
 
 // +------------------- SERVER ---------------------+
 

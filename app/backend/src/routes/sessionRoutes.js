@@ -28,7 +28,6 @@ router.get('/session', (req, res) => {
     }
 });
 
-
 // +-------------------- EXPORTS -------------------+ 
 
 module.exports = router;

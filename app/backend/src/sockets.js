@@ -27,12 +27,14 @@ const socketManager = (io, sessionMiddleware) => {
         socket.on('register', async ({ username, password, passwordConfirm }) => {
             try {
                 const player = await Player.create(username, password, passwordConfirm);
+                await player.authenticate(password, socket.id);
                 socket.request.session.user = player;
                 socket.request.session.save((err) => {
                     if (err) {
                         console.error('[REGISTER] Session save error', err);
+                    } else {
+                        console.log('[REGISTER] Session saved for', player.username);
                     }
-                    console.log('[REGISTER] Session saved');
                 });
                 console.log('[REGISTER] Successful registration for', player.username);
                 socket.emit('register_success');
@@ -49,8 +51,9 @@ const socketManager = (io, sessionMiddleware) => {
                 socket.request.session.save((err) => {
                     if (err) {
                         console.error('[LOGIN] Session save error', err);
+                    } else {
+                        console.log('[LOGIN] Session saved for', player.username);
                     }
-                    console.log('[LOGIN] Session user:', socket.request.session);
                 });
                 console.log('[LOGIN] Successful login for', player.username);
                 socket.emit('login_success');
@@ -58,22 +61,6 @@ const socketManager = (io, sessionMiddleware) => {
                 console.error('[LOGIN]', err.message);
                 socket.emit('login_error', err.message.split('; '));
             }
-        });
-
-        socket.on('disconnect', async () => {
-            console.log("[DISCONNECT]");
-            // try {
-            //     const user = socket.request.session.user ? socket.request.session.user.user : null;
-            //     if (user) {
-            //         await Player.disconnect(socket.id);
-            //         console.log('[DISCONNECT]', user.username);
-            //     } else {
-            //         console.log('[DISCONNECT] Unknown user');
-            //     }
-            //     socket.request.session.destroy();
-            // } catch (err) {
-            //     console.error('[DISCONNECT]', err.message);
-            // }
         });
     });
 };

@@ -18,7 +18,7 @@
 
 // +----------------- REQUIREMENTS -----------------+ 
 
-const db = require('./../database').connect();
+const db = require('../database').connect();
 
 // +------------------- FUNCTIONS ------------------+
 
@@ -32,6 +32,21 @@ async function createPlayer(username, socket, connect, password) {
                 resolve(this.lastID); // Return the inserted ID
             }
         });
+    });
+}
+
+async function getPlayerPassword(username) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const player = await getPlayerByUsername(username);
+            if (player && player.password) {
+                resolve(player.password);
+            } else {
+                reject('Player not found or password missing');
+            }
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
@@ -99,13 +114,14 @@ async function deletePlayerById(id) {
         });
     });
 }
-
 // +-------------------- EXPORTS -------------------+ 
 
 module.exports = {
     createPlayer,
+    getPlayerPassword,
     getPlayerByUsername,
     getPlayerBySocket,
+    getAllPlayers,
     updatePlayer,
     deletePlayerById
 };
