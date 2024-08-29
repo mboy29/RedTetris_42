@@ -15,12 +15,15 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
+import { SessionProvider } from './contexts/sessionContext';
 
 // +------------------- FUNCTIONS ------------------+
 
 ReactDOM.render(
     <BrowserRouter>
-        <App />
+        <SessionProvider>
+            <App />
+        </SessionProvider>
     </BrowserRouter>,
     document.getElementById('root')
 );

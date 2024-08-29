@@ -8,16 +8,15 @@
     This module defines the `Login` component for the 
     RedTetris frontend. The component provides a login 
     form for users to enter their username and 
-    password. The component uses a socket connection
-    to authenticate the user.
+    password.
 */
 
 // +----------------- REQUIREMENTS -----------------+
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
-import config from '../configs/config';
+import axios from 'axios';
+import { SessionContext } from '../contexts/sessionContext'; // Adjust path as needed
 
 // +------------------- COMPONENT -------------------+
 
@@ -25,28 +24,10 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [errors, setErrors] = useState([]);
-    const [socket, setSocket] = useState(null);
+    const { setSession } = useContext(SessionContext); 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const socketConnection = io(config.api_url, {
-            withCredentials: true,
-            transports: ['websocket', 'polling'],
-            secure: true,
-        });
-
-        setSocket(socketConnection);
-
-        return () => {
-            if (socketConnection) {
-                socketConnection.off('login_success');
-                socketConnection.off('login_error');
-                socketConnection.disconnect();
-            }
-        };
-    }, []);
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setErrors([]);
 
@@ -55,18 +36,13 @@ const Login = () => {
             return;
         }
 
-        if (socket) {
-            socket.emit('login', { username, password });
-
-            socket.on('login_success', () => {
-                console.log('[LOGIN] Successful');
-                navigate('/home');
-            });
-
-            socket.on('login_error', (errorMessages) => {
-                console.error('[LOGIN] Failed:', errorMessages);
-                setErrors(errorMessages);
-            });
+        try {
+            const response = await axios.post('/auth/login', { username, password });
+            setSession(response.data.user);
+            navigate('/home');
+        } catch (error) {
+            console.error('[LOGIN] Failed:', error.response?.data?.message || error.message);
+            setErrors([error.response?.data?.message || 'Login failed.']);
         }
     };
 

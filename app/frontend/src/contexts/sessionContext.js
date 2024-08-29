@@ -1,55 +1,51 @@
 // +------------------------------------------------+
-// |            SESSION CONTEXT COMPONENT           |
+// |           REDTETRIS SESSION CONTEXT            |
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
 
 /*
-    This module defines a React context for managing 
-    the user session in the RedTetris frontend 
-    application.
-
-    The context provides a `SessionProvider` component
-    to wrap the application and a `useSession` hook to
-    access the current session data.
+    This module defines the `SessionContext` and 
+    `SessionProvider` components for the RedTetris 
+    frontend. The context provides the current user 
+    session state to all components in the app.
 */
 
-// +----------------- REQUIREMENTS -----------------+ 
+// +----------------- REQUIREMENTS -----------------+
 
-import React, { createContext, useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import axios from '../configs/axiosConfig';
+import React, { createContext, useEffect, useState } from 'react';
+import axios from './../configs/axiosConfig';
+import LoadingSpinner from './../components/LoadingSpinner';
 
-// +------------------- COMPONENT ------------------+
+// +------------------- CONTEXT --------------------+
 
-export const SessionContext = createContext();
+export const SessionContext = createContext(null);
 
-const useSession = () => {
-    const [session, setSession] = useState({ user: null });
-    const location = useLocation(); 
+const SessionProvider = ({ children }) => {
+    const [session, setSession] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchSession = async () => {
             try {
-                const { data } = await axios.get('/session', { withCredentials: true });
-                setSession(data);
-            } catch (err) {
-                console.error('Error fetching session:', err);
+                const response = await axios.get('/auth/session');
+                setSession(response.data.user);
+            } catch (error) {
+                console.error('Error fetching session:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchSession();
-    }, [location]);
-    return session;
-};
-
-
-export const SessionProvider = ({ children }) => {
-    const session = useSession();
+    }, []);
 
     return (
-        <SessionContext.Provider value={session}>
-            {children}
+        <SessionContext.Provider value={{ session, setSession, loading }}>
+            {loading ? <LoadingSpinner /> : children}
         </SessionContext.Provider>
     );
 };
+// +------------------- EXPORTS --------------------+
+
+export { SessionProvider };

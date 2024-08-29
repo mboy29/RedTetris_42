@@ -21,23 +21,20 @@ import Home from './components/HomeComponent';
 import Register from './components/RegisterComponent';
 import Login from './components/LoginComponent';
 import Logout from './components/LogoutComponent';
-import { SessionProvider } from './contexts/sessionContext';
 
 // +--------------------- APP ----------------------+
 
 const App = () => {
     return (
-        <SessionProvider>
-            <div className="container">
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/home" element={<Home />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/logout" element={<Logout />} />
-                </Routes>
-            </div>
-        </SessionProvider>
+        <div className="container">
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/logout" element={<Logout />} />
+            </Routes>
+        </div>
     );
 };
 

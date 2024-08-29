@@ -11,10 +11,10 @@
 
 // +----------------- REQUIREMENTS -----------------+
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
-import config from '../configs/config';
+import axios from 'axios';
+import { SessionContext } from '../contexts/sessionContext'; 
 
 // +------------------- COMPONENT -------------------+
 
@@ -23,43 +23,30 @@ const Register = () => {
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [errors, setErrors] = useState([]);
-    const [socket, setSocket] = useState(null);
+    const { setSession } = useContext(SessionContext); 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const socketConnection = io(config.api_url, {
-            withCredentials: true,
-            transports: ['websocket', 'polling'],
-            secure: true,
-        });
-
-        setSocket(socketConnection);
-
-        return () => {
-            if (socketConnection) {
-                socketConnection.off('register_success');
-                socketConnection.off('register_error');
-                socketConnection.disconnect();
-            }
-        };
-    }, []);
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setErrors([]);
 
-        if (socket) {
-            socket.emit('register', { username, password, passwordConfirm });
+        if (username.trim() === '' || password.trim() === '' || passwordConfirm.trim() === '') {
+            setErrors(['All fields are required.']);
+            return;
+        }
 
-            socket.on('register_success', () => {
-                console.log('[REGISTER] Successful');
-                navigate('/home');
-            });
+        if (password !== passwordConfirm) {
+            setErrors(['Passwords do not match.']);
+            return;
+        }
 
-            socket.on('register_error', (errorMessages) => {
-                console.error('[REGISTER] Failed:', errorMessages);
-                setErrors(errorMessages); // Expecting an array of error messages
-            });
+        try {
+            const response = await axios.post('/auth/register', { username, password, passwordConfirm });
+            setSession(response.data.user);
+            navigate('/home');
+        } catch (error) {
+            console.error('[REGISTER] Failed:', error.response?.data?.message || error.message);
+            setErrors([error.response?.data?.message || 'Registration failed.']);
         }
     };
 

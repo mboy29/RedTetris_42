@@ -15,15 +15,11 @@
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
-const socketIo = require('socket.io');
+const session = require('express-session');
 const cookieParser = require('cookie-parser');
 
 const config = require('./config');
-const socketManager = require('./sockets');
-
-const sessionMiddleware = require('./middlewares/sessionMiddleware');
-const sessionRouter = require('./routes/sessionRoutes');
-const authRouter = require('./routes/authRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 require('./database/initDatabase').init();
 
@@ -31,34 +27,35 @@ require('./database/initDatabase').init();
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-    transports: ['websocket'], 
-    cors: {
-        origin: config.react_url,
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        credentials: true
-    }
-});
 
-// +-------------------- SOCKETS --------------------+
+// +------------------ CORS CONFIGURATION -------------------+
 
-socketManager(io, sessionMiddleware);
+app.use(cors({
+    origin: [config.react_url], 
+    credentials: true 
+}));
 
 // +------------------ MIDDLEWARE -------------------+
 
-app.use(cors({
-    origin: config.react_url,
-    credentials: true
-}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(sessionMiddleware);
+app.use(session({
+    secret: config.session_secret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false,
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 7
+    }
+}));
 
 // +------------------- ROUTES ---------------------+
 
-app.use('', sessionRouter);
-app.use('/auth', authRouter);
+
+app.use('/auth', authRoutes);
+
 
 // +------------------- SERVER ---------------------+
 

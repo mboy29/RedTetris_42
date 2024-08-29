@@ -13,33 +13,37 @@
 
 // +----------------- REQUIREMENTS -----------------+
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from './../configs/axiosConfig';
+import axios from 'axios';
+import { SessionContext } from '../contexts/sessionContext'; 
 
-// +--------------------- APP ----------------------+
+// +--------------------- COMPONENT ----------------------+
+
 const Logout = () => {
-    const navigate = useNavigate(); // Updated hook
+    const { setSession } = useContext(SessionContext);
+    const navigate = useNavigate();
 
     useEffect(() => {
-    const logout = async () => {
-        try {
-        await axios.get('/auth/logout');
-        navigate('/');
-        } catch (err) {
-        console.error(err);
-        }
-    };
+        const logout = async () => {
+            try {
+                await axios.post('/auth/logout'); // Change GET to POST
+                setSession(null);
+                navigate('/login');
+            } catch (error) {
+                console.error('[LOGOUT] Failed:', error.response?.data?.message || error.message);
+            }
+        };
 
-    logout();
-    }, [navigate]);
+        logout();
+    }, [navigate, setSession]);
 
     return (
-    <div className="row justify-content-center mt-5">
-        <div className="col-md-4">
-        <h2>Logging out...</h2>
+        <div className="row justify-content-center mt-5">
+            <div className="col-md-4">
+                <h2>Logging out...</h2>
+            </div>
         </div>
-    </div>
     );
 };
 

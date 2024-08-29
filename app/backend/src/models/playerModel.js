@@ -139,27 +139,26 @@ class Player {
         return new Player(username, null, false, hashedPassword);
     }
 
-    async authenticate(password, socketId) {
+    async authenticate(password) {
         const passwordHash = await Player.getPlayerPassword(this.getUsername());
         const isPasswordValid = bcrypt.compareSync(password, passwordHash);
         if (!isPasswordValid) {
             throw new Error('Invalid password.');
         }
-        this.setSocket(socketId);
         this.setConnect(true);
-        await queries.updatePlayer(this.getUsername(), socketId, true);
+        await queries.updatePlayer(this.getUsername(), null, true);
     }
 
-    static async authenticate(username, password, socketId) {
+    static async authenticate(username, password) {
         const player = await Player.getByUsername(username);
 
         if (!player) {
             throw new Error('Player not found.');
         } else {
-            await player.authenticate(password, socketId);
+            await player.authenticate(password);
         }
-        await queries.updatePlayer(username, socketId, true);
-        return new Player(player.username, socketId, true, player.password);;
+        await queries.updatePlayer(username, null, true);
+        return new Player(player.username, null, true);
     }
 
     async disconnect() {
@@ -168,11 +167,8 @@ class Player {
         await queries.updatePlayer(this.getUsername(), null, false);
     }
 
-    static async disconnect(socketId) {
-        let errors = [];
-
-        console.log('socketId', socketId);
-        let player = await Player.getBySocket(socketId);
+    static async disconnect(username) {
+        let player = await Player.getByUsername(username);
         if (!player) {
             throw new Error('Player not found.');
         } else {
@@ -181,9 +177,7 @@ class Player {
         }
     }
 
-
 }
-
 
 // +-------------------- EXPORTS -------------------+ 
 

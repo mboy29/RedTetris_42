@@ -1,44 +1,76 @@
 // +------------------------------------------------+
-// |        REDTETRIS AUTHENTICATION ROUTES         |
+// |        REDTETRIS AUTHENTICATIONS ROUTES        |
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
 
 /*
-    Middleware that creates a session for the user
-    using the express-session library.
+    This module defines the authentication routes for 
+    the RedTetris game. The routes handle user 
+    registration, login, and logout operations.
 */
 
 // +----------------- REQUIREMENTS -----------------+ 
 
 const express = require('express');
 const router = express.Router();
-
 const Player = require('./../models/playerModel');
 
 // +------------------- FUNCTIONS ------------------+
 
-router.get('/logout', async (req, res) => {  // Add async here
-    if (req.session) {
-        try {
-            const socketId = req.session.user.socket;
-            const username = req.session.user.username;
-            await Player.disconnect(socketId);
+router.post('/register', async (req, res) => {
+    const { username, password, passwordConfirm } = req.body;
+    try {
+        const player = await Player.create(username, password, passwordConfirm);
+        await player.authenticate(password);
+        req.session.user = player;
+        req.session.save();
+        console.log('[REGISTER] Successful registration for', player.username);
+        res.status(200).json({ success: true, user: player });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const player = await Player.authenticate(username, password);
+        req.session.user = player; 
+        req.session.save();
+        console.log('[LOGIN] Successful login for', player.username);
+        res.status(200).json({ success: true, user: player });
+    } catch (err) {
+        res.status(401).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/logout', async (req, res) => {
+    try {
+        const user = req.session.user;
+        if (req.session.user) {
+            const player = await Player.getByUsername(user.username); // This shadows the outer `player` variable
+            const username = player.username;
+            await player.disconnect();
             req.session.destroy((err) => {
                 if (err) {
-                    console.error('[LOGOUT] Session destroy error', err);
-                    return res.status(500).send('Logout failed');
+                    res.status(500).json({ success: false, message: 'Logout failed' });
+                } else {
+                    console.log('[LOGOUT] Successful logout for', username);
+                    res.status(200).json({ success: true, message: 'Logged out successfully' });
                 }
-                console.log('[LOGOUT] Session destroyed for', username);
-                console.log('[LOGOUT] Successful logout', username);
-                return res.status(200).send('Logout successful');
             });
-        } catch (err) {
-            console.error('[LOGOUT] Error during logout:', err);
-            return res.status(500).send('Logout failed');
         }
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.get('/session', (req, res) => {
+    if (req.session.user) {
+        res.json({ user: req.session.user });
     } else {
-        return res.status(400).send('No session found');
+        res.json({ user: null });
     }
 });
 
