@@ -15,7 +15,7 @@
 
 import React, { createContext, useEffect, useState } from 'react';
 import axios from './../configs/axiosConfig';
-import LoadingSpinner from './../components/LoadingSpinner';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 // +------------------- CONTEXT --------------------+
 

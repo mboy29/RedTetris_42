@@ -6,8 +6,8 @@
 
 /*
     This module is the entry point for the RedTetris
-    server. It creates an Express server that listens on 
-    the port specified in the configuration file.
+    server. It creates an Express server that listens 
+    on the port specified in the configuration file.
 */
 
 // +----------------- REQUIREMENTS -----------------+
@@ -53,9 +53,7 @@ app.use(session({
 
 // +------------------- ROUTES ---------------------+
 
-
 app.use('/auth', authRoutes);
-
 
 // +------------------- SERVER ---------------------+
 

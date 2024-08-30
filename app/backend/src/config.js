@@ -9,8 +9,8 @@
 // +------------------- SUMMARY --------------------+
 
 /*
-    This module exports the configuration object for the RedTetris
-    backend server.
+    This module exports the configuration object for
+    the RedTetris backend server.
 */
 
 // +----------------- REQUIREMENTS -----------------+

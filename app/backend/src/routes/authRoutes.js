@@ -47,20 +47,21 @@ router.post('/login', async (req, res) => {
 
 router.post('/logout', async (req, res) => {
     try {
-        const user = req.session.user;
-        if (req.session.user) {
-            const player = await Player.getByUsername(user.username); // This shadows the outer `player` variable
-            const username = player.username;
-            await player.disconnect();
-            req.session.destroy((err) => {
-                if (err) {
-                    res.status(500).json({ success: false, message: 'Logout failed' });
-                } else {
-                    console.log('[LOGOUT] Successful logout for', username);
-                    res.status(200).json({ success: true, message: 'Logged out successfully' });
-                }
-            });
+        if (!req.session || !req.session.user) {
+            return res.status(401).json({ success: false, message: 'Not logged in' });
         }
+        const user = req.session.user;
+        const player = await Player.getByUsername(user.username);
+        const username = player.username;
+        await player.disconnect();
+        req.session.destroy((err) => {
+            if (err) {
+                res.status(500).json({ success: false, message: 'Logout failed' });
+            } else {
+                console.log('[LOGOUT] Successful logout for', username);
+                res.status(200).json({ success: true, message: 'Logged out successfully' });
+            }
+        });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

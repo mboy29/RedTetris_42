@@ -23,7 +23,6 @@ import { SessionContext } from './../contexts/sessionContext';
 const Home = () => {
     const { session } = useContext(SessionContext); 
 
-    console.log('Home session:', session);
     return (
         <div>
             {session ? (

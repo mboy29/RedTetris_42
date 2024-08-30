@@ -1,28 +1,30 @@
 // +------------------------------------------------+
-// |           REDTETRIS LOGIN COMPONENT            |
+// |          REDTETRIS REGISTER COMPONENT          |
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
 
 /*
-    This module defines the `Login` component for the 
-    RedTetris frontend. The component provides a login 
-    form for users to enter their username and 
-    password.
+    This module defines the `Register` component for 
+    the RedTetris frontend. The component allows users 
+    to register for the game.
 */
 
 // +----------------- REQUIREMENTS -----------------+
 
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { SessionContext } from '../contexts/sessionContext'; // Adjust path as needed
+import React, { useState, useContext } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+
+import { SessionContext } from '../contexts/sessionContext'; 
 
 // +------------------- COMPONENT -------------------+
 
-const Login = () => {
+
+const Register = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [passwordConfirm, setPasswordConfirm] = useState('');
     const [errors, setErrors] = useState([]);
     const { setSession } = useContext(SessionContext); 
     const navigate = useNavigate();
@@ -31,25 +33,30 @@ const Login = () => {
         e.preventDefault();
         setErrors([]);
 
-        if (username.trim() === '' || password.trim() === '') {
-            setErrors(['Username and password are required.']);
+        if (username.trim() === '' || password.trim() === '' || passwordConfirm.trim() === '') {
+            setErrors(['All fields are required.']);
+            return;
+        }
+
+        if (password !== passwordConfirm) {
+            setErrors(['Passwords do not match.']);
             return;
         }
 
         try {
-            const response = await axios.post('/auth/login', { username, password });
+            const response = await axios.post('/auth/register', { username, password, passwordConfirm });
             setSession(response.data.user);
             navigate('/home');
         } catch (error) {
-            console.error('[LOGIN] Failed:', error.response?.data?.message || error.message);
-            setErrors([error.response?.data?.message || 'Login failed.']);
+            console.error('[REGISTER] Failed:', error.response?.data?.message || error.message);
+            setErrors([error.response?.data?.message || 'Registration failed.']);
         }
     };
 
     return (
         <div className="row justify-content-center mt-5">
             <div className="col-md-4">
-                <h2>LOGIN</h2>
+                <h2>REGISTER</h2>
                 {errors.length > 0 && (
                     <div className="alert alert-danger">
                         <ul>
@@ -80,13 +87,27 @@ const Login = () => {
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
-                    <button type="submit" className="btn btn-primary">Login</button>
+                    <div className="form-group">
+                        <label htmlFor="passwordConfirm">Confirm Password</label>
+                        <input
+                            type="password"
+                            id="passwordConfirm"
+                            className="form-control"
+                            value={passwordConfirm}
+                            onChange={(e) => setPasswordConfirm(e.target.value)}
+                        />
+                    </div>
+                    <button type="submit" className="btn btn-primary">Register</button>
                 </form>
+                <p className="mt-3">
+                    Already registered? <Link to="/login">Login here</Link>.
+                </p>
             </div>
         </div>
     );
 };
 
+
 // +------------------- EXPORTS --------------------+
 
-export default Login;
+export default Register;
