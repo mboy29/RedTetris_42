@@ -1,42 +1,37 @@
 // +------------------------------------------------+
-// |           REDTETRIS SESSION CONTEXT            |
+// |           REDTETRIS HOME COMPONENT             |
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
 
 /*
-    This module defines the `SessionContext` and 
-    `SessionProvider` components for the RedTetris 
-    frontend. The context provides the current user 
-    session state to all components in the app.
+    This module defines the `Home` component for the 
+    RedTetris frontend. It displays a welcome message 
+    or login/register options depending on the session state.
 */
 
 // +----------------- REQUIREMENTS -----------------+
 
-import React, { useContext } from 'react';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useContext } from 'react';
+import { SessionContext } from '../contexts/sessionContext';
 
-import { SessionContext } from './../contexts/sessionContext';
+import NavBar from './NavBar'; 
 
 // +------------------- COMPONENT -------------------+
 
 const Home = () => {
-    const { session } = useContext(SessionContext); 
+    // if no session redirect to login
+    // if session redirect to game
+    const { session } = useContext(SessionContext);
 
+    if (!session) {
+        return <Navigate to="/login" />;
+    }
     return (
-        <div>
-            {session ? (
-                <div>
-                    <h1>Welcome, {session.username}</h1>
-                    <Link to="/logout" className="btn btn-primary">Logout</Link>
-                </div>
-            ) : (
-                <div>
-                    <h1>Red Tetris</h1>
-                    <Link to="/login" className="btn btn-primary">Login</Link>
-                    <Link to="/register" className="btn btn-primary">Register</Link>
-                </div>
-            )}
+        <div className="home-container">
+            <NavBar />  {/* Include the NavBar component */}
         </div>
     );
 };

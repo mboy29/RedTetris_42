@@ -20,6 +20,7 @@ const cookieParser = require('cookie-parser');
 
 const config = require('./config');
 const authRoutes = require('./routes/authRoutes');
+const sessionRoutes = require('./routes/sessionRoutes');
 
 require('./database/initDatabase').init();
 
@@ -54,9 +55,34 @@ app.use(session({
 // +------------------- ROUTES ---------------------+
 
 app.use('/auth', authRoutes);
+app.use('/session', sessionRoutes);
 
 // +------------------- SERVER ---------------------+
 
-server.listen(config.port, '0.0.0.0', () => {
-    console.log(`Server is running on http://${config.hostname_local}:${config.port}`);
-});
+const startServer = () => {
+    return new Promise((resolve) => {
+        server.listen(config.port, '0.0.0.0', () => {
+            console.log(`Server is running on http://${config.hostname_local}:${config.port}`);
+            resolve();
+        });
+    });
+};
+
+const closeServer = () => {
+    return new Promise((resolve) => {
+        server.close(() => {
+            console.log('Server closed');
+            resolve();
+        });
+    });
+};
+
+// start server if this file is run directly
+if (require.main === module) {
+    startServer();
+}
+
+
+// +------------------- EXPORTS --------------------+
+
+module.exports = { app, startServer, closeServer };

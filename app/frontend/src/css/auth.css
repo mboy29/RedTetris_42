@@ -1,0 +1,118 @@
+/* +------------------------------------------------+ */
+/* |               REDTETRIS AUTH CSS               | */
+/* +------------------------------------------------+ */
+
+@import './colors.css';
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Roboto', sans-serif;
+}
+
+h2 {
+    color: var(--primary-red);
+    margin-bottom: 20px;
+    font-size: 2rem;
+    text-transform: uppercase;
+}
+
+p {
+    margin-bottom: 20px;
+    color: var(--secondary-light-grey);
+}
+
+.alert {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: var(--secondary-eerie);
+    border-color: var(--primary-red);
+}
+
+.alert p {
+    margin: 0;
+    padding: 0;
+    color: var(--primary-red);
+}
+
+.auth-logo-container {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.auth-logo {
+    background-image: url('./../assets/ui/RedTetrisLogo.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 200px;
+    height: 200px;
+}
+
+.auth-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin-top: -50px;
+}
+
+.auth-form-container {
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    margin: 0;
+}
+
+.auth-form-control {
+    background-color: var(--secondary-dark-grey);
+    border: 2px solid var(--secondary-grey);
+    border-radius: 8px;
+    color: var(--secondary-light-grey);
+    padding: 10px; 
+    transition: border-color 0.3s, box-shadow 0.3s; 
+}
+
+.auth-form-control::placeholder {
+    color: var(--secondary-light-grey);
+}
+
+.auth-form-control:focus {
+    border-color: var(--primary-red);
+    box-shadow: 0 0 0 0.2rem rgba(240, 146, 146, 0.5);
+    outline: none;
+}
+
+.auth-btn {
+    background-color: var(--primary-red);
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.auth-btn:hover {
+    background-color: var(--primary-blue);
+}
+
+.auth-btn:active:focus {
+    background-color: var(--primary-cyan);
+}
+
+.auth-link {
+    color: var(--primary-red);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.auth-link:hover {
+    color: var(--primary-blue);
+}

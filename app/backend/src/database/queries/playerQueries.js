@@ -18,102 +18,97 @@
 
 // +----------------- REQUIREMENTS -----------------+ 
 
-const db = require('../database').connect();
+const dbModule = require('../database');
 
 // +------------------- FUNCTIONS ------------------+
 
 async function createPlayer(username, socket, connect, password) {
-    return new Promise((resolve, reject) => {
+    try {
+        const db = await dbModule.connect();
         const query = 'INSERT INTO players (username, socket, connect, password) VALUES (?, ?, ?, ?)';
-        db.run(query, [username, socket, connect, password], function(err) {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(this.lastID); // Return the inserted ID
-            }
-        });
-    });
+        const result = await dbModule.run(query, [username, socket, connect, password]);
+        return result.lastID; // Return the inserted ID
+    } catch (err) {
+        throw new Error(`Error creating player: ${err.message}`);
+    }
 }
 
 async function getPlayerPassword(username) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const player = await getPlayerByUsername(username);
-            if (player && player.password) {
-                resolve(player.password);
-            } else {
-                reject('Player not found or password missing');
-            }
-        } catch (error) {
-            reject(error);
+    try {
+        const player = await getPlayerByUsername(username);
+        if (player && player.password) {
+            return player.password || null;
+        } else {
+            throw new Error('Player not found or password missing');
         }
-    });
+    } catch (error) {
+        throw new Error(`Error getting player password: ${error.message}`);
+    }
 }
 
 async function getPlayerByUsername(username) {
-    return new Promise((resolve, reject) => {
+    try {
+        const db = await dbModule.connect();
         const query = 'SELECT * FROM players WHERE username = ?';
-        db.get(query, [username], (err, row) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(row);
-            }
-        });
-    });
+        const row = await dbModule.get(query, [username]);
+        return row || null;
+    } catch (err) {
+        throw new Error(`Error getting player by username: ${err.message}`);
+    }
 }
 
 async function getPlayerBySocket(socket) {
-    return new Promise((resolve, reject) => {
+    try {
+        const db = await dbModule.connect();
         const query = 'SELECT * FROM players WHERE socket = ?';
-        db.get(query, [socket], (err, row) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(row);
-            }
-        });
-    });
+        const row = await dbModule.get(query, [socket]);
+        return row || null;
+    } catch (err) {
+        throw new Error(`Error getting player by socket: ${err.message}`);
+    }
 }
 
 async function getAllPlayers() {
-    return new Promise((resolve, reject) => {
+    try {
+        const db = await dbModule.connect();
         const query = 'SELECT * FROM players';
-        db.all(query, (err, rows) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(rows);
-            }
-        });
-    });
+        const rows = await dbModule.all(query);
+        return rows || [];
+    } catch (err) {
+        throw new Error(`Error getting all players: ${err.message}`);
+    }
 }
 
 async function updatePlayer(username, socket, connect) {
-    return new Promise((resolve, reject) => {
+    try {
+        const db = await dbModule.connect();
+        const player = await getPlayerByUsername(username);
+        if (!player) {
+            throw new Error('Player not found');
+        }
         const query = 'UPDATE players SET socket = ?, connect = ? WHERE username = ?';
-        db.run(query, [socket, connect, username], function(err) {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(this.changes);
-            }
-        });
-    });
+        const result = await dbModule.run(query, [socket, connect, username]);
+        return result.changes; // Return the number of rows changed
+    } catch (err) {
+        throw new Error(`Error updating player: ${err.message}`);
+    }
 }
 
 async function deletePlayerById(id) {
-    return new Promise((resolve, reject) => {
+    try {
+        const db = await dbModule.connect();
+        const queryGet = 'SELECT * FROM players WHERE id = ?';
+        if (!await dbModule.get(queryGet, [id])) {
+            throw new Error('Player not found');
+        }
         const query = 'DELETE FROM players WHERE id = ?';
-        db.run(query, [id], function(err) {
-            if (err) {
-                reject(err);
-            } else {
-                resolve(this.changes);
-            }
-        });
-    });
+        const result = await dbModule.run(query, [id]);
+        return result.changes; 
+    } catch (err) {
+        throw new Error(`Error deleting player by ID: ${err.message}`);
+    }
 }
+
 // +-------------------- EXPORTS -------------------+ 
 
 module.exports = {

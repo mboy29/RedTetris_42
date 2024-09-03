@@ -67,15 +67,6 @@ router.post('/logout', async (req, res) => {
     }
 });
 
-router.get('/session', (req, res) => {
-    if (req.session.user) {
-        res.json({ user: req.session.user });
-    } else {
-        res.json({ user: null });
-    }
-});
-
-
 // +-------------------- EXPORTS -------------------+ 
 
 module.exports = router;

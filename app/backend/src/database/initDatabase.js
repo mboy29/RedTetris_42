@@ -15,27 +15,27 @@
 
 // +----------------- REQUIREMENTS -----------------+ 
 
-const db = require('./database').connect()
+const dbModule = require('./database');
 
 // +------------------- FUNCTIONS ------------------+
 
 
-function init() {
-    db.serialize(() => {
-        db.run(`CREATE TABLE IF NOT EXISTS players (
+async function init() {
+    try {
+        const db = await dbModule.connect(); // Connect to the database
+
+        await dbModule.run(`CREATE TABLE IF NOT EXISTS players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL CHECK(length(username) >= 4 AND length(username) <= 12) UNIQUE,
             socket TEXT,
             connect BOOLEAN NOT NULL,
             password TEXT NOT NULL
-        )`, (err) => {
-            if (err) {
-                console.error('[DATABASE] Error creating table:', err.message);
-            } else {
-                console.log('[DATABASE] Table created or already exists.');
-            }
-        });
-    });
+        )`);
+
+        console.log('[DATABASE] Table created or already exists.');
+    } catch (err) {
+        console.error('[DATABASE] Error creating table:', err.message);
+    }
 }
 
 // +-------------------- EXPORTS -------------------+ 

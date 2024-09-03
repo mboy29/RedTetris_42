@@ -51,21 +51,26 @@ class Player {
 
     setUsername(username) {
         const validUsernamePattern = /^[a-zA-Z0-9_-]+$/;
-        username = username.trim();
+        
         let errors = [];
 
-        if (typeof username !== 'string' || username === '') {
+        if (typeof username !== 'string')
             errors.push('Username must be a non-empty string.');
-        } 
-        if (username.length < 4 || username.length > 12) {
-            errors.push('Username must be between 4 and 12 characters long.');
-        } 
-        if (!validUsernamePattern.test(username)) {
-            errors.push('Username can only contain letters, numbers, underscores, and dashes.');
+        else {
+            username = username.trim();
+            if ( username === '') {
+                errors.push('Username must be a non-empty string.');
+            } 
+            if (username.length < 4 || username.length > 12) {
+                errors.push('Username must be between 4 and 12 characters long.');
+            } 
+            if (!validUsernamePattern.test(username)) {
+                errors.push('Username can only contain letters, numbers, underscores, and dashes.');
+            }
         }
 
         if (errors.length > 0) {
-            throw new Error(errors.join('; '));
+            throw new Error(errors.join(', '));
         }
 
         this.username = username;
@@ -137,6 +142,13 @@ class Player {
         const hashedPassword = bcrypt.hashSync(password, 10);
         await queries.createPlayer(username, null, false, hashedPassword);
         return new Player(username, null, false, hashedPassword);
+    }
+
+    async update(username, socket, connect) {
+        this.setUsername(username);
+        this.setSocket(socket);
+        this.setConnect(connect);
+        await queries.updatePlayer(this.getUsername(), this.getSocket(), this.getConnect());
     }
 
     async authenticate(password) {

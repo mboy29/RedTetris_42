@@ -24,11 +24,11 @@ const path = require('path');
 dotenv.config();
 
 const config = {
-    hostname: process.env.HOSTNAME,
-    hostname_local: process.env.HOSTNAME_LOCAL,
-    port: process.env.BACKEND_PORT,
-    session_secret: process.env.SESSION_SECRET,
-    react_url: `http://${process.env.HOSTNAME_LOCAL}:${process.env.FRONTEND_PORT}`
+    hostname: process.env.HOSTNAME || '127.0.0.1',
+    hostname_local: process.env.HOSTNAME_LOCAL || 'localhost',
+    port: process.env.BACKEND_PORT || 8080,
+    session_secret: process.env.SESSION_SECRET || 'redtetris_secret',
+    react_url: `http://${process.env.HOSTNAME_LOCAL}:${process.env.FRONTEND_PORT}` || 'http://localhost:3000',
 
 };
 

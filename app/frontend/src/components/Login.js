@@ -16,8 +16,10 @@
 import axios from 'axios';
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Container, Form, Button, Alert } from 'react-bootstrap';
 
-import { SessionContext } from '../contexts/sessionContext'; // Adjust path as needed
+import { SessionContext } from '../contexts/sessionContext';
+import './../css/auth.css';
 
 // +------------------- COMPONENT -------------------+
 
@@ -48,46 +50,49 @@ const Login = () => {
     };
 
     return (
-        <div className="row justify-content-center mt-5">
-            <div className="col-md-4">
-                <h2>LOGIN</h2>
+        <Container fluid className="auth-container">
+            <div className="auth-logo-container">
+                <div className="auth-logo"></div>
+            </div>
+            <div className="auth-form-container">
+                <h2 className="text-center">Login</h2>
                 {errors.length > 0 && (
-                    <div className="alert alert-danger">
-                        <ul>
-                            {errors.map((error, index) => (
-                                <li key={index}>{error}</li>
-                            ))}
-                        </ul>
-                    </div>
+                    <Alert variant="danger">
+                        {errors.map((error, index) => (
+                            <p key={index} className="text-center">{error}</p>
+                        ))}
+                    </Alert>
                 )}
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="username">Username</label>
-                        <input
+                <Form onSubmit={handleSubmit}>
+                    <Form.Group className="mb-3">
+                        <Form.Control
                             type="text"
                             id="username"
-                            className="form-control"
                             value={username}
+                            className="auth-form-control"
+                            placeholder="Username"
                             onChange={(e) => setUsername(e.target.value)}
                         />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Control
                             type="password"
                             id="password"
-                            className="form-control"
                             value={password}
+                            className="auth-form-control"
+                            placeholder="Password"
                             onChange={(e) => setPassword(e.target.value)}
                         />
-                    </div>
-                    <button type="submit" className="btn btn-primary">Login</button>
-                </form>
-                <p className="mt-3">
-                    Don't have an account? <Link to="/register">Register here</Link>.
+                    </Form.Group>
+                    <Button type="submit" variant="primary" className="w-100 auth-btn">
+                        Login
+                    </Button>
+                </Form>
+                <p className="mt-3 text-center">
+                    Don't have an account? <Link to="/register" className="auth-link">Register here</Link>.
                 </p>
             </div>
-        </div>
+        </Container>
     );
 };
 

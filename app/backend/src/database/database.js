@@ -22,34 +22,85 @@ const sqlite3 = require('sqlite3').verbose();
 let db = null;
 
 function connect() {
-    if (!db) {
-        db = new sqlite3.Database('./redtetris.db', (err) => {
-            if (err) {
-                console.error('[DATABASE] Could not connect to database:', err.message);
-            } else {
-                console.log('[DATABASE] Connected to SQLite database');
-            }
-        });
-    }
-    return db;
+    return new Promise((resolve, reject) => {
+        if (!db) {
+            db = new sqlite3.Database('./redtetris.db', (err) => {
+                if (err) {
+                    console.error('[DATABASE] Could not connect to database:', err.message);
+                    reject(err);
+                } else {
+                    console.log('[DATABASE] Connected to SQLite database');
+                    resolve(db);
+                }
+            });
+        } else {
+            resolve(db);
+        }
+    });
 }
 
 function close() {
-    if (db) {
-        db.close((err) => {
+    return new Promise((resolve, reject) => {
+        if (db) {
+            db.close((err) => {
+                if (err) {
+                    console.error('[DATABASE] Error closing the database:', err.message);
+                    reject(err);
+                } else {
+                    console.log('[DATABASE] Closed the database connection.');
+                    resolve();
+                }
+            });
+            db = null;
+        } else {
+            resolve();
+        }
+    });
+}
+
+function run(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.run(sql, params, function(err) {
             if (err) {
-                console.error('[DATABASE] Error closing the database:', err.message);
+                reject(err);
             } else {
-                console.log('[DATABASE] Closed the database connection.');
+                resolve(this); // Returns the statement object with lastID and changes
             }
         });
-        db = null;
-    }
+    });
 }
+
+function get(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.get(sql, params, (err, row) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
+function all(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        db.all(sql, params, (err, rows) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(rows);
+            }
+        });
+    });
+}
+
 
 // +-------------------- EXPORTS -------------------+ 
 
 module.exports = {
     connect,
-    close
-}
+    close,
+    run,
+    get,
+    all
+};

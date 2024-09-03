@@ -28,7 +28,7 @@ const SessionProvider = ({ children }) => {
     useEffect(() => {
         const fetchSession = async () => {
             try {
-                const response = await axios.get('/auth/session');
+                const response = await axios.get('/session/get');
                 setSession(response.data.user);
             } catch (error) {
                 console.error('Error fetching session:', error);

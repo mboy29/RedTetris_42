@@ -6,8 +6,8 @@
     "scripts": {
         "start": "babel-node ./src/server.js",
         "dev": "nodemon --exec babel-node ./src/server.js",
-        "test": "jest",
-        "coverage": "jest --coverage"
+        "test": "jest --detectOpenHandles",
+        "coverage": "jest --coverage --silent"
     },
     "dependencies": {
         "bcrypt": "^5.1.1",
@@ -27,5 +27,31 @@
         "jest": "^29.7.0",
         "nodemon": "^2.0.22",
         "supertest": "^7.0.0"
+    },
+    "jest": {
+        "testEnvironment": "node",
+        "testMatch": [
+            "**/__tests__/**/*.test.js"
+        ],
+        "collectCoverage": true,
+        "coverageDirectory": "./__tests__/report",
+        "coverageProvider": "v8",
+        "coverageThreshold": {
+            "global": {
+                "branches": 50,
+                "functions": 70,
+                "lines": 70,
+                "statements": 70
+            }
+        },
+        "coverageReporters": ["text", "html", "json"],
+        "setupFilesAfterEnv": ["./__tests__/jest.setup.js"],
+        "moduleNameMapper": {
+            "^@root/(.*)$": "<rootDir>/src/$1",
+            "^@models/(.*)$": "<rootDir>/src/models/$1",
+            "^@database/(.*)$": "<rootDir>/src/database/$1",
+            "^@queries/(.*)$": "<rootDir>/src/database/queries/$1"
+        },
+        "verbose": true
     }
 }

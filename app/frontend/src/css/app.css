@@ -1,0 +1,28 @@
+/* +------------------------------------------------+ */
+/* |               REDTETRIS APP CSS                | */
+/* +------------------------------------------------+ */
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+.app-bg-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+}
+
+.app-bg-image {
+    background-image: url('./../assets/ui/RedTetrisBackground.svg');
+    background-size: cover; 
+    background-repeat: no-repeat;
+    background-position: bottom center;
+    width: 100%;
+    height: 100%;
+}
+

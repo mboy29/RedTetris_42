@@ -1,0 +1,20 @@
+ /* +------------------------------------------------+ */
+/* |               REDTETRIS COLORS CSS              | */
+/* +------------------------------------------------+ */
+
+:root {
+    --primary-red: #f09292;
+    --primary-orange: #f7c3c1;
+    --primary-yellow: #fffbe5;
+    --primary-green: #d2e8d9;
+    --primary-cyan: #c5e6f1;
+    --primary-blue: #9dcff1;
+    --primary-purple: #e2c9e3;
+    
+    --secondary-eerie: #1c1c1c;
+    --secondary-black: #0a0b0b;
+    --secondary-white: #ffffff;
+    --secondary-grey: #555;
+    --secondary-light-grey: #888;
+    --secondary-dark-grey: #333;
+}

@@ -12,21 +12,22 @@
 
 // +----------------- REQUIREMENTS -----------------+
 
-import axios from 'axios';
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
+import { Container, Form, Button, Alert } from 'react-bootstrap';
 
-import { SessionContext } from '../contexts/sessionContext'; 
+import { SessionContext } from '../contexts/sessionContext';
+import './../css/auth.css';
 
 // +------------------- COMPONENT -------------------+
-
 
 const Register = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [errors, setErrors] = useState([]);
-    const { setSession } = useContext(SessionContext); 
+    const { setSession } = useContext(SessionContext);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -54,59 +55,61 @@ const Register = () => {
     };
 
     return (
-        <div className="row justify-content-center mt-5">
-            <div className="col-md-4">
-                <h2>REGISTER</h2>
+        <Container fluid className="auth-container">
+            <div className="auth-logo-container">
+                <div className="auth-logo"></div>
+            </div>
+            <div className="auth-form-container">
+                <h2 className="text-center">Register</h2>
                 {errors.length > 0 && (
-                    <div className="alert alert-danger">
-                        <ul>
-                            {errors.map((error, index) => (
-                                <li key={index}>{error}</li>
-                            ))}
-                        </ul>
-                    </div>
+                    <Alert variant="danger">
+                        {errors.map((error, index) => (
+                            <p key={index} className="text-center">{error}</p>
+                        ))}
+                    </Alert>
                 )}
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="username">Username</label>
-                        <input
+                <Form onSubmit={handleSubmit}>
+                    <Form.Group className="mb-3">
+                        <Form.Control
                             type="text"
                             id="username"
-                            className="form-control"
                             value={username}
+                            className="auth-form-control"
+                            placeholder="Username"
                             onChange={(e) => setUsername(e.target.value)}
                         />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Control
                             type="password"
                             id="password"
-                            className="form-control"
                             value={password}
+                            className="auth-form-control"
+                            placeholder="Password"
                             onChange={(e) => setPassword(e.target.value)}
                         />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="passwordConfirm">Confirm Password</label>
-                        <input
+                    </Form.Group>
+                    <Form.Group className="mb-4">
+                        <Form.Control
                             type="password"
                             id="passwordConfirm"
-                            className="form-control"
                             value={passwordConfirm}
+                            className="auth-form-control"
+                            placeholder="Confirm Password"
                             onChange={(e) => setPasswordConfirm(e.target.value)}
                         />
-                    </div>
-                    <button type="submit" className="btn btn-primary">Register</button>
-                </form>
-                <p className="mt-3">
-                    Already registered? <Link to="/login">Login here</Link>.
+                    </Form.Group>
+                    <Button type="submit" variant="primary" className="w-100 auth-btn">
+                        Register
+                    </Button>
+                </Form>
+                <p className="mt-3 text-center">
+                    Already registered? <Link to="/login" className="auth-link">Login here</Link>
                 </p>
             </div>
-        </div>
+        </Container>
     );
 };
-
 
 // +------------------- EXPORTS --------------------+
 
