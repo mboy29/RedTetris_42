@@ -18,9 +18,9 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
 
 import Home from './components/Home';
-import Register from './components/Register';
-import Login from './components/Login';
-import Logout from './components/Logout';
+import Register from './components/auth/Register';
+import Login from './components/auth/Login';
+import Logout from './components/auth/Logout';
 import { SessionContext } from './contexts/sessionContext';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -36,6 +36,14 @@ const ProtectedRoute = ({ element }) => {
 const RedirectIfLoggedIn = ({ element }) => {
     const { session } = useContext(SessionContext);
     return session ? <Navigate to="/home" /> : element;
+};
+
+const LogoutRoute = () => {
+    const { session } = useContext(SessionContext);
+    if (!session) {
+        return <Navigate to="/login" />;
+    }
+    return <Logout />;
 };
 
 // +--------------------- APP ----------------------+
@@ -55,7 +63,7 @@ const App = () => {
                     <Route path="/register" element={<RedirectIfLoggedIn element={<Register />} />} />
                     <Route path="/login" element={<RedirectIfLoggedIn element={<Login />} />} />
                     <Route path="/home" element={<ProtectedRoute element={<Home />} />} />
-                    <Route path="/logout" element={<Logout />} />
+                    <Route path="/logout" element={<LogoutRoute />} />
                 </Routes>
             </Container>
         </div>

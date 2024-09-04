@@ -16,7 +16,7 @@
 import React, { useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { SessionContext } from '../contexts/sessionContext'; 
+import { SessionContext } from './../../contexts/sessionContext'; 
 
 // +--------------------- COMPONENT ----------------------+
 

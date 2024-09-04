@@ -22,8 +22,6 @@ import NavBar from './NavBar';
 // +------------------- COMPONENT -------------------+
 
 const Home = () => {
-    // if no session redirect to login
-    // if session redirect to game
     const { session } = useContext(SessionContext);
 
     if (!session) {
@@ -31,7 +29,7 @@ const Home = () => {
     }
     return (
         <div className="home-container">
-            <NavBar />  {/* Include the NavBar component */}
+            <NavBar />
         </div>
     );
 };
