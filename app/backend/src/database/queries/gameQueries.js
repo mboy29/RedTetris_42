@@ -1,0 +1,171 @@
+// +------------------------------------------------+
+// |       REDTETRIS GAME QUERY DATABASE JS         |
+// +------------------------------------------------+
+
+// +------------------- SUMMARY --------------------+
+/*
+    This module is designed to handle operations on the `games` 
+    and `game_players` tables in the SQLite database for the RedTetris project. 
+
+    This includes:
+        - Creating a game
+        - Finding a game by name
+        - Updating a game's status
+        - Adding a player to a game
+        - Removing a player from a game
+        - Getting all players in a game
+        - Checking if a player is in a game
+*/
+
+// +----------------- REQUIREMENTS -----------------+ 
+
+const dbModule = require('../database');
+
+// +------------------- FUNCTIONS ------------------+
+
+function validateStatus(status) {
+    const validStatuses = ['pending', 'in progress', 'finished'];
+    if (!validStatuses.includes(status)) {
+        throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+    }
+}
+
+function validateMode(mode) {
+    const validModes = ['solo', 'multiplayer'];
+    if (!validModes.includes(mode)) {
+        throw new Error(`Invalid mode. Must be one of: ${validModes.join(', ')}`);
+    }
+}
+
+async function createGame(name, mode, status) {
+    try {
+        validateMode(mode);
+        validateStatus(status);
+        
+        const db = await dbModule.connect();
+        const query = 'INSERT INTO games (name, mode, status) VALUES (?, ?, ?)';
+        const result = await dbModule.run(query, [name, mode, status]);
+        return result.lastID;
+    } catch (err) {
+        throw new Error(`Error creating game: ${err.message}`);
+    }
+}
+
+async function deleteGameById(id) {
+    try {
+        const db = await dbModule.connect();
+        const queryGet = 'SELECT * FROM games WHERE id = ?';
+        if (!await dbModule.get(queryGet, [id])) {
+            throw new Error('Game not found');
+        }
+        const query = 'DELETE FROM games WHERE id = ?';
+        const result = await dbModule.run(query, [id]);
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error deleting game by ID: ${err.message}`);
+    }
+}
+
+async function updateGame(id, status) {
+    try {
+        validateStatus(status);
+
+        const db = await dbModule.connect();
+        const query = 'UPDATE games SET status = ? WHERE id = ?';
+        const result = await dbModule.run(query, [status, id]);
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error updating game: ${err.message}`);
+    }
+}
+
+async function getGameById(id) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'SELECT * FROM games WHERE id = ?';
+        const row = await dbModule.get(query, [id]);
+        return row || null;
+    } catch (err) {
+        throw new Error(`Error getting game by ID: ${err.message}`);
+    }
+}
+
+async function getGameByName(name) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'SELECT * FROM games WHERE name = ?';
+        const row = await dbModule.get(query, [name]);
+        return row || null;
+    } catch (err) {
+        throw new Error(`Error getting game by name: ${err.message}`);
+    }
+}
+
+async function getGamePlayers(gameId) {
+    try {
+        const db = await dbModule.connect();
+        const query = `
+            SELECT players.* 
+            FROM players
+            JOIN game_players ON players.id = game_players.player_id
+            WHERE game_players.game_id = ?
+        `;
+        const rows = await dbModule.all(query, [gameId]);
+        return rows || [];
+    } catch (err) {
+        throw new Error(`Error getting players for game ID ${gameId}: ${err.message}`);
+    }
+}
+
+async function isGamePlayer(gameId, playerId) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'SELECT 1 FROM game_players WHERE game_id = ? AND player_id = ?';
+        const row = await dbModule.get(query, [gameId, playerId]);
+        return row ? true : false;
+    } catch (err) {
+        throw new Error(`Error checking if player ${playerId} is in game ${gameId}: ${err.message}`);
+    }
+}
+
+async function addPlayerToGame(gameId, playerId) {
+    try {
+        const db = await dbModule.connect();
+        if (await isGamePlayer(gameId, playerId)) {
+            throw new Error('Player is already in the game');
+        }
+        const query = 'INSERT INTO game_players (game_id, player_id) VALUES (?, ?)';
+        const result = await dbModule.run(query, [gameId, playerId]);
+        return result.lastID;
+    } catch (err) {
+        throw new Error(`Error adding player ${playerId} to game ${gameId}: ${err.message}`);
+    }
+}
+
+async function removePlayerFromGame(gameId, playerId) {
+    try {
+        const db = await dbModule.connect();
+        if (!await isGamePlayer(gameId, playerId)) {
+            throw new Error('Player is not in the game');
+        }
+        const query = 'DELETE FROM game_players WHERE game_id = ? AND player_id = ?';
+        const result = await dbModule.run(query, [gameId, playerId]);
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error removing player ${playerId} from game ${gameId}: ${err.message}`);
+    }
+}
+
+// +-------------------- EXPORTS -------------------+ 
+
+module.exports = {
+    createGame,
+    deleteGameById,
+    updateGame,
+    getGameById,
+    getGameByName,
+    getGamePlayers,
+    isGamePlayer,
+    addPlayerToGame,
+    removePlayerFromGame
+};

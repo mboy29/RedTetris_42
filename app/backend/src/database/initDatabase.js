@@ -3,7 +3,6 @@
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
-
 /*
     This module is designed to initialize the SQLite 
     database for the RedTetris project with the
@@ -11,6 +10,8 @@
 
     This includes :
         - players
+        - games
+        - game_players (to link players to games)
 */
 
 // +----------------- REQUIREMENTS -----------------+ 
@@ -19,10 +20,10 @@ const dbModule = require('./database');
 
 // +------------------- FUNCTIONS ------------------+
 
-
-async function init() {
+// Initialize the players table
+async function initPlayer() {
     try {
-        const db = await dbModule.connect(); // Connect to the database
+        const db = await dbModule.connect();
 
         await dbModule.run(`CREATE TABLE IF NOT EXISTS players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,9 +33,57 @@ async function init() {
             password TEXT NOT NULL
         )`);
 
-        console.log('[DATABASE] Table created or already exists.');
+        console.log('[DATABASE] Players table created or already exists.');
     } catch (err) {
-        console.error('[DATABASE] Error creating table:', err.message);
+        console.error('[DATABASE] Error creating players table:', err.message);
+    }
+}
+
+// Initialize the games table
+async function initGame() {
+    try {
+        const db = await dbModule.connect();
+
+        await dbModule.run(`CREATE TABLE IF NOT EXISTS games (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL CHECK(length(name) >= 1),
+            status TEXT NOT NULL CHECK(status IN ('pending', 'in progress', 'finished')),
+            mode TEXT NOT NULL CHECK(mode IN ('solo', 'multiplayer')),
+        )`);
+
+        console.log('[DATABASE] Games table created or already exists.');
+    } catch (err) {
+        console.error('[DATABASE] Error creating games table:', err.message);
+    }
+}
+
+// Initialize the game_players table (junction table)
+async function initGamePlayers() {
+    try {
+        const db = await dbModule.connect();
+
+        await dbModule.run(`CREATE TABLE IF NOT EXISTS game_players (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            player_id INTEGER NOT NULL,
+            FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )`);
+
+        console.log('[DATABASE] Game Players table created or already exists.');
+    } catch (err) {
+        console.error('[DATABASE] Error creating game_players table:', err.message);
+    }
+}
+
+// Initialize all tables
+async function init() {
+    try {
+        await initPlayer();
+        await initGame();
+        await initGamePlayers();
+    } catch (err) {
+        console.error('[DATABASE] Error initializing database:', err.message);
     }
 }
 
@@ -42,4 +91,4 @@ async function init() {
 
 module.exports = {
     init
-}
+};

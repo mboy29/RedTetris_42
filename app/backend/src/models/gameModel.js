@@ -18,15 +18,15 @@
 
 const queries = require('./../database/queries/gameQueries');
 
+
 // +--------------------- CLASS ---------------------+
 
 class Game {
-    constructor(name, mode, id = null, status = 'pending') {
-        this.setName(name);
-        this.setMode(mode);
-        this.setStatus(status);
+    constructor(name, mode, status = "pending") {
+        this.name = name;
+        this.mode = mode;
+        this.status = status;
         this.players = [];
-        this.setId(id);
     }
 
     setName(name) {
@@ -37,7 +37,7 @@ class Game {
     }
 
     setStatus(status) {
-        const validStatuses = ['pending', 'in progress', 'finished'];
+        const validStatuses = ["pending", "in progress", "finished"];
         if (!validStatuses.includes(status)) {
             throw new Error('Invalid status.');
         }
@@ -45,35 +45,27 @@ class Game {
     }
 
     setMode(mode) {
-        const validModes = ['solo', 'multiplayer'];
+        const validModes = ["solo", "multiplayer"];
         if (!validModes.includes(mode)) {
             throw new Error('Invalid mode.');
         }
         this.mode = mode;
     }
 
-    setId(id) { 
-        this.id = id; 
+    getName() {
+        return this.name;
     }
 
-    getName() { 
-        return this.name; 
+    getPlayers() {
+        return this.players;
     }
 
-    getPlayers() { 
-        return this.players; 
+    getStatus() {
+        return this.status;
     }
 
-    getStatus() { 
-        return this.status; 
-    }
-
-    getMode() { 
-        return this.mode; 
-    }
-
-    getId() { 
-        return this.id; 
+    getMode() {
+        return this.mode;
     }
 
     async addPlayers(...players) {
@@ -81,7 +73,7 @@ class Game {
             for (const player of players) {
                 if (!this.players.includes(player)) {
                     this.players.push(player);
-                    await queries.addPlayerToGame(this.id, player.id);
+                    await dbModule.addPlayerToGame(this.id, player.id);
                 }
             }
         } catch (err) {
@@ -95,7 +87,7 @@ class Game {
                 const index = this.players.indexOf(player);
                 if (index !== -1) {
                     this.players.splice(index, 1);
-                    await queries.removePlayerFromGame(this.id, player.id);
+                    await dbModule.removePlayerFromGame(this.id, player.id);
                 }
             }
         } catch (err) {
@@ -105,13 +97,11 @@ class Game {
 
     static async getByName(name) {
         try {
-            const gameData = await queries.getGameByName(name);
-            if (!gameData) {
+            const game = await dbModule.getGameByName(name);
+            if (!game) {
                 throw new Error('Game not found');
             }
-            const game = new Game(gameData.name, gameData.mode, gameData.id, gameData.status);
-            game.players = await queries.getGamePlayers(gameData.id); // Fetch players
-            return game;
+            return new Game(game.name, game.mode, game.status);
         } catch (err) {
             throw new Error(`Error retrieving game by name: ${err.message}`);
         }
@@ -119,13 +109,11 @@ class Game {
 
     static async getById(id) {
         try {
-            const gameData = await queries.getGameById(id);
-            if (!gameData) {
+            const game = await dbModule.getGameById(id);
+            if (!game) {
                 throw new Error('Game not found');
             }
-            const game = new Game(gameData.name, gameData.mode, gameData.id, gameData.status);
-            game.players = await queries.getGamePlayers(gameData.id); // Fetch players
-            return game;
+            return new Game(game.name, game.mode, game.status);
         } catch (err) {
             throw new Error(`Error retrieving game by ID: ${err.message}`);
         }
@@ -133,9 +121,8 @@ class Game {
 
     static async create(name, mode) {
         try {
-            const id = await queries.createGame(name, mode, 'pending');
-            const game = await Game.getById(id);
-            return game;
+            const id = await dbModule.createGame(name, mode);
+            return await Game.getById(id);
         } catch (err) {
             throw new Error(`Error creating game: ${err.message}`);
         }
@@ -143,10 +130,7 @@ class Game {
 
     async update() {
         try {
-            if (this.id === null) {
-                throw new Error('Game ID is not set.');
-            }
-            await queries.updateGame(this.id, this.status);
+            await dbModule.updateGame(this.id, this.status);
         } catch (err) {
             throw new Error(`Error updating game: ${err.message}`);
         }
@@ -154,10 +138,7 @@ class Game {
 
     async remove() {
         try {
-            if (this.id === null) {
-                throw new Error('Game ID is not set.');
-            }
-            await queries.deleteGameById(this.id);
+            await dbModule.deleteGameById(this.id);
         } catch (err) {
             throw new Error(`Error removing game: ${err.message}`);
         }
