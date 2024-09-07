@@ -41,7 +41,7 @@ router.post('/create', async (req, res) => {
         console.log(`[GAME] Game ${roomName} created by ${playerName}`);
         res.status(201).json({ roomName, playerName }); 
     } catch (error) {
-        console.error('[GAME] Error creating game:', error.message);
+        console.log('[GAME] Error creating game:', error.message);
         res.status(500).json({ message: 'Internal server error' });
     }
 });
@@ -68,11 +68,9 @@ router.post('/join', async (req, res) => {
             return res.status(409).json({ message: 'Player already in game' });
         }
 
-        await game.addPlayers(player);
-        console.log(`[GAME] Player ${playerName} joined game ${roomName}`);
         res.status(200).json({ roomName, playerName });
     } catch (error) {
-        console.error('[GAME] Error joining game:', error.message);
+        console.log('[GAME] Error joining game:', error.message);
         res.status(500).json({ message: 'Internal server error' });
     }
 });

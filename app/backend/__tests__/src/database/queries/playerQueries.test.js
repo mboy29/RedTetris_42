@@ -72,12 +72,11 @@ describe('Player Queries', () => {
             if (double) { 
                 await queries.deletePlayerById(double.id);
             }
-            const playerId = await queries.createPlayer('testuser', 'socket123', true, 'hashedPassword');
+            const playerId = await queries.createPlayer('testuser', true, 'hashedPassword');
             expect(playerId).toBeDefined();
             const player = await queries.getPlayerByUsername('testuser');
             expect(player).toEqual(expect.objectContaining({
                 username: 'testuser',
-                socket: 'socket123',
                 connect: 1,
                 password: 'hashedPassword'
             }));
@@ -85,25 +84,25 @@ describe('Player Queries', () => {
         });
 
         it('should throw an error if player already exists', async () => {
-            await queries.createPlayer('testuser', 'socket123', true, 'hashedPassword');
-            await expect(queries.createPlayer('testuser', 'socket123', true, 'hashedPassword'))
+            await queries.createPlayer('testuser', true, 'hashedPassword');
+            await expect(queries.createPlayer('testuser', true, 'hashedPassword'))
                 .rejects.toThrow('Error creating player');
         });
 
         it('should throw an error if username is too short', async () => {
-            await expect(queries.createPlayer('tes', 'socket123', true, 'hashedPassword'))
+            await expect(queries.createPlayer('tes', true, 'hashedPassword'))
                 .rejects.toThrow('Error creating player');
         });
 
         it('should throw an error if username is too long', async () => {
-            await expect(queries.createPlayer('test username', 'socket123', true, 'hashedPassword'))
+            await expect(queries.createPlayer('test username', true, 'hashedPassword'))
                 .rejects.toThrow('Error creating player');
         });
     });
 
     describe('getPlayerPassword', () => {
         it('should get the password for a player', async () => {
-            await queries.createPlayer('testuser', 'socket123', true, 'hashedPassword');
+            await queries.createPlayer('testuser', true, 'hashedPassword');
             const password = await queries.getPlayerPassword('testuser');
             expect(password).toBe('hashedPassword');
         });
@@ -116,11 +115,10 @@ describe('Player Queries', () => {
 
     describe('getPlayerByUsername', () => {
         it('should return a player by username', async () => {
-            await queries.createPlayer('testuser', 'socket123', true, 'hashedPassword');
+            await queries.createPlayer('testuser', true, 'hashedPassword');
             const player = await queries.getPlayerByUsername('testuser');
             expect(player).toEqual(expect.objectContaining({
                 username: 'testuser',
-                socket: 'socket123',
                 connect: 1,
                 password: 'hashedPassword'
             }));
@@ -132,20 +130,20 @@ describe('Player Queries', () => {
         });
     });
 
-    describe('getPlayerBySocket', () => {
-        it('should return a player by socket', async () => {
-            await queries.createPlayer('testuser', 'socket123', true, 'hashedPassword');
-            const player = await queries.getPlayerBySocket('socket123');
+    describe('getPlayerById', () => {
+        it('should return a player by ID', async () => {
+            const playerId = await queries.createPlayer('testuser', true, 'hashedPassword');
+            const player = await queries.getPlayerById(playerId);
             expect(player).toEqual(expect.objectContaining({
+                id: playerId,
                 username: 'testuser',
-                socket: 'socket123',
                 connect: 1,
                 password: 'hashedPassword'
             }));
         });
 
         it('should return null if player does not exist', async () => {
-            const player = await queries.getPlayerBySocket('nonexistentSocket');
+            const player = await queries.getPlayerById('nonexistentSocket');
             expect(player).toBeNull();
         });
     });
@@ -168,20 +166,44 @@ describe('Player Queries', () => {
         });
     });
 
-    describe('updatePlayer', () => {
-        it('should update a player', async () => {
-            await queries.createPlayer('testuser', 'socket123', true, 'hashedPassword');
-            await queries.updatePlayer('testuser', 'newSocket', false);
-            const player = await queries.getPlayerByUsername('testuser');
-            expect(player).toEqual(expect.objectContaining({
-                username: 'testuser',
-                socket: 'newSocket',
-                connect: 0 // Updated to false
-            }));
+    describe('updatePlayerUsername', () => {
+        it('should update a player\'s username', async () => {
+            const playerId = await queries.createPlayer('testuser', true, 'hashedPassword');
+            await queries.updatePlayerUsername(playerId, 'newuser');
+            const player = await queries.getPlayerById(playerId);
+            expect(player).toEqual(expect.objectContaining({ username: 'newuser' }));
         });
 
         it('should throw an error if player does not exist', async () => {
-            await expect(queries.updatePlayer('nonexistentuser', 'socket123', true))
+            await expect(queries.updatePlayerUsername(999, 'newuser'))
+                .rejects.toThrow('Error updating player');
+        });
+    });
+
+    describe('updatePlayerConnect', () => {
+        it('should update a player\'s connect status', async () => {
+            const playerId = await queries.createPlayer('testuser', true, 'hashedPassword');
+            await queries.updatePlayerConnect(playerId, false);
+            const player = await queries.getPlayerById(playerId);
+            expect(player).toEqual(expect.objectContaining({ connect: 0 }));
+        });
+
+        it('should throw an error if player does not exist', async () => {
+            await expect(queries.updatePlayerConnect(999, false))
+                .rejects.toThrow('Error updating player');
+        });
+    });
+
+    describe('updatePlayerRoomName', () => {
+        it('should update a player\'s room name', async () => {
+            const playerId = await queries.createPlayer('testuser', true, 'hashedPassword');
+            await queries.updatePlayerRoomName(playerId, 'room1');
+            const player = await queries.getPlayerById(playerId);
+            expect(player).toEqual(expect.objectContaining({ roomName: 'room1' }));
+        });
+
+        it('should throw an error if player does not exist', async () => {
+            await expect(queries.updatePlayerRoomName(999, 'room1'))
                 .rejects.toThrow('Error updating player');
         });
     });

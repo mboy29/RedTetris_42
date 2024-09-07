@@ -49,6 +49,13 @@ class Player {
         this.setRoomName(roomName); 
     }
 
+    setId(id) { 
+        if (typeof id !== 'number') {
+            throw new Error('ID must be a number.');
+        }
+        this.id = id;
+    }
+
     setUsername(username) {
         const validUsernamePattern = /^[a-zA-Z0-9_-]+$/;
         
@@ -74,8 +81,6 @@ class Player {
         this.username = username;
     }
 
-    setId(id) { this.id = id; }
-
     setConnect(connect) { this.connect = connect; }
 
     setRoomName(roomName) { this.roomName = roomName; }
@@ -93,7 +98,7 @@ class Player {
         if (!playerData) {
             return null;
         }
-        return new Player(playerData.id, playerData.username, playerData.connect, playerData.roomName);
+        return new Player(Number(playerData.id), playerData.username, playerData.connect, playerData.roomName);
     }
 
     static async getById(id) {
@@ -101,7 +106,7 @@ class Player {
         if (!playerData) {
             return null;
         }
-        return new Player(playerData.id, playerData.username, playerData.connect, playerData.roomName);
+        return new Player(Number(playerData.id), playerData.username, playerData.connect, playerData.roomName);
     }
 
     static async getPlayerPassword(username) {
@@ -117,7 +122,7 @@ class Player {
         if (!playersData) {
             return null;
         }
-        return playersData.map(playerData => new Player(playerData.id, playerData.username, playerData.connect, playerData.roomName));
+        return playersData.map(playerData => new Player(Number(Number), playerData.username, playerData.connect, playerData.roomName));
     }
 
 
@@ -165,7 +170,7 @@ class Player {
 
         const hashedPassword = bcrypt.hashSync(password, 10);
         const id = await queries.createPlayer(username, false, hashedPassword);
-        return new Player(id, username, false, null);
+        return new Player(Number(id), username, false, null);
     }
 
     async remove() {

@@ -12,8 +12,8 @@
 
 // +----------------- REQUIREMENTS -----------------+
 
-const Game = require('./../models/gameModel');
-const Player = require('./../models/playerModel');
+const Game = require('../models/gameModel');
+const Player = require('../models/playerModel');
 
 // +------------------- FUNCTIONS -------------------+
 
@@ -37,12 +37,10 @@ function setupSocket(io) {
                 if (!game) {
                     throw new Error('Game not found');
                 }
-    
                 if (await game.isGamePlayer(player)) {
-                    socket.emit('gameJoined', { roomName, playerName });
-                    return;
+                    throw new Error('Player already in game');
                 }
-    
+
                 await game.addPlayers(socket, player);
 
                 socketRooms.set(socket.id, { roomName, playerName });
@@ -53,8 +51,8 @@ function setupSocket(io) {
                 socket.emit('gameJoined', { roomName, playerName });
     
             } catch (error) {
-                socket.emit('error', { message: error.message });
-                console.error('[GAME] Error joining game:', error.message);
+                console.log('[GAME] Error joining game:', error.message);
+                socket.emit('error', { message: error.message });  
             }
         });
     
@@ -64,17 +62,16 @@ function setupSocket(io) {
                 if (!roomName || !playerName) {
                     throw new Error('Invalid input');
                 }
-        
-                const game = await Game.getByName(roomName);
-                if (!game) {
-                    throw new Error('Game not found');
-                }
-        
+                
                 const player = await Player.getByUsername(playerName);
                 if (!player) {
                     throw new Error('Player not found');
                 }
-        
+                
+                const game = await Game.getByName(roomName);
+                if (!game) {
+                    throw new Error('Game not found');
+                }
                 if (!await game.isGamePlayer(player)) {
                     throw new Error('Player not in game');
                 }
@@ -85,13 +82,13 @@ function setupSocket(io) {
                     await game.remove(roomName);
                     console.log(`[GAME] Game ${roomName} deleted as creator left`);
                     socket.emit('gameDeleted');
-                    io.to(roomName).emit('gameDeleted');
+                    io.to(roomName).emit('gameDeleted', {});
                 } else {
                     const players = await game.getPlayers();
                     io.to(roomName).emit('updatePlayers', players);
                 }                 
             } catch (error) {
-                console.error('[GAME] Error handling player leaving game:', error.message);
+                console.log('[GAME] Error handling player leaving game:', error.message);
                 socket.emit('error', { message: error.message });
             }
         });
@@ -101,7 +98,7 @@ function setupSocket(io) {
             try {
                 const socketInfo = socketRooms.get(socket.id);
                 if (!socketInfo) {
-                    console.error('[GAME] Socket information not found');
+                    console.log('[GAME] Socket information not found');
                     return;
                 }
     
@@ -129,14 +126,13 @@ function setupSocket(io) {
                 if (game.isGameCreator(player)) {
                     await game.remove(roomName);
                     console.log(`[GAME] Game ${roomName} deleted as creator left`);
-                    socket.emit('gameDeleted');
                     io.to(roomName).emit('gameDeleted');
                 } else {
                     const players = await game.getPlayers();
                     io.to(roomName).emit('updatePlayers', players);
                 }           
             } catch (error) {
-                console.error('[GAME] Error handling player leaving game:', error.message);
+                console.log('[GAME] Error handling player leaving game:', error.message);
             }
         });
     });

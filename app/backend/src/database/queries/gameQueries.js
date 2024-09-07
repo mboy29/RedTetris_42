@@ -75,6 +75,9 @@ async function updateGameName(id, name) {
         const db = await dbModule.connect();
         const query = 'UPDATE games SET name = ? WHERE id = ?';
         const result = await dbModule.run(query, [name, id]);
+        if (result.changes === 0) {
+            throw new Error('Game not found');
+        }
         return result.changes;
     } catch (err) {
         throw new Error(`Error updating game name: ${err.message}`);
@@ -87,6 +90,9 @@ async function updateGameMode(id, mode) {
         const db = await dbModule.connect();
         const query = 'UPDATE games SET mode = ? WHERE id = ?';
         const result = await dbModule.run(query, [mode, id]);
+        if (result.changes === 0) {
+            throw new Error('Game not found');
+        }
         return result.changes;
     } catch (err) {
         throw new Error(`Error updating game mode: ${err.message}`);
@@ -99,6 +105,9 @@ async function updateGameStatus(id, status) {
         const db = await dbModule.connect();
         const query = 'UPDATE games SET status = ? WHERE id = ?';
         const result = await dbModule.run(query, [status, id]);
+        if (result.changes === 0) {
+            throw new Error('Game not found');
+        }
         return result.changes;
     } catch (err) {
         throw new Error(`Error updating game status: ${err.message}`);
@@ -162,6 +171,9 @@ async function addPlayerToGame(gameId, playerId) {
         }
         const query = 'INSERT INTO game_players (game_id, player_id) VALUES (?, ?)';
         const result = await dbModule.run(query, [gameId, playerId]);
+        if (result.changes === 0) {
+            throw new Error('Game not found');
+        }
         return result.lastID;
     } catch (err) {
         throw new Error(`Error adding player ${playerId} to game ${gameId}: ${err.message}`);
@@ -176,9 +188,11 @@ async function removePlayerFromGame(gameId, playerId) {
         }
         const query = 'DELETE FROM game_players WHERE game_id = ? AND player_id = ?';
         const result = await dbModule.run(query, [gameId, playerId]);
+        if (result.changes === 0) {
+            throw new Error('Game not found');
+        }
         return result.changes;
     } catch (err) {
-        console.error(`Error removing player ${playerId} from game ${gameId}: ${err.message}`);
         throw new Error(`Error removing player ${playerId} from game ${gameId}: ${err.message}`);
     }
 }

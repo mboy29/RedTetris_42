@@ -136,8 +136,12 @@ class Game {
     }
 
     async updateName(name) {
-        this.setName(name);
-        await queries.updateGameName(this.id, name);
+        try {
+            this.setName(name);
+            await queries.updateGameName(this.id, name);
+        } catch (error) {
+            throw new Error(error.message);
+        }   
     }
 
     async updateMode(mode) {
