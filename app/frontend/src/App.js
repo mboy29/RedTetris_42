@@ -13,6 +13,8 @@
 
 // +----------------- REQUIREMENTS -----------------+
 
+
+
 import React, { useContext } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
@@ -21,10 +23,15 @@ import Home from './components/Home';
 import Register from './components/auth/Register';
 import Login from './components/auth/Login';
 import Logout from './components/auth/Logout';
+
+
+import CreateGame from './components/game/CreateGame';
+import JoinGame from './components/game/JoinGame';
+import Game from './components/game/Game';
+
 import { SessionContext } from './contexts/sessionContext';
 
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './css/app.css'; 
+import './css/app.css';
 
 // +------------------- COMPONENT ------------------+
 
@@ -51,19 +58,22 @@ const LogoutRoute = () => {
 const App = () => {
     return (
         <div>
-            {/* Background Image Wrapper */}
             <div className="app-bg-wrapper">
                 <div className="app-bg-image"></div>
             </div>
-
-            {/* Main Content */}
             <Container fluid>
                 <Routes>
                     <Route path="/" element={<RedirectIfLoggedIn element={<Register />} />} />
                     <Route path="/register" element={<RedirectIfLoggedIn element={<Register />} />} />
                     <Route path="/login" element={<RedirectIfLoggedIn element={<Login />} />} />
-                    <Route path="/home" element={<ProtectedRoute element={<Home />} />} />
                     <Route path="/logout" element={<LogoutRoute />} />
+
+                    <Route path="/home" element={<ProtectedRoute element={<Home />} />} />
+
+                    <Route path="/game/create" element={<ProtectedRoute element={<CreateGame />} />} />
+                    <Route path="/game/join" element={<ProtectedRoute element={<JoinGame />} />} />
+                    <Route path="/:room/:playerName" element={<ProtectedRoute element={<Game />} />} />
+
                 </Routes>
             </Container>
         </div>

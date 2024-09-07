@@ -9,10 +9,11 @@
     table in the SQLite database for the RedTetris project. 
 
     This includes:
-        - Creating a player
-        - Finding a player by username
-        - Finding a player by socket
-        - Updating a player
+        - Creating a new player
+        - Getting a player by ID or username
+        - Getting all players
+        - Updating a player's username, connection status, 
+          or room name
         - Deleting a player by ID
 */
 
@@ -22,12 +23,12 @@ const dbModule = require('../database');
 
 // +------------------- FUNCTIONS ------------------+
 
-async function createPlayer(username, socket, connect, password) {
+async function createPlayer(username, connect, password) {
     try {
         const db = await dbModule.connect();
-        const query = 'INSERT INTO players (username, socket, connect, password) VALUES (?, ?, ?, ?)';
-        const result = await dbModule.run(query, [username, socket, connect, password]);
-        return result.lastID; // Return the inserted ID
+        const query = 'INSERT INTO players (username, connect, password) VALUES (?, ?, ?)';
+        const result = await dbModule.run(query, [username, connect, password]);
+        return result.lastID;
     } catch (err) {
         throw new Error(`Error creating player: ${err.message}`);
     }
@@ -57,14 +58,14 @@ async function getPlayerByUsername(username) {
     }
 }
 
-async function getPlayerBySocket(socket) {
+async function getPlayerById(id) {
     try {
         const db = await dbModule.connect();
-        const query = 'SELECT * FROM players WHERE socket = ?';
-        const row = await dbModule.get(query, [socket]);
+        const query = 'SELECT * FROM players WHERE id = ?';
+        const row = await dbModule.get(query, [id]);
         return row || null;
     } catch (err) {
-        throw new Error(`Error getting player by socket: ${err.message}`);
+        throw new Error(`Error getting player by ID: ${err.message}`);
     }
 }
 
@@ -79,18 +80,48 @@ async function getAllPlayers() {
     }
 }
 
-async function updatePlayer(username, socket, connect) {
+async function updatePlayerUsername(id, username) {
     try {
         const db = await dbModule.connect();
-        const player = await getPlayerByUsername(username);
-        if (!player) {
+        const queryGet = 'SELECT * FROM players WHERE id = ?';
+        if (!await dbModule.get(queryGet, [id])) {
             throw new Error('Player not found');
         }
-        const query = 'UPDATE players SET socket = ?, connect = ? WHERE username = ?';
-        const result = await dbModule.run(query, [socket, connect, username]);
-        return result.changes; // Return the number of rows changed
+        const query = 'UPDATE players SET username = ? WHERE id = ?';
+        const result = await dbModule.run(query, [username, id]);
+        return result.changes; 
     } catch (err) {
-        throw new Error(`Error updating player: ${err.message}`);
+        throw new Error(`Error updating player username: ${err.message}`);
+    }
+}
+
+async function updatePlayerConnect(id, connect) {
+    try {
+        const db = await dbModule.connect();
+        const queryGet = 'SELECT * FROM players WHERE id = ?';
+        if (!await dbModule.get(queryGet, [id])) {
+            throw new Error('Player not found');
+        }
+        const query = 'UPDATE players SET connect = ? WHERE id = ?';
+        const result = await dbModule.run(query, [connect, id]);
+        return result.changes; 
+    } catch (err) {
+        throw new Error(`Error updating player connect: ${err.message}`);
+    }
+}
+
+async function updatePlayerRoomName(id, roomName) {
+    try {
+        const db = await dbModule.connect();
+        const queryGet = 'SELECT * FROM players WHERE id = ?';
+        if (!await dbModule.get(queryGet, [id])) {
+            throw new Error('Player not found');
+        }
+        const query = 'UPDATE players SET roomName = ? WHERE id = ?';
+        const result = await dbModule.run(query, [roomName, id]);
+        return result.changes; 
+    } catch (err) {
+        throw new Error(`Error updating player roomName: ${err.message}`);
     }
 }
 
@@ -115,8 +146,10 @@ module.exports = {
     createPlayer,
     getPlayerPassword,
     getPlayerByUsername,
-    getPlayerBySocket,
+    getPlayerById,
     getAllPlayers,
-    updatePlayer,
+    updatePlayerUsername,
+    updatePlayerConnect,
+    updatePlayerRoomName,
     deletePlayerById
 };

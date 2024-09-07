@@ -15,7 +15,6 @@
 
 import React, { createContext, useEffect, useState } from 'react';
 import axios from './../configs/axiosConfig';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 // +------------------- CONTEXT --------------------+
 
@@ -42,7 +41,7 @@ const SessionProvider = ({ children }) => {
 
     return (
         <SessionContext.Provider value={{ session, setSession, loading }}>
-            {loading ? <LoadingSpinner /> : children}
+            {loading ? null : children}
         </SessionContext.Provider>
     );
 };

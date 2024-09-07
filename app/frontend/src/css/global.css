@@ -1,0 +1,61 @@
+/* +------------------------------------------------+ */
+/* |              REDTETRIS GLOBAL CSS              | */
+/* +------------------------------------------------+ */
+
+@import './colors.css';
+
+.global-form-container {
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    margin: 0;
+}
+
+.global-form-control {
+    background-color: var(--secondary-dark-grey);
+    border: 2px solid var(--secondary-grey);
+    border-radius: 8px;
+    color: var(--secondary-light-grey);
+    padding: 10px; 
+    transition: border-color 0.3s, box-shadow 0.3s; 
+}
+
+.global-form-control::placeholder {
+    color: var(--secondary-light-grey);
+}
+
+.global-form-control:focus {
+    border-color: var(--primary-red);
+    box-shadow: 0 0 0 0.2rem rgba(240, 146, 146, 0.5);
+    outline: none;
+}
+
+.global-btn {
+    background-color: var(--primary-red);
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.global-btn:hover {
+    background-color: var(--primary-blue);
+}
+
+.global-btn:active:focus {
+    background-color: var(--primary-cyan);
+}
+
+.global-link {
+    color: var(--primary-red);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.global-link:hover {
+    color: var(--primary-blue);
+}

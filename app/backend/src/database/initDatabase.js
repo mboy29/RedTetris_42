@@ -20,7 +20,6 @@ const dbModule = require('./database');
 
 // +------------------- FUNCTIONS ------------------+
 
-// Initialize the players table
 async function initPlayer() {
     try {
         const db = await dbModule.connect();
@@ -28,18 +27,16 @@ async function initPlayer() {
         await dbModule.run(`CREATE TABLE IF NOT EXISTS players (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL CHECK(length(username) >= 4 AND length(username) <= 12) UNIQUE,
-            socket TEXT,
+            roomName TEXT,
             connect BOOLEAN NOT NULL,
             password TEXT NOT NULL
         )`);
-
         console.log('[DATABASE] Players table created or already exists.');
     } catch (err) {
         console.error('[DATABASE] Error creating players table:', err.message);
     }
 }
 
-// Initialize the games table
 async function initGame() {
     try {
         const db = await dbModule.connect();
@@ -49,6 +46,8 @@ async function initGame() {
             name TEXT NOT NULL CHECK(length(name) >= 1),
             status TEXT NOT NULL CHECK(status IN ('pending', 'in progress', 'finished')),
             mode TEXT NOT NULL CHECK(mode IN ('solo', 'multiplayer')),
+            creator_id INTEGER NOT NULL,
+            FOREIGN KEY (creator_id) REFERENCES players(id)
         )`);
 
         console.log('[DATABASE] Games table created or already exists.');
@@ -57,7 +56,7 @@ async function initGame() {
     }
 }
 
-// Initialize the game_players table (junction table)
+
 async function initGamePlayers() {
     try {
         const db = await dbModule.connect();
@@ -76,7 +75,6 @@ async function initGamePlayers() {
     }
 }
 
-// Initialize all tables
 async function init() {
     try {
         await initPlayer();

@@ -8,13 +8,13 @@
     and `game_players` tables in the SQLite database for the RedTetris project. 
 
     This includes:
-        - Creating a game
-        - Finding a game by name
-        - Updating a game's status
-        - Adding a player to a game
-        - Removing a player from a game
-        - Getting all players in a game
+        - Creating a new game
+        - Deleting a game by ID
+        - Updating a game's name, mode, or status
+        - Getting a game by ID or name
+        - Getting a game's players
         - Checking if a player is in a game
+        - Adding or removing a player from a game
 */
 
 // +----------------- REQUIREMENTS -----------------+ 
@@ -37,14 +37,18 @@ function validateMode(mode) {
     }
 }
 
-async function createGame(name, mode, status) {
+async function createGame(name, mode, creatorId, status) {
     try {
         validateMode(mode);
         validateStatus(status);
-        
+
         const db = await dbModule.connect();
-        const query = 'INSERT INTO games (name, mode, status) VALUES (?, ?, ?)';
-        const result = await dbModule.run(query, [name, mode, status]);
+        const query = `
+            INSERT INTO games (name, mode, creator_id, status) 
+            VALUES (?, ?, ?, ?)
+        `;
+        const result = await dbModule.run(query, [name, mode, creatorId, status]);
+
         return result.lastID;
     } catch (err) {
         throw new Error(`Error creating game: ${err.message}`);
@@ -66,16 +70,38 @@ async function deleteGameById(id) {
     }
 }
 
-async function updateGame(id, status) {
+async function updateGameName(id, name) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'UPDATE games SET name = ? WHERE id = ?';
+        const result = await dbModule.run(query, [name, id]);
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error updating game name: ${err.message}`);
+    }
+}
+
+async function updateGameMode(id, mode) {
+    try {
+        validateMode(mode);
+        const db = await dbModule.connect();
+        const query = 'UPDATE games SET mode = ? WHERE id = ?';
+        const result = await dbModule.run(query, [mode, id]);
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error updating game mode: ${err.message}`);
+    }
+}
+
+async function updateGameStatus(id, status) {
     try {
         validateStatus(status);
-
         const db = await dbModule.connect();
         const query = 'UPDATE games SET status = ? WHERE id = ?';
         const result = await dbModule.run(query, [status, id]);
         return result.changes;
     } catch (err) {
-        throw new Error(`Error updating game: ${err.message}`);
+        throw new Error(`Error updating game status: ${err.message}`);
     }
 }
 
@@ -105,10 +131,10 @@ async function getGamePlayers(gameId) {
     try {
         const db = await dbModule.connect();
         const query = `
-            SELECT players.* 
-            FROM players
-            JOIN game_players ON players.id = game_players.player_id
-            WHERE game_players.game_id = ?
+            SELECT p.*
+            FROM players p
+            JOIN game_players gp ON p.id = gp.player_id
+            WHERE gp.game_id = ?;
         `;
         const rows = await dbModule.all(query, [gameId]);
         return rows || [];
@@ -144,7 +170,7 @@ async function addPlayerToGame(gameId, playerId) {
 
 async function removePlayerFromGame(gameId, playerId) {
     try {
-        const db = await dbModule.connect();
+        const db = await dbModule.connect()
         if (!await isGamePlayer(gameId, playerId)) {
             throw new Error('Player is not in the game');
         }
@@ -152,6 +178,7 @@ async function removePlayerFromGame(gameId, playerId) {
         const result = await dbModule.run(query, [gameId, playerId]);
         return result.changes;
     } catch (err) {
+        console.error(`Error removing player ${playerId} from game ${gameId}: ${err.message}`);
         throw new Error(`Error removing player ${playerId} from game ${gameId}: ${err.message}`);
     }
 }
@@ -161,7 +188,9 @@ async function removePlayerFromGame(gameId, playerId) {
 module.exports = {
     createGame,
     deleteGameById,
-    updateGame,
+    updateGameName,
+    updateGameMode,
+    updateGameStatus,
     getGameById,
     getGameByName,
     getGamePlayers,

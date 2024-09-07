@@ -18,6 +18,7 @@ import axios from 'axios';
 import { Container, Form, Button, Alert } from 'react-bootstrap';
 
 import { SessionContext } from './../../contexts/sessionContext';
+
 import './../../css/auth.css';
 
 // +------------------- COMPONENT -------------------+
@@ -59,7 +60,7 @@ const Register = () => {
             <div className="auth-logo-container">
                 <div className="auth-logo"></div>
             </div>
-            <div className="auth-form-container">
+            <div className="global-form-container">
                 <h2 className="text-center">Register</h2>
                 {errors.length > 0 && (
                     <Alert variant="danger">
@@ -74,7 +75,7 @@ const Register = () => {
                             type="text"
                             id="username"
                             value={username}
-                            className="auth-form-control"
+                            className="global-form-control"
                             placeholder="Username"
                             onChange={(e) => setUsername(e.target.value)}
                         />
@@ -84,7 +85,7 @@ const Register = () => {
                             type="password"
                             id="password"
                             value={password}
-                            className="auth-form-control"
+                            className="global-form-control"
                             placeholder="Password"
                             onChange={(e) => setPassword(e.target.value)}
                         />
@@ -94,17 +95,17 @@ const Register = () => {
                             type="password"
                             id="passwordConfirm"
                             value={passwordConfirm}
-                            className="auth-form-control"
+                            className="global-form-control"
                             placeholder="Confirm Password"
                             onChange={(e) => setPasswordConfirm(e.target.value)}
                         />
                     </Form.Group>
-                    <Button type="submit" variant="primary" className="w-100 auth-btn">
+                    <Button type="submit" variant="primary" className="w-100 global-btn">
                         Register
                     </Button>
                 </Form>
                 <p className="mt-3 text-center">
-                    Already registered? <Link to="/login" className="auth-link">Login here</Link>
+                    Already registered? <Link to="/login" className="global-link">Login here</Link>
                 </p>
             </div>
         </Container>

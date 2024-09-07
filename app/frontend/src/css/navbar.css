@@ -15,17 +15,14 @@
     width: 100%;
 }
 
-.auth-logo {
-    max-width: 100px;
-    max-height: 65px;
-    height: 50px;
-    background-image: url('./../assets/ui/RedTetrisLogo.svg');
+.navbar-logo {
+    background-image: url('./../assets/base/RedTetrisLogo.svg');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    margin-right: 15px; 
+    width: 100px;
+    height: 100px;
 }
-
 .navbar-message {
     color: var(--primary-red);
     font-size: 1.2rem;

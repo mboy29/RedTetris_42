@@ -8,25 +8,40 @@
     and provides methods for interacting with game data. 
 
     Methods include:
-        - Setting and getting game properties (name, status, mode)
-        - Adding and removing players
-        - Static methods for creating and retrieving games
-        - Updating and removing games
+        - `getByName`: retrieves a game by name
+        - `getById`: retrieves a game by ID
+        - `isGamePlayer`: checks if a player is in the game
+        - `isGameCreator`: checks if a player is the game creator
+        - `updateName`: updates the game name
+        - `updateMode`: updates the game mode
+        - `updateStatus`: updates the game status
+        - `addPlayers`: adds players to the game
+        - `removePlayers`: removes players from the game
+        - `create`: creates a new game
+        - `remove`: removes the game
 */
 
 // +----------------- REQUIREMENTS -----------------+ 
 
 const queries = require('./../database/queries/gameQueries');
+const Player = require('./playerModel');
+const { getAll } = require('./playerModel');
 
 
 // +--------------------- CLASS ---------------------+
 
 class Game {
-    constructor(name, mode, status = "pending") {
-        this.name = name;
-        this.mode = mode;
-        this.status = status;
+    constructor(id, name, mode, creator, status = "pending") {
+        this.setId(id);
+        this.setName(name);
+        this.setMode(mode);
+        this.setStatus(status);
+        this.setCreator(creator);
         this.players = [];
+    }
+
+    setId(id) {
+        this.id = id;
     }
 
     setName(name) {
@@ -52,6 +67,12 @@ class Game {
         this.mode = mode;
     }
 
+    setCreator(creator) { this.creator = creator; }
+
+    getId() {
+        return this.id;
+    }
+
     getName() {
         return this.name;
     }
@@ -68,80 +89,95 @@ class Game {
         return this.mode;
     }
 
-    async addPlayers(...players) {
-        try {
-            for (const player of players) {
-                if (!this.players.includes(player)) {
-                    this.players.push(player);
-                    await dbModule.addPlayerToGame(this.id, player.id);
-                }
-            }
-        } catch (err) {
-            throw new Error(`Error adding players: ${err.message}`);
-        }
-    }
-
-    async removePlayers(...players) {
-        try {
-            for (const player of players) {
-                const index = this.players.indexOf(player);
-                if (index !== -1) {
-                    this.players.splice(index, 1);
-                    await dbModule.removePlayerFromGame(this.id, player.id);
-                }
-            }
-        } catch (err) {
-            throw new Error(`Error removing players: ${err.message}`);
-        }
+    getCreator() {
+        return this.creator;
     }
 
     static async getByName(name) {
-        try {
-            const game = await dbModule.getGameByName(name);
-            if (!game) {
-                throw new Error('Game not found');
-            }
-            return new Game(game.name, game.mode, game.status);
-        } catch (err) {
-            throw new Error(`Error retrieving game by name: ${err.message}`);
+        const game = await queries.getGameByName(name);
+        if (!game) {
+            return null;
         }
+        const creator = await Player.getById(game.creator_id);
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.status);
+        const players = await queries.getGamePlayers(game.id);
+        for (const player of players) {
+            newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
+        }
+        return newGame;
     }
 
     static async getById(id) {
-        try {
-            const game = await dbModule.getGameById(id);
-            if (!game) {
-                throw new Error('Game not found');
+        const game = await queries.getGameById(id);
+        if (!game) {
+            return null;
+        }
+        const creator = await Player.getById(game.creator_id);
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.status);
+        for (const player of await queries.getGamePlayers(id)) {
+            newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
+        }
+        return newGame;
+    }
+
+    isGamePlayer(player) {
+        const index = this.players.findIndex(p => p.id === player.id);
+        if (index === -1) {
+            return false;
+        }
+        return true;
+    }
+
+    isGameCreator(player) {
+        if (this.getCreator().id === player.id) {
+            return true;
+        }
+        return false;
+    }
+
+    async updateName(name) {
+        this.setName(name);
+        await queries.updateGameName(this.id, name);
+    }
+
+    async updateMode(mode) {
+        this.setMode(mode);
+        await queries.updateGameMode(this.id, mode);
+    }
+
+    async updateStatus(status) {
+        this.setStatus(status);
+        await queries.updateGameStatus(this.id, status);
+    }
+
+    async addPlayers(socket, ...players) {
+        for (const player of players) {
+            if (this.isGamePlayer(player) === false) {
+                this.players.push(player);
+                await queries.addPlayerToGame(this.id, player.id);
+                await player.joinGame(socket, this.getName());
             }
-            return new Game(game.name, game.mode, game.status);
-        } catch (err) {
-            throw new Error(`Error retrieving game by ID: ${err.message}`);
         }
     }
 
-    static async create(name, mode) {
-        try {
-            const id = await dbModule.createGame(name, mode);
-            return await Game.getById(id);
-        } catch (err) {
-            throw new Error(`Error creating game: ${err.message}`);
+    async removePlayers(socket, ...players) {
+        for (const player of players) {
+            if (this.isGamePlayer(player) === true) {
+                const index = this.players.findIndex(p => p.id === player.id);
+                this.players.splice(index, 1);
+                await queries.removePlayerFromGame(this.id, player.id);
+                await player.leaveGame(socket);
+            }
         }
     }
-
-    async update() {
-        try {
-            await dbModule.updateGame(this.id, this.status);
-        } catch (err) {
-            throw new Error(`Error updating game: ${err.message}`);
-        }
+    
+    static async create(name, mode, creator) {
+        const id = await queries.createGame(name, mode, creator.id, 'pending');
+        return new Game(id, name, mode, creator);
     }
 
     async remove() {
-        try {
-            await dbModule.deleteGameById(this.id);
-        } catch (err) {
-            throw new Error(`Error removing game: ${err.message}`);
-        }
+        await queries.deleteGameById(this.id);
     }
 }
 

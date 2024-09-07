@@ -1,169 +1,232 @@
 // +------------------------------------------------+
-// |              REDTETRIS GAME MODEL              |
+// |             REDTETRIS PLAYERS MODEL            |
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
-/*
-    This module defines a `Game` class that models game objects 
-    and provides methods for interacting with game data. 
 
-    Methods include:
-        - Setting and getting game properties (name, status, mode)
-        - Adding and removing players
-        - Static methods for creating and retrieving games
-        - Updating and removing games
+/*
+    This module defines the `Player` class for managing player 
+    entities in the RedTetris game. The class provides methods 
+    to handle player-related data and interactions, such as 
+    creation, retrieval, updating, and deletion of player records.
+
+    The `Player` class includes:
+        - `setUsername`: sets the player's username
+        - `setId`: sets the player's ID
+        - `setConnect`: sets the player's connection status
+        - `setRoomName`: sets the player's room name
+        - `getUsername`: gets the player's username
+        - `getId`: gets the player's ID
+        - `getConnect`: gets the player's connection status
+        - `getRoomName`: gets the player's room name
+        - `getByUsername`: retrieves a player by username
+        - `getById`: retrieves a player by ID
+        - `getPlayerPassword`: retrieves a player's password
+        - `getAll`: retrieves all players
+        - `updateUsername`: updates the player's username
+        - `updateConnect`: updates the player's connection status
+        - `updateRoomName`: updates the player's room name
+        - `create`: creates a new player
+        - `remove`: removes a player
+        - `authenticate`: authenticates a player
+        - `disconnect`: disconnects a player
+        - `joinGame`: joins a game
+        - `leaveGame`: leaves a game
 */
 
 // +----------------- REQUIREMENTS -----------------+ 
 
-const queries = require('./../database/queries/gameQueries');
+const bcrypt = require('bcrypt');
+const queries = require('./../database/queries/playerQueries');
 
 // +--------------------- CLASS ---------------------+
 
-class Game {
-    constructor(name, mode, id = null, status = 'pending') {
-        this.setName(name);
-        this.setMode(mode);
-        this.setStatus(status);
-        this.players = [];
+class Player {
+    constructor(id, username, connect = false, roomName = null) {
         this.setId(id);
+        this.setUsername(username);
+        this.setConnect(connect);
+        this.setRoomName(roomName); 
     }
 
-    setName(name) {
-        if (name.length < 4 || name.length > 14) {
-            throw new Error('Name must be between 4 and 14 characters.');
-        }
-        this.name = name;
-    }
+    setUsername(username) {
+        const validUsernamePattern = /^[a-zA-Z0-9_-]+$/;
+        
+        let errors = [];
 
-    setStatus(status) {
-        const validStatuses = ['pending', 'in progress', 'finished'];
-        if (!validStatuses.includes(status)) {
-            throw new Error('Invalid status.');
-        }
-        this.status = status;
-    }
-
-    setMode(mode) {
-        const validModes = ['solo', 'multiplayer'];
-        if (!validModes.includes(mode)) {
-            throw new Error('Invalid mode.');
-        }
-        this.mode = mode;
-    }
-
-    setId(id) { 
-        this.id = id; 
-    }
-
-    getName() { 
-        return this.name; 
-    }
-
-    getPlayers() { 
-        return this.players; 
-    }
-
-    getStatus() { 
-        return this.status; 
-    }
-
-    getMode() { 
-        return this.mode; 
-    }
-
-    getId() { 
-        return this.id; 
-    }
-
-    async addPlayers(...players) {
-        try {
-            for (const player of players) {
-                if (!this.players.includes(player)) {
-                    this.players.push(player);
-                    await queries.addPlayerToGame(this.id, player.id);
-                }
+        if (typeof username !== 'string')
+            errors.push('Username must be a non-empty string.');
+        else {
+            username = username.trim();
+            if ( username === '') {
+                errors.push('Username must be a non-empty string.');
+            } 
+            if (username.length < 4 || username.length > 12) {
+                errors.push('Username must be between 4 and 12 characters long.');
+            } 
+            if (!validUsernamePattern.test(username)) {
+                errors.push('Username can only contain letters, numbers, underscores, and dashes.');
             }
-        } catch (err) {
-            throw new Error(`Error adding players: ${err.message}`);
         }
+        if (errors.length > 0) {
+            throw new Error(errors.join(', '));
+        }
+        this.username = username;
     }
 
-    async removePlayers(...players) {
-        try {
-            for (const player of players) {
-                const index = this.players.indexOf(player);
-                if (index !== -1) {
-                    this.players.splice(index, 1);
-                    await queries.removePlayerFromGame(this.id, player.id);
-                }
-            }
-        } catch (err) {
-            throw new Error(`Error removing players: ${err.message}`);
-        }
-    }
+    setId(id) { this.id = id; }
 
-    static async getByName(name) {
-        try {
-            const gameData = await queries.getGameByName(name);
-            if (!gameData) {
-                throw new Error('Game not found');
-            }
-            const game = new Game(gameData.name, gameData.mode, gameData.id, gameData.status);
-            game.players = await queries.getGamePlayers(gameData.id); // Fetch players
-            return game;
-        } catch (err) {
-            throw new Error(`Error retrieving game by name: ${err.message}`);
+    setConnect(connect) { this.connect = connect; }
+
+    setRoomName(roomName) { this.roomName = roomName; }
+
+    getId() { return this.id; }
+
+    getUsername() { return this.username; }
+
+    getConnect() { return this.connect; }
+
+    getRoomName() { return this.roomName; }
+
+    static async getByUsername(username) {
+        const playerData = await queries.getPlayerByUsername(username);
+        if (!playerData) {
+            return null;
         }
+        return new Player(playerData.id, playerData.username, playerData.connect, playerData.roomName);
     }
 
     static async getById(id) {
+        const playerData = await queries.getPlayerById(id);
+        if (!playerData) {
+            return null;
+        }
+        return new Player(playerData.id, playerData.username, playerData.connect, playerData.roomName);
+    }
+
+    static async getPlayerPassword(username) {
+        const password = await queries.getPlayerPassword(username);
+        if (!password) {
+            return null;
+        }
+        return password;
+    }
+
+    static async getAll() {
+        const playersData = await queries.getAllPlayers();
+        if (!playersData) {
+            return null;
+        }
+        return playersData.map(playerData => new Player(playerData.id, playerData.username, playerData.connect, playerData.roomName));
+    }
+
+
+    async updateUsername(username) {
         try {
-            const gameData = await queries.getGameById(id);
-            if (!gameData) {
-                throw new Error('Game not found');
-            }
-            const game = new Game(gameData.name, gameData.mode, gameData.id, gameData.status);
-            game.players = await queries.getGamePlayers(gameData.id); // Fetch players
-            return game;
+            this.setUsername(username);
+            await queries.updatePlayerUsername(this.getId(), this.getUsername());
         } catch (err) {
-            throw new Error(`Error retrieving game by ID: ${err.message}`);
+            throw new Error(`Error updating player username: ${err.message}`);
+        } 
+    }
+
+    async updateConnect(connect) {
+        try {
+            this.setConnect(connect);
+            await queries.updatePlayerConnect(this.getId(), this.getConnect());
+        } catch (err) {
+            throw new Error(`Error updating player connection status: ${err.message}`);
         }
     }
 
-    static async create(name, mode) {
+    async updateRoomName(roomName) {
         try {
-            const id = await queries.createGame(name, mode, 'pending');
-            const game = await Game.getById(id);
-            return game;
+            this.setRoomName(roomName);
+            await queries.updatePlayerRoomName(this.getId(), this.getRoomName());
         } catch (err) {
-            throw new Error(`Error creating game: ${err.message}`);
+            throw new Error(`Error updating player room name: ${err.message}`);
         }
     }
 
-    async update() {
-        try {
-            if (this.id === null) {
-                throw new Error('Game ID is not set.');
-            }
-            await queries.updateGame(this.id, this.status);
-        } catch (err) {
-            throw new Error(`Error updating game: ${err.message}`);
+    static async create(username, password, passwordConfirm) {
+        let errors = [];
+        if (!username || !password || !passwordConfirm) {
+            errors.push('Username, password, and password confirmation are required.');
+        } if (password !== passwordConfirm) {
+            errors.push('Passwords do not match.');
+        } if (password.length < 6 || password.length > 20) {
+            errors.push('Password must be between 6 and 20 characters long.');
+        } if (await Player.getByUsername(username)) {
+            errors.push('Username already taken.');
         }
+        if (errors.length > 0) {
+            throw new Error(errors.join('; '));
+        }
+
+        const hashedPassword = bcrypt.hashSync(password, 10);
+        const id = await queries.createPlayer(username, false, hashedPassword);
+        return new Player(id, username, false, null);
     }
 
     async remove() {
         try {
-            if (this.id === null) {
-                throw new Error('Game ID is not set.');
-            }
-            await queries.deleteGameById(this.id);
+            await queries.deletePlayer(this.getUsername());
         } catch (err) {
-            throw new Error(`Error removing game: ${err.message}`);
+            throw new Error(`Error deleting player: ${err.message}`);
         }
+    }
+
+    async authenticate(password) {
+        const passwordHash = await Player.getPlayerPassword(this.getUsername());
+        const isPasswordValid = bcrypt.compareSync(password, passwordHash);
+        if (!isPasswordValid) {
+            throw new Error('Invalid password.');
+        }
+        await this.updateConnect(true);
+    }
+
+    static async authenticate(username, password) {
+        const player = await Player.getByUsername(username);
+
+        if (!player) {
+            throw new Error('Player not found.');
+        } else {
+            await player.authenticate(password);
+        }
+        await player.updateConnect(true);
+        return player;
+    }
+
+    async disconnect() {
+        await this.updateConnect(false);
+    }
+
+    static async disconnect(username) {
+        let player = await Player.getByUsername(username);
+        if (!player) {
+            throw new Error('Player not found.');
+        } else {
+            await player.disconnect();
+            player = null;
+        }
+    }
+
+    async joinGame(socket, roomName) {
+        await this.updateRoomName(roomName);
+        socket.join(roomName);
+        socket.playerName = this.getUsername();
+        socket.roomName = this.getRoomName();
+    }
+
+    async leaveGame(socket) {
+        await this.updateRoomName(null);
+        socket.leave(this.getRoomName());
+        socket.roomName = null;
+        socket.playerName = null;
+        
     }
 }
 
 // +-------------------- EXPORTS -------------------+ 
 
-module.exports = Game;
+module.exports = Player;

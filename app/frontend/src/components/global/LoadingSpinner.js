@@ -15,7 +15,7 @@
 
 import React from 'react';
 import Spinner from 'react-bootstrap/Spinner';
-import 'bootstrap/dist/css/bootstrap.min.css'; 
+// import 'bootstrap/dist/css/bootstrap.min.css'; 
 
 // +------------------- COMPONENT ------------------+
 

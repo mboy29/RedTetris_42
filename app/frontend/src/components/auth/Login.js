@@ -19,6 +19,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Container, Form, Button, Alert } from 'react-bootstrap';
 
 import { SessionContext } from './../../contexts/sessionContext';
+
 import './../../css/auth.css';
 
 // +------------------- COMPONENT -------------------+
@@ -54,7 +55,7 @@ const Login = () => {
             <div className="auth-logo-container">
                 <div className="auth-logo"></div>
             </div>
-            <div className="auth-form-container">
+            <div className="global-form-container">
                 <h2 className="text-center">Login</h2>
                 {errors.length > 0 && (
                     <Alert variant="danger">
@@ -69,7 +70,7 @@ const Login = () => {
                             type="text"
                             id="username"
                             value={username}
-                            className="auth-form-control"
+                            className="global-form-control"
                             placeholder="Username"
                             onChange={(e) => setUsername(e.target.value)}
                         />
@@ -79,17 +80,17 @@ const Login = () => {
                             type="password"
                             id="password"
                             value={password}
-                            className="auth-form-control"
+                            className="global-form-control"
                             placeholder="Password"
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </Form.Group>
-                    <Button type="submit" variant="primary" className="w-100 auth-btn">
+                    <Button type="submit" variant="primary" className="w-100 global-btn">
                         Login
                     </Button>
                 </Form>
                 <p className="mt-3 text-center">
-                    Don't have an account? <Link to="/register" className="auth-link">Register here</Link>.
+                    Don't have an account? <Link to="/register" className="global-link">Register here</Link>.
                 </p>
             </div>
         </Container>

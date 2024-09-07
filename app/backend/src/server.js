@@ -17,10 +17,13 @@ const http = require('http');
 const cors = require('cors');
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
+const sharedsession = require('express-socket.io-session');
 
 const config = require('./config');
 const authRoutes = require('./routes/authRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
+const gameRoutes = require('./routes/gameRoutes');
+const { setupSocket } = require('./services/socket');
 
 require('./database/initDatabase').init();
 
@@ -28,6 +31,13 @@ require('./database/initDatabase').init();
 
 const app = express();
 const server = http.createServer(app);
+const io = require('socket.io')(server, {
+    cors: {
+        origin: config.react_url,
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        credentials: true,
+    }
+});
 
 // +------------------ CORS CONFIGURATION -------------------+
 
@@ -41,7 +51,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(session({
+
+const sessionMiddleware = session({
     secret: config.session_secret,
     resave: false,
     saveUninitialized: false,
@@ -50,12 +61,19 @@ app.use(session({
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24 * 7
     }
+});
+app.use(sessionMiddleware);
+io.use(sharedsession(sessionMiddleware, {
+    autoSave: true
 }));
+
+setupSocket(io);
 
 // +------------------- ROUTES ---------------------+
 
 app.use('/auth', authRoutes);
 app.use('/session', sessionRoutes);
+app.use('/game', gameRoutes);
 
 // +------------------- SERVER ---------------------+
 
@@ -77,11 +95,9 @@ const closeServer = () => {
     });
 };
 
-// start server if this file is run directly
 if (require.main === module) {
     startServer();
 }
-
 
 // +------------------- EXPORTS --------------------+
 

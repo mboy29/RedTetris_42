@@ -21,9 +21,12 @@ const Player = require('./../models/playerModel');
 router.post('/register', async (req, res) => {
     const { username, password, passwordConfirm } = req.body;
     try {
+        console.log()
         const player = await Player.create(username, password, passwordConfirm);
         await player.authenticate(password);
         req.session.user = player;
+        req.session.inGame = false;
+        req.session.gameRoom = null;
         req.session.save();
         console.log('[REGISTER] Successful registration for', player.username);
         res.status(200).json({ success: true, user: player });
@@ -37,6 +40,8 @@ router.post('/login', async (req, res) => {
     try {
         const player = await Player.authenticate(username, password);
         req.session.user = player; 
+        req.session.inGame = false;
+        req.session.gameRoom = null;
         req.session.save();
         console.log('[LOGIN] Successful login for', player.username);
         res.status(200).json({ success: true, user: player });

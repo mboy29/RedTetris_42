@@ -18,8 +18,9 @@ import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
-import { SessionContext } from './../contexts/sessionContext';
-import './../css/navbar.css';
+import { SessionContext } from '../../contexts/sessionContext';
+
+import './../../css/navbar.css';
 
 // +------------------- COMPONENT -------------------+
 
@@ -30,7 +31,8 @@ const NavBar = () => {
         <Navbar className="navbar" fixed="top">
             <Container fluid>
                 <Nav className="me-auto d-flex align-items-center">
-                    <Navbar.Brand className="auth-logo"></Navbar.Brand>
+                    <Navbar.Brand className="navbar-logo">
+                    </Navbar.Brand>
                     <Navbar.Text className="navbar-message">
                         Welcome, {session.username}!
                     </Navbar.Text>

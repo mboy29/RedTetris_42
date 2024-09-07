@@ -13,21 +13,31 @@
 
 // +----------------- REQUIREMENTS -----------------+
 
+import io from 'socket.io-client';
 import React, { useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { SessionContext } from './../../contexts/sessionContext'; 
 
+import './../../css/auth.css';
+import config from './../../configs/config';
+
 // +--------------------- COMPONENT ----------------------+
 
+const socket = io(config.api_url);
+
 const Logout = () => {
-    const { setSession } = useContext(SessionContext);
+    const { session, setSession } = useContext(SessionContext);
     const navigate = useNavigate();
 
     useEffect(() => {
-        const logout = async () => {
+        const handleLogout = async () => {
+            if (session.roomName) {
+                socket.emit('leaveGame', { roomName: session.roomName, playerName: session.username });
+            }
+
             try {
-                await axios.post('/auth/logout'); // Change GET to POST
+                await axios.post('/auth/logout');
                 setSession(null);
                 navigate('/login');
             } catch (error) {
@@ -35,8 +45,8 @@ const Logout = () => {
             }
         };
 
-        logout();
-    }, [navigate, setSession]);
+        handleLogout();
+    }, [navigate, setSession, session.roomName, session.username]);
 
     return (
         <div className="row justify-content-center mt-5">
