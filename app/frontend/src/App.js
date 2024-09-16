@@ -53,6 +53,7 @@ const LogoutRoute = () => {
     return <Logout />;
 };
 
+
 // +--------------------- APP ----------------------+
 
 const App = () => {

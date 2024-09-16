@@ -68,10 +68,50 @@ router.post('/join', async (req, res) => {
             return res.status(409).json({ message: 'Player already in game' });
         }
 
+        if (game.isGameFull()) {
+            return res.status(409).json({ message: 'Game is full' });
+        }
+
+        if (!game.isGameJoinable()) {
+            return res.status(409).json({ message: 'Game has already started' });
+        }
+
         res.status(200).json({ roomName, playerName });
     } catch (error) {
         console.log('[GAME] Error joining game:', error.message);
         res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+router.get('/:room/:playerName', async (req, res) => {
+    const { room, playerName } = req.params;
+
+    console.log("[DEBUG]")
+    try {
+        const user = await Player.getByUsername(req.session.user.username);
+        const player = await Player.getByUsername(playerName);
+        const game = await Game.getByName(room);
+
+        console.log('[DEBUG] user', user);
+        console.log('[DEBUG] player', player);
+        console.log('[DEBUG] game', room, game.getName(), user.getRoomName());
+        if (!player || !user) {
+            return res.status(404).json({ success: false, message: 'Player not found' });
+        } else if (player.getId() != user.getId()) {
+            console.log('diff users');
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        } else if (!game) {
+            console.log('game not found');
+            return res.status(404).json({ success: false, message: 'Game not found' });
+        } else if (game.getName() != user.getRoomName()) {
+            console.log('game not match');
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        }
+        return res.status(200).json({ success: true });
+
+    } catch (error) {
+        console.error('Error validating game access:', error);
+        return res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
 

@@ -24,9 +24,9 @@
 // +----------------- REQUIREMENTS -----------------+ 
 
 const queries = require('./../database/queries/gameQueries');
-const Player = require('./playerModel');
-const { getAll } = require('./playerModel');
 
+const Piece = require('./pieceModel');
+const Player = require('./playerModel');
 
 // +--------------------- CLASS ---------------------+
 
@@ -35,9 +35,13 @@ class Game {
         this.setId(id);
         this.setName(name);
         this.setMode(mode);
-        this.setStatus(status);
         this.setCreator(creator);
+        this.setStatus(status);
+        this.setSize(2);
+
         this.players = [];
+        this.setReadyPlayers(0);
+        this.peices = [];
     }
 
     setId(id) {
@@ -54,7 +58,7 @@ class Game {
     setStatus(status) {
         const validStatuses = ["pending", "in progress", "finished"];
         if (!validStatuses.includes(status)) {
-            throw new Error('Invalid status.');
+            throw new Error(`Invalid status. Should be one of: ${validStatuses.join(', ')}`);
         }
         this.status = status;
     }
@@ -68,6 +72,10 @@ class Game {
     }
 
     setCreator(creator) { this.creator = creator; }
+
+    setSize(size) { this.size = size; }
+
+    setReadyPlayers(ready_players) { this.ready_players = ready_players; }
 
     getId() {
         return this.id;
@@ -93,6 +101,18 @@ class Game {
         return this.creator;
     }
 
+    getSize() {
+        return this.size;
+    }
+
+    getReadyPlayers() {
+        return this.ready_players;
+    }
+
+    getPieces() {
+        return this.pieces;
+    }
+
     static async getByName(name) {
         const game = await queries.getGameByName(name);
         if (!game) {
@@ -100,6 +120,8 @@ class Game {
         }
         const creator = await Player.getById(game.creator_id);
         const newGame = new Game(game.id, game.name, game.mode, creator, game.status);
+        newGame.setSize(game.size);
+        newGame.setReadyPlayers(game.ready_players);
         const players = await queries.getGamePlayers(game.id);
         for (const player of players) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
@@ -114,6 +136,8 @@ class Game {
         }
         const creator = await Player.getById(game.creator_id);
         const newGame = new Game(game.id, game.name, game.mode, creator, game.status);
+        newGame.setSize(game.size);
+        newGame.setReadyPlayers(game.ready_players);
         for (const player of await queries.getGamePlayers(id)) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
         }
@@ -130,6 +154,28 @@ class Game {
 
     isGameCreator(player) {
         if (this.getCreator().id === player.id) {
+            return true;
+        }
+        return false;
+    }
+
+    isGameFull() {
+        const playerCount = this.getPlayers().length;
+        if (playerCount === this.getSize()) {
+            return true;
+        }
+        return false;
+    }
+
+    isGameJoinable() {
+        if (this.getStatus() == 'pending') {
+            return true;
+        }
+        return false;
+    }
+
+    arePlayersReady() {
+        if (this.getReadyPlayers() === this.getSize()) {
             return true;
         }
         return false;
@@ -154,6 +200,16 @@ class Game {
         await queries.updateGameStatus(this.id, status);
     }
 
+    async updateNbPlayers(size) {
+        this.setSize(size);
+        await queries.updateGameNbPlayers(this.id, size);
+    }
+
+    async updateReadyPlayers(ready_players) {
+        this.setReadyPlayers(ready_players);
+        await queries.updateReadyPlayers(this.id, ready_players);
+    }
+
     async addPlayers(socket, ...players) {
         for (const player of players) {
             if (this.isGamePlayer(player) === false) {
@@ -163,6 +219,7 @@ class Game {
             }
         }
     }
+    
 
     async removePlayers(socket, ...players) {
         for (const player of players) {
@@ -182,6 +239,28 @@ class Game {
 
     async remove() {
         await queries.deleteGameById(this.id);
+    }
+
+    async increaseReadyPlayers() {
+        await queries.updateReadyPlayers(this.id, 1);
+        this.ready_players++;
+    }
+    
+
+    async decreaseReadyPlayers() {
+        await queries.updateReadyPlayers(this.id, -1);
+        this.ready_players--;
+    }
+
+    async startGame(roomName) {
+        for (let i = 0; i < 50; i++) {
+            this.peices.push(new Piece());
+        }
+        await this.updateStatus('in progress');
+    }
+
+    async endGame(surrender = false) {
+        await this.updateStatus('finished');
     }
 }
 

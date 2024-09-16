@@ -225,7 +225,9 @@ class Player {
 
     async leaveGame(socket) {
         await this.updateRoomName(null);
-        socket.leave(this.getRoomName());
+        if (socket != null) {
+            socket.leave(this.getRoomName());
+        }
         socket.roomName = null;
         socket.playerName = null;
         

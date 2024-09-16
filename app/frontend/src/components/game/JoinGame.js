@@ -49,7 +49,7 @@ const JoinGame = () => {
 
                 if (response.ok) {
                     const { roomName, playerName } = await response.json();
-                    navigate(`/${roomName}/${playerName}`);  // Navigate to game room
+                    navigate(`/${roomName}/${playerName}`);
                 } else {
                     const errorData = await response.json();
                     setErrors([errorData.message]);

@@ -37,17 +37,17 @@ function validateMode(mode) {
     }
 }
 
-async function createGame(name, mode, creatorId, status) {
+async function createGame(name, mode, creatorId, status, size = 2) {
     try {
         validateMode(mode);
         validateStatus(status);
 
         const db = await dbModule.connect();
         const query = `
-            INSERT INTO games (name, mode, creator_id, status) 
-            VALUES (?, ?, ?, ?)
+            INSERT INTO games (name, mode, creator_id, status, size)
+            VALUES (?, ?, ?, ?, ?);
         `;
-        const result = await dbModule.run(query, [name, mode, creatorId, status]);
+        const result = await dbModule.run(query, [name, mode, creatorId, status, size]);
 
         return result.lastID;
     } catch (err) {
@@ -98,6 +98,41 @@ async function updateGameMode(id, mode) {
         throw new Error(`Error updating game mode: ${err.message}`);
     }
 }
+
+async function updateGameSize(id, size) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'UPDATE games SET size = ? WHERE id = ?';
+        const result = await dbModule.run(query, [size, id]);
+        if (result.changes === 0) {
+            throw new Error('Game not found');
+        }
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error updating game number of players: ${err.message}`);
+    }
+}
+
+async function updateReadyPlayers(gameId, increment) {
+    try {
+        const db = await dbModule.connect();
+        const query = `
+            UPDATE games 
+            SET ready_players = ready_players + ? 
+            WHERE id = ? AND ready_players + ? <= size;
+        `;
+        const result = await dbModule.run(query, [increment, gameId, increment]);
+
+        if (result.changes === 0) {
+            throw new Error('Game not found or player count exceeded.');
+        }
+
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error updating game number of ready players: ${err.message}`);
+    }
+}
+
 
 async function updateGameStatus(id, status) {
     try {
@@ -205,6 +240,8 @@ module.exports = {
     updateGameName,
     updateGameMode,
     updateGameStatus,
+    updateGameSize,
+    updateReadyPlayers,
     getGameById,
     getGameByName,
     getGamePlayers,

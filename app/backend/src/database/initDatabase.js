@@ -47,6 +47,8 @@ async function initGame() {
             status TEXT NOT NULL CHECK(status IN ('pending', 'in progress', 'finished')),
             mode TEXT NOT NULL CHECK(mode IN ('solo', 'multiplayer')),
             creator_id INTEGER NOT NULL,
+            size INTEGER NOT NULL CHECK(size >= 1 AND size <= 4),
+            ready_players INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (creator_id) REFERENCES players(id)
         )`);
 

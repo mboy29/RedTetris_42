@@ -12,9 +12,9 @@
     and deletion of piece records.
 
     The `Piece` class includes:
-        - constructor: initializes a new piece
         - `randomPiece`: generates a random tetromino piece
-        - `setPiece`: sets the current piece
+        - `rotatePiece`: rotates a tetromino piece
+        - `rotate`: rotates the current piece
         - `getPiece`: gets the current piece
 */
 
@@ -73,11 +73,22 @@ class Piece {
         return tetrominos[piece];
     }
 
-    setPiece(piece) {
-        this.piece = piece;
+    rotatePiece(piece) {
+        const rotatedPiece = piece.map((row, i) =>
+            row.map((val, j) => piece[piece.length - j - 1][i])
+        );
+        return rotatedPiece;
     }
 
-    getPiece() {
-        return this.piece;
+    rotate() {
+        this.piece = this.rotatePiece(this.piece);
     }
+
+    setPiece(piece) { this.piece = piece; }
+
+    getPiece() { return this.piece; }
 }
+
+// +--------------------- EXPORT ---------------------+
+
+module.exports = Piece;

@@ -1,0 +1,43 @@
+/* +------------------------------------------------+ */
+/* |               REDTETRIS GRID CSS               | */
+/* +------------------------------------------------+ */
+
+@import './colors.css';
+
+
+.grid {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 90vh;
+    max-width: 400px;
+    max-height: 800px;
+    margin: 0 auto;
+
+    border: 8px solid  var(--primary-red);
+    border-radius: 5px;
+
+    /* shadow opacity */
+    
+    box-shadow: 0 0 10px 10px var(--secondary-eerie);
+}
+
+.grid-row {
+    display: flex;
+    width: 100%;
+    flex-grow: 1;
+}
+
+.grid-cell {
+    flex: 1;
+    background-color: var(--secondary-eerie);
+    border: 1px solid var(--secondary-black); 
+    aspect-ratio: 1 / 1; 
+}
+
+.grid-cell:hover {
+    background-color: #2d2d2d; 
+    border-color: #555;
+}
