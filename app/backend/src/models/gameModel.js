@@ -24,6 +24,7 @@
 // +----------------- REQUIREMENTS -----------------+ 
 
 const queries = require('./../database/queries/gameQueries');
+const piecesQueries = require('./../database/queries/piecesQueries');
 
 const Piece = require('./pieceModel');
 const Player = require('./playerModel');
@@ -41,9 +42,9 @@ class Game {
 
         this.players = [];
         this.setReadyPlayers(0);
-        this.peices = [];
+        this.pieces = [];
     }
-
+    
     setId(id) {
         this.id = id;
     }
@@ -126,6 +127,9 @@ class Game {
         for (const player of players) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
         }
+        for (const piece of await Piece.getPieces(game.id)) {
+            newGame.pieces.push(new Piece(piece.type));
+        }
         return newGame;
     }
 
@@ -140,6 +144,9 @@ class Game {
         newGame.setReadyPlayers(game.ready_players);
         for (const player of await queries.getGamePlayers(id)) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
+        }
+        for (const piece of await Piece.getPieces(game.id)) {
+            newGame.pieces.push(new Piece(piece.type));
         }
         return newGame;
     }
@@ -231,6 +238,14 @@ class Game {
             }
         }
     }
+
+    async addPiece() {
+        for (let idx = 0; idx < 50; idx++) {
+            const piece = new Piece();
+            this.pieces.push(piece);
+            await Piece.updatPieces(this.id, piece.getType(), idx);
+        }
+    }
     
     static async create(name, mode, creator) {
         const id = await queries.createGame(name, mode, creator.id, 'pending');
@@ -252,9 +267,10 @@ class Game {
         this.ready_players--;
     }
 
-    async startGame(roomName) {
-        for (let i = 0; i < 50; i++) {
-            this.peices.push(new Piece());
+    async startGame() {
+        const pieces = await this.getPieces();
+        if (pieces.length === 0) {
+            await this.addPiece();
         }
         await this.updateStatus('in progress');
     }

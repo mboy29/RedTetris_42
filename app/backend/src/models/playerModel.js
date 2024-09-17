@@ -211,6 +211,7 @@ class Player {
         if (!player) {
             throw new Error('Player not found.');
         } else {
+            await this.updateRoomName(null);
             await player.disconnect();
             player = null;
         }

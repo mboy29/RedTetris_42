@@ -34,9 +34,7 @@ router.post('/create', async (req, res) => {
         } else if (await Game.getByName(roomName)) {
             return res.status(409).json({ message: 'Game already exists' });
         }
-
-        // Create the game and associate it with the player
-        const game = await Game.create(roomName, 'multiplayer', player);
+        await Game.create(roomName, 'multiplayer', player);
 
         console.log(`[GAME] Game ${roomName} created by ${playerName}`);
         res.status(201).json({ roomName, playerName }); 
@@ -64,16 +62,16 @@ router.post('/join', async (req, res) => {
             return res.status(404).json({ message: 'Game not found' });
         }
 
-        if (await game.isGamePlayer(player)) {
-            return res.status(409).json({ message: 'Player already in game' });
+        if (!game.isGameJoinable()) {
+            return res.status(409).json({ message: 'Game has already started' });
         }
 
         if (game.isGameFull()) {
             return res.status(409).json({ message: 'Game is full' });
         }
 
-        if (!game.isGameJoinable()) {
-            return res.status(409).json({ message: 'Game has already started' });
+        if (await game.isGamePlayer(player)) {
+            return res.status(409).json({ message: 'Player already in game' });
         }
 
         res.status(200).json({ roomName, playerName });

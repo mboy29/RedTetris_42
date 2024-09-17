@@ -77,11 +77,31 @@ async function initGamePlayers() {
     }
 }
 
+async function initGamePieces() {
+    try {
+        const db = await dbModule.connect();
+
+        await dbModule.run(`CREATE TABLE IF NOT EXISTS game_pieces (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            type TEXT NOT NULL CHECK(type IN ('I', 'J', 'L', 'O', 'S', 'T', 'Z')),
+            position INTEGER NOT NULL, 
+            FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+        )`);
+
+        console.log('[DATABASE] Game Pieces table created or already exists.');
+    } catch (err) {
+        console.error('[DATABASE] Error creating game_pieces table:', err.message);
+    }
+}
+
+
 async function init() {
     try {
         await initPlayer();
         await initGame();
         await initGamePlayers();
+        await initGamePieces();
     } catch (err) {
         console.error('[DATABASE] Error initializing database:', err.message);
     }

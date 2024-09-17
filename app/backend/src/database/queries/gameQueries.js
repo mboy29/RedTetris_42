@@ -149,6 +149,7 @@ async function updateGameStatus(id, status) {
     }
 }
 
+
 async function getGameById(id) {
     try {
         const db = await dbModule.connect();
@@ -247,5 +248,5 @@ module.exports = {
     getGamePlayers,
     isGamePlayer,
     addPlayerToGame,
-    removePlayerFromGame
+    removePlayerFromGame,
 };

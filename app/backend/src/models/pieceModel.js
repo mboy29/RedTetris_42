@@ -1,24 +1,24 @@
 // +------------------------------------------------+
-// |             REDTETRIS PIECES MODEL             |
+// |              REDTETRIS PIECE MODEL             |
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
 
 /*
-    This module defines the `Piece` class for managing
-    tetromino pieces in the RedTetris game. The class
-    provides methods to handle piece-related data and
-    interactions, such as creation, retrieval, updating,
-    and deletion of piece records.
+    This module defines a `Piece` class that models 
+    game pieces and provides methods for interacting
+    with game piece data. 
 
-    The `Piece` class includes:
-        - `randomPiece`: generates a random tetromino piece
-        - `rotatePiece`: rotates a tetromino piece
-        - `rotate`: rotates the current piece
-        - `getPiece`: gets the current piece
+    Methods include:
+        - `getPiece`: retrieves the piece
+        - `getType`: retrieves the piece type
+        - `getGamePieces`: retrieves all pieces for a game
+        - `updateGamePieces`: updates a game piece
 */
 
-// +----------------- REQUIREMENTS -----------------+ 
+// +----------------- REQUIREMENTS -----------------+
+
+const queries = require('../database/queries/piecesQueries');
 
 // +--------------------- CLASS ---------------------+
 
@@ -44,7 +44,6 @@ const tetrominos = {
         [1, 1, 0],
         [0, 0, 0],
     ],
-
     Z: [
         [1, 1, 0],
         [0, 1, 1],
@@ -61,32 +60,42 @@ const tetrominos = {
     ]
 };
 
+
 class Piece {
     
-    constructor() {
-        this.setPiece(this.randomPiece());
+    constructor(type = null) {
+        if (type) {
+            this.setPiece(tetrominos[type], type);
+        } else {
+            const [piece, type] = this.randomPiece();
+            this.setPiece(piece, type);
+        }
     }
 
     randomPiece() {
         const pieces = Object.keys(tetrominos);
-        const piece = pieces[Math.floor(Math.random() * pieces.length)];
-        return tetrominos[piece];
+        const type = pieces[Math.floor(Math.random() * pieces.length)];
+        const piece = tetrominos[type];
+        return [piece, type];
     }
 
-    rotatePiece(piece) {
-        const rotatedPiece = piece.map((row, i) =>
-            row.map((val, j) => piece[piece.length - j - 1][i])
-        );
-        return rotatedPiece;
+    setPiece(piece, type) { 
+        this.piece = piece;
+        this.type = type;
     }
-
-    rotate() {
-        this.piece = this.rotatePiece(this.piece);
-    }
-
-    setPiece(piece) { this.piece = piece; }
 
     getPiece() { return this.piece; }
+    getType() { return this.type; }
+
+    static async getPieces(gameId) {
+        const rows = await queries.getGamePieces(gameId);
+        return rows || [];
+    }
+
+    static async updatPieces(gameId, type, position) {
+        const result = await queries.updateGamePieces(gameId, type, position);
+        return result.lastID; 
+    }
 }
 
 // +--------------------- EXPORT ---------------------+

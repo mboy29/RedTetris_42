@@ -9,6 +9,7 @@ import config from './../../configs/config';
 import { SessionContext } from './../../contexts/sessionContext';
 
 const socket = io(config.api_url);
+
 const Game = () => {
     const { session } = useContext(SessionContext);
     const [errors, setErrors] = useState([]);
@@ -21,13 +22,12 @@ const Game = () => {
     const [countdownFinished, setCountdownFinished] = useState(false);
     const [gameStarted, setGameStarted] = useState(false);
     const [isReconnecting, setIsReconnecting] = useState(false);
-    const [socketReady, setSocketReady] = useState(false);  // Track socket setup
-    const [loading, setLoading] = useState(true); // New state for loading overlay
+    const [socketReady, setSocketReady] = useState(false);
+    const [loading, setLoading] = useState(true);
     const { room } = useParams(); 
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Set up socket listeners
         socket.on('error', ({ message }) => {
             setErrors((prevErrors) => [...prevErrors, message]);
             navigate('/home');
@@ -155,8 +155,7 @@ const Game = () => {
                     </Col>
 
                     <Col md={6} className="d-flex justify-content-between">
-                        <Grid isInteractable={gameStarted} />
-                        <Grid isInteractable={gameStarted} />
+                        <Grid socket={socket} isInteractable={true}/>
                     </Col>
                 </Row>
 
