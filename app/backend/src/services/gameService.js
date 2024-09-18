@@ -98,6 +98,7 @@ const readyGame = async (io, socket, { roomName, playerName }) => {
             await game.startGame();
             console.log(`[GAME] Game ${roomName} started`);
             io.to(roomName).emit('gameStarted', { roomName });
+            io.to(roomName).emit('gamePieces', { pieces: game.getPieces() });
         }
     } catch (error) {
         console.log('[GAME] Error setting player ready:', error.message);

@@ -31,11 +31,31 @@
 .grid-cell {
     flex: 1;
     background-color: var(--secondary-eerie);
-    border: 1px solid var(--secondary-black);
+    border: 1px solid var(--secondary-black); /* Default border for grid cells */
     aspect-ratio: 1 / 1;
+    box-sizing: border-box; /* Ensure borders are included in element size */
+    z-index: 1; /* Default z-index for grid cells */
 }
 
+/* Style for hovered cells */
 .grid-cell:hover {
-    background-color: #2d2d2d;
-    border-color: #555;
+    border: 1px solid var(--secondary-dark-grey);
 }
+
+/* Shadow cell style overrides the default grid cell style */
+.grid-cell.cell-shadow {
+    background-color: var(--secondary-grey);
+    border: 1px solid var(--secondary-black);
+    z-index: 0; /* Shadow cells are above default cells */
+}
+
+
+/* Piece colors */
+.cell-S { background-color: var(--primary-green); }
+.cell-I { background-color: var(--primary-cyan); }
+.cell-O { background-color: var(--primary-yellow); }
+.cell-T { background-color: var(--primary-purple); }
+.cell-L { background-color: var(--primary-orange); }
+.cell-J { background-color: var(--primary-blue); }
+.cell-Z { background-color: var(--primary-red); }
+.cell-default { background-color: var(--secondary-eerie); }

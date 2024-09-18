@@ -1,12 +1,35 @@
+// +------------------------------------------------+
+// |            REDTETRIS GAME COMPONENT            |
+// +------------------------------------------------+
+
+// +------------------- SUMMARY --------------------+
+/*
+    This module defines the `Game` component for the
+    RedTetris frontend. It allows a user to play a
+    game of Tetris with other players in a room.
+
+    The component uses a WebSocket connection to
+    communicate with the server and other players.
+
+    The component displays a grid for the game and
+    shows an overlay while waiting for players to
+    join or the game to start.
+*/
+
+// +----------------- REQUIREMENTS -----------------+
+
 import io from 'socket.io-client';
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Form, Alert } from 'react-bootstrap';
 import Grid from './Grid';
+
 import './../../css/game.css'; 
 import NavBar from './../global/NavBar';
 import config from './../../configs/config';
 import { SessionContext } from './../../contexts/sessionContext';
+
+// +------------------- COMPONENT -------------------+
 
 const socket = io(config.api_url);
 

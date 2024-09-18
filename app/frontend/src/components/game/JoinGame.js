@@ -4,9 +4,9 @@
 
 // +------------------- SUMMARY --------------------+
 /*
-    This module defines the `JoinGame` component for the 
-    RedTetris frontend. It allows a user to join an existing
-    game by entering the room name. 
+    This module defines the `JoinGame` component for
+    the RedTetris frontend. It allows a user to join
+    an existing game by entering the room name. 
 */
 
 // +----------------- REQUIREMENTS -----------------+

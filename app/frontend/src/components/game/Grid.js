@@ -1,39 +1,278 @@
 // +------------------------------------------------+
-// |            REDTETRIS GRID COMPONENT            |
+// |          REDTETRIS GRID GAME COMPONENT         |
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
-
 /*
-    This module defines the `Grid` component for 
-    the RedTetris frontend. The component provides
-    a grid for rendering the game board.
+    This module defines the `Grid` component for the
+    RedTetris frontend. It displays the game grid and
+    handles the logic for the game pieces :
+    - Moving horizontally
+    - Rotating
+    - Dropping to the bottom
+    - Fast dropping
+    - Merging piece to pile
+    - Updating grid with piece and pile
+    - Handling game pieces from the server
+    - Handling key events
+    - Handling shadow cells
 */
 
 // +----------------- REQUIREMENTS -----------------+
 
-
-import React from 'react';
-import './../../css/grid.css'; 
+import React, { useEffect, useState, useCallback } from 'react';
+import './../../css/grid.css';
 
 // +------------------- COMPONENT -------------------+
 
-const Grid = () => {
+const Grid = ({ socket, isInteractable }) => {
     const numRows = 20;
     const numCols = 10;
+    const [grid, setGrid] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
+    const [currentPiece, setCurrentPiece] = useState(null);
+    const [piecePosition, setPiecePosition] = useState({ x: 0, y: 0 });
+    const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
+    const [isFastDropping, setIsFastDropping] = useState(false);
+    const [pieceQueue, setPieceQueue] = useState([]);
+    const [shadowPosition, setShadowPosition] = useState({ x: 0, y: 0 });
 
-    const grid = Array(numRows)
-        .fill()
-        .map(() => Array(numCols).fill(0));
+    const canPlacePiece = useCallback((piece, posX, posY) => {
+        for (let row = 0; row < piece.length; row++) {
+            for (let col = 0; col < piece[row].length; col++) {
+                if (piece[row][col]) {
+                    const newRow = posX + row;
+                    const newCol = posY + col;
+                    if (
+                        newRow >= numRows ||
+                        newCol < 0 ||
+                        newCol >= numCols ||
+                        (newRow >= 0 && pile[newRow][newCol])
+                    ) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }, [numRows, numCols, pile]);
 
+    const mergePieceToPile = useCallback((piece, posX, posY) => {
+        const newPile = pile.map(row => [...row]);
+        for (let row = 0; row < piece.length; row++) {
+            for (let col = 0; col < piece[row].length; col++) {
+                if (piece[row][col]) {
+                    newPile[posX + row][posY + col] = currentPiece.type;
+                }
+            }
+        }
+        setPile(newPile);
+    }, [pile, currentPiece]);
+
+    const updateGridWithPieceAndPile = useCallback((piece, posX, posY) => {
+        const newGrid = Array(numRows).fill().map(() => Array(numCols).fill(null));
+        for (let row = 0; row < numRows; row++) {
+            for (let col = 0; col < numCols; col++) {
+                newGrid[row][col] = pile[row][col];
+            }
+        }
+        for (let row = 0; row < piece.length; row++) {
+            for (let col = 0; col < piece[row].length; col++) {
+                if (piece[row][col]) {
+                    newGrid[posX + row][posY + col] = currentPiece.type;
+                }
+            }
+        }
+        setGrid(newGrid);
+    }, [numRows, numCols, pile, currentPiece]);
+
+    const rotatePiece = useCallback(() => {
+        if (!currentPiece) return;
+        const rotatedPiece = currentPiece.piece[0].map((_, index) =>
+            currentPiece.piece.map(row => row[index]).reverse()
+        );
+        if (canPlacePiece(rotatedPiece, piecePosition.x, piecePosition.y)) {
+            setCurrentPiece({ ...currentPiece, piece: rotatedPiece });
+        }
+    }, [currentPiece, piecePosition, canPlacePiece]);
+
+    const dropPieceToBottom = useCallback(() => {
+        if (!currentPiece) return;
+        let dropX = piecePosition.x;
+        while (canPlacePiece(currentPiece.piece, dropX + 1, piecePosition.y)) {
+            dropX += 1;
+        }
+        setPiecePosition({ x: dropX, y: piecePosition.y });
+        mergePieceToPile(currentPiece.piece, dropX, piecePosition.y);
+
+        const [nextPiece, ...remainingQueue] = pieceQueue;
+        setPieceQueue(remainingQueue);
+
+        if (nextPiece) {
+            setCurrentPiece(nextPiece);
+            setPiecePosition({
+                x: 0,
+                y: Math.floor(numCols / 2) - Math.floor(nextPiece.piece[0].length / 2)
+            });
+        } else {
+            setCurrentPiece(null);
+        }
+    }, [currentPiece, piecePosition, pieceQueue, mergePieceToPile, canPlacePiece, numCols]);
+
+    const movePieceHorizontally = useCallback((direction) => {
+        if (!currentPiece) return;
+        const newY = piecePosition.y + direction;
+        if (canPlacePiece(currentPiece.piece, piecePosition.x, newY)) {
+            setPiecePosition(prevPosition => ({
+                ...prevPosition,
+                y: newY,
+            }));
+        }
+    }, [currentPiece, piecePosition, canPlacePiece]);
+
+    useEffect(() => {
+        if (!currentPiece) return;
+        const interval = setInterval(() => {
+            if (canPlacePiece(currentPiece.piece, piecePosition.x + 1, piecePosition.y)) {
+                setPiecePosition(prevPosition => ({
+                    x: prevPosition.x + 1,
+                    y: prevPosition.y,
+                }));
+            } else {
+                mergePieceToPile(currentPiece.piece, piecePosition.x, piecePosition.y);
+                const [nextPiece, ...remainingQueue] = pieceQueue;
+                setPieceQueue(remainingQueue);
+
+                if (nextPiece) {
+                    setCurrentPiece(nextPiece);
+                    setPiecePosition({
+                        x: 0,
+                        y: Math.floor(numCols / 2) - Math.floor(nextPiece.piece[0].length / 2)
+                    });
+                } else {
+                    setCurrentPiece(null);
+                }
+            }
+        }, isFastDropping ? 100 : 1000);
+        return () => clearInterval(interval);
+    }, [currentPiece, piecePosition, isFastDropping, pieceQueue, canPlacePiece, mergePieceToPile, numCols]);
+
+    useEffect(() => {
+        if (currentPiece) {
+            updateGridWithPieceAndPile(currentPiece.piece, piecePosition.x, piecePosition.y);
+        }
+    }, [currentPiece, piecePosition, pile, updateGridWithPieceAndPile]);
+
+    useEffect(() => {
+        if (socket) {
+            socket.on('gamePieces', ({ pieces }) => {
+                if (pieces.length) {
+                    setPieceQueue(prevQueue => [...prevQueue, ...pieces]);
+                    if (!currentPiece) {
+                        const [firstPiece, ...remainingQueue] = pieces;
+                        setPieceQueue(remainingQueue);
+                        setCurrentPiece(firstPiece);
+                        setPiecePosition({
+                            x: 0,
+                            y: Math.floor(numCols / 2) - Math.floor(firstPiece.piece[0].length / 2)
+                        });
+                    }
+                }
+            });
+            return () => {
+                socket.off('gamePieces');
+            };
+        }
+    }, [socket, numCols, currentPiece]);
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (!currentPiece) return;
+            switch (event.key) {
+                case 'ArrowLeft':
+                    movePieceHorizontally(-1);
+                    break;
+                case 'ArrowRight':
+                    movePieceHorizontally(1);
+                    break;
+                case 'ArrowUp':
+                    rotatePiece();
+                    break;
+                case 'ArrowDown':
+                    setIsFastDropping(true);
+                    break;
+                case ' ':
+                    dropPieceToBottom();
+                    break;
+                default:
+                    break;
+            }
+        };
+
+        const handleKeyUp = (event) => {
+            if (event.key === 'ArrowDown') {
+                setIsFastDropping(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }, [currentPiece, piecePosition, movePieceHorizontally, rotatePiece, dropPieceToBottom]);
+
+    useEffect(() => {
+        if (!currentPiece) return;
+        let dropY = piecePosition.y;
+        let dropX = piecePosition.x;
+
+        while (canPlacePiece(currentPiece.piece, dropX + 1, dropY)) {
+            dropX += 1;
+        }
+
+        setShadowPosition({ x: dropX, y: dropY });
+    }, [currentPiece, piecePosition, canPlacePiece]);
+
+    const getCellClassName = (value, isShadow = false) => {
+        if (isShadow) {
+            return 'cell-shadow';
+        }
+        switch (value) {
+            case 'S': return 'cell-S';
+            case 'I': return 'cell-I';
+            case 'O': return 'cell-O';
+            case 'T': return 'cell-T';
+            case 'L': return 'cell-L';
+            case 'J': return 'cell-J';
+            case 'Z': return 'cell-Z';
+            default: return 'cell-default';
+        }
+    };
+    
+    const isShadowCell = (rowIndex, colIndex) => {
+        if (!currentPiece) return false;
+        const piece = currentPiece.piece;
+        const shadowX = shadowPosition.x;
+        const shadowY = shadowPosition.y;
+    
+        if (piece[rowIndex - piecePosition.x]?.[colIndex - piecePosition.y]) {
+            return false;
+        }
+        return piece[rowIndex - shadowX]?.[colIndex - shadowY] ? true : false;
+    };
+    
     return (
         <div className="grid">
             {grid.map((row, rowIndex) => (
                 <div key={rowIndex} className="grid-row">
-                    {row.map((col, colIndex) => (
-                        <div key={colIndex} className="grid-cell">
-                            {/* This is where you can render your tetrominoes */}
-                        </div>
+                    {row.map((cell, colIndex) => (
+                        <div
+                            key={colIndex}
+                            className={`grid-cell ${getCellClassName(cell)} ${
+                                isShadowCell(rowIndex, colIndex) ? getCellClassName(currentPiece?.type, true) : ''
+                            }`}
+                        ></div>
                     ))}
                 </div>
             ))}
@@ -41,6 +280,6 @@ const Grid = () => {
     );
 };
 
-// +------------------------------------------------+
+// +------------------- EXPORTS ---------------------+
 
 export default Grid;
