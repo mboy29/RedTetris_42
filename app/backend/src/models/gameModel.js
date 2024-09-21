@@ -38,10 +38,9 @@ class Game {
         this.setMode(mode);
         this.setCreator(creator);
         this.setStatus(status);
-        this.setSize(2);
+        this.setSize(4);
 
         this.players = [];
-        this.setReadyPlayers(0);
         this.pieces = [];
     }
     
@@ -76,8 +75,6 @@ class Game {
 
     setSize(size) { this.size = size; }
 
-    setReadyPlayers(ready_players) { this.ready_players = ready_players; }
-
     getId() {
         return this.id;
     }
@@ -106,10 +103,6 @@ class Game {
         return this.size;
     }
 
-    getReadyPlayers() {
-        return this.ready_players;
-    }
-
     getPieces() {
         return this.pieces;
     }
@@ -121,8 +114,6 @@ class Game {
         }
         const creator = await Player.getById(game.creator_id);
         const newGame = new Game(game.id, game.name, game.mode, creator, game.status);
-        newGame.setSize(game.size);
-        newGame.setReadyPlayers(game.ready_players);
         const players = await queries.getGamePlayers(game.id);
         for (const player of players) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
@@ -140,8 +131,6 @@ class Game {
         }
         const creator = await Player.getById(game.creator_id);
         const newGame = new Game(game.id, game.name, game.mode, creator, game.status);
-        newGame.setSize(game.size);
-        newGame.setReadyPlayers(game.ready_players);
         for (const player of await queries.getGamePlayers(id)) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
         }
@@ -168,6 +157,7 @@ class Game {
 
     isGameFull() {
         const playerCount = this.getPlayers().length;
+        console.log('[DEGUG] isGameFUll', playerCount, this.getSize());
         if (playerCount === this.getSize()) {
             return true;
         }
@@ -176,13 +166,6 @@ class Game {
 
     isGameJoinable() {
         if (this.getStatus() == 'pending') {
-            return true;
-        }
-        return false;
-    }
-
-    arePlayersReady() {
-        if (this.getReadyPlayers() === this.getSize()) {
             return true;
         }
         return false;
@@ -208,13 +191,7 @@ class Game {
     }
 
     async updateNbPlayers(size) {
-        this.setSize(size);
         await queries.updateGameNbPlayers(this.id, size);
-    }
-
-    async updateReadyPlayers(ready_players) {
-        this.setReadyPlayers(ready_players);
-        await queries.updateReadyPlayers(this.id, ready_players);
     }
 
     async addPlayers(socket, ...players) {
@@ -249,22 +226,12 @@ class Game {
     
     static async create(name, mode, creator) {
         const id = await queries.createGame(name, mode, creator.id, 'pending');
-        return new Game(id, name, mode, creator);
+        const new_game = new Game(id, name, mode, creator);
+        return new_game
     }
 
     async remove() {
         await queries.deleteGameById(this.id);
-    }
-
-    async increaseReadyPlayers() {
-        await queries.updateReadyPlayers(this.id, 1);
-        this.ready_players++;
-    }
-    
-
-    async decreaseReadyPlayers() {
-        await queries.updateReadyPlayers(this.id, -1);
-        this.ready_players--;
     }
 
     async startGame() {

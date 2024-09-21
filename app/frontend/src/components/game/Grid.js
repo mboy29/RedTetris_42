@@ -16,11 +16,13 @@
     - Handling game pieces from the server
     - Handling key events
     - Handling shadow cells
+    - Displaying the next 4 pieces in the queue
 */
 
 // +----------------- REQUIREMENTS -----------------+
 
 import React, { useEffect, useState, useCallback } from 'react';
+import Queue from './Queue';
 import './../../css/grid.css';
 
 // +------------------- COMPONENT -------------------+
@@ -33,8 +35,9 @@ const Grid = ({ socket, isInteractable }) => {
     const [piecePosition, setPiecePosition] = useState({ x: 0, y: 0 });
     const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
     const [isFastDropping, setIsFastDropping] = useState(false);
-    const [pieceQueue, setPieceQueue] = useState([]);
+    const [pieceQueue, setPieceQueue] = useState([]); // Updated for queue system
     const [shadowPosition, setShadowPosition] = useState({ x: 0, y: 0 });
+
 
     const canPlacePiece = useCallback((piece, posX, posY) => {
         for (let row = 0; row < piece.length; row++) {
@@ -56,6 +59,7 @@ const Grid = ({ socket, isInteractable }) => {
         return true;
     }, [numRows, numCols, pile]);
 
+    // Merge the current piece into the pile once it reaches the bottom
     const mergePieceToPile = useCallback((piece, posX, posY) => {
         const newPile = pile.map(row => [...row]);
         for (let row = 0; row < piece.length; row++) {
@@ -68,6 +72,7 @@ const Grid = ({ socket, isInteractable }) => {
         setPile(newPile);
     }, [pile, currentPiece]);
 
+    // Update the grid to reflect the current piece and pile state
     const updateGridWithPieceAndPile = useCallback((piece, posX, posY) => {
         const newGrid = Array(numRows).fill().map(() => Array(numCols).fill(null));
         for (let row = 0; row < numRows; row++) {
@@ -85,6 +90,7 @@ const Grid = ({ socket, isInteractable }) => {
         setGrid(newGrid);
     }, [numRows, numCols, pile, currentPiece]);
 
+    // Rotate the current piece
     const rotatePiece = useCallback(() => {
         if (!currentPiece) return;
         const rotatedPiece = currentPiece.piece[0].map((_, index) =>
@@ -95,6 +101,7 @@ const Grid = ({ socket, isInteractable }) => {
         }
     }, [currentPiece, piecePosition, canPlacePiece]);
 
+    // Drop the current piece to the bottom of the grid
     const dropPieceToBottom = useCallback(() => {
         if (!currentPiece) return;
         let dropX = piecePosition.x;
@@ -118,6 +125,7 @@ const Grid = ({ socket, isInteractable }) => {
         }
     }, [currentPiece, piecePosition, pieceQueue, mergePieceToPile, canPlacePiece, numCols]);
 
+    // Move the current piece horizontally
     const movePieceHorizontally = useCallback((direction) => {
         if (!currentPiece) return;
         const newY = piecePosition.y + direction;
@@ -129,6 +137,7 @@ const Grid = ({ socket, isInteractable }) => {
         }
     }, [currentPiece, piecePosition, canPlacePiece]);
 
+    // Automatically drop the piece down or merge it to the pile if it can't move further
     useEffect(() => {
         if (!currentPiece) return;
         const interval = setInterval(() => {
@@ -156,15 +165,18 @@ const Grid = ({ socket, isInteractable }) => {
         return () => clearInterval(interval);
     }, [currentPiece, piecePosition, isFastDropping, pieceQueue, canPlacePiece, mergePieceToPile, numCols]);
 
+    // Update the grid when the piece or pile changes
     useEffect(() => {
         if (currentPiece) {
             updateGridWithPieceAndPile(currentPiece.piece, piecePosition.x, piecePosition.y);
         }
     }, [currentPiece, piecePosition, pile, updateGridWithPieceAndPile]);
 
+    // Handle game pieces sent from the server
     useEffect(() => {
-        if (socket) {
-            socket.on('gamePieces', ({ pieces }) => {
+        if (socket && isInteractable) {
+            socket.on('gamePieces', (pieces) => {
+                console.log('Received game pieces:', pieces);
                 if (pieces.length) {
                     setPieceQueue(prevQueue => [...prevQueue, ...pieces]);
                     if (!currentPiece) {
@@ -182,8 +194,9 @@ const Grid = ({ socket, isInteractable }) => {
                 socket.off('gamePieces');
             };
         }
-    }, [socket, numCols, currentPiece]);
+    }, [socket, numCols, currentPiece, isInteractable]);
 
+    // Handle keyboard input for piece movement
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (!currentPiece) return;
@@ -222,6 +235,7 @@ const Grid = ({ socket, isInteractable }) => {
         };
     }, [currentPiece, piecePosition, movePieceHorizontally, rotatePiece, dropPieceToBottom]);
 
+    // Update shadow position of the piece
     useEffect(() => {
         if (!currentPiece) return;
         let dropY = piecePosition.y;
@@ -249,33 +263,39 @@ const Grid = ({ socket, isInteractable }) => {
             default: return 'cell-default';
         }
     };
-    
+
     const isShadowCell = (rowIndex, colIndex) => {
         if (!currentPiece) return false;
         const piece = currentPiece.piece;
         const shadowX = shadowPosition.x;
         const shadowY = shadowPosition.y;
-    
+
         if (piece[rowIndex - piecePosition.x]?.[colIndex - piecePosition.y]) {
             return false;
         }
         return piece[rowIndex - shadowX]?.[colIndex - shadowY] ? true : false;
     };
-    
+
     return (
-        <div className="grid">
-            {grid.map((row, rowIndex) => (
-                <div key={rowIndex} className="grid-row">
-                    {row.map((cell, colIndex) => (
-                        <div
-                            key={colIndex}
-                            className={`grid-cell ${getCellClassName(cell)} ${
-                                isShadowCell(rowIndex, colIndex) ? getCellClassName(currentPiece?.type, true) : ''
-                            }`}
-                        ></div>
-                    ))}
-                </div>
-            ))}
+        <div className="grid-container">
+            <div className={`grid ${!isInteractable ? 'grid-non-interactable' : ''}`}>
+                {grid.map((row, rowIndex) => (
+                    <div key={rowIndex} className="grid-row">
+                        {row.map((cell, colIndex) => (
+                            <div
+                                key={colIndex}
+                                className={`grid-cell ${getCellClassName(cell)} ${
+                                    isShadowCell(rowIndex, colIndex) ? getCellClassName(currentPiece?.type, true) : ''
+                                }`}
+                            ></div>
+                        ))}
+                    </div>
+                ))}
+            </div>
+    
+            {isInteractable && (
+                <Queue pieceQueue={pieceQueue} getCellClassName={getCellClassName} />
+            )}
         </div>
     );
 };

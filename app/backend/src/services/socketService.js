@@ -24,17 +24,21 @@ function setupSocket(io) {
             gameService.joinGame(io, socket, { roomName, playerName });
         });
 
-        socket.on('readyGame', async ({ roomName, playerName }) => {
-            gameService.readyGame(io, socket, { roomName, playerName });
+        socket.on('startGame', async ({ roomName, playerName }) => {
+            gameService.startGame(io, socket, { roomName, playerName });
+        });
+
+        socket.on('triggerGame', async ({ roomName }) => {
+            gameService.triggerGame(io, socket, { roomName });
         });
     
         socket.on('leaveGame', async ({ roomName, playerName }) => {
             gameService.leaveGame(io, socket, { roomName, playerName });
         });
         
-        socket.on('disconnect', async () => {
-            gameService.disconnect(io, socket);
-        });
+        // socket.on('disconnect', async () => {
+        //     gameService.disconnect(io, socket);
+        // });
         
     });
 }

@@ -1,240 +1,237 @@
-// +------------------------------------------------+
-// |            REDTETRIS GAME COMPONENT            |
-// +------------------------------------------------+
-
-// +------------------- SUMMARY --------------------+
-/*
-    This module defines the `Game` component for the
-    RedTetris frontend. It allows a user to play a
-    game of Tetris with other players in a room.
-
-    The component uses a WebSocket connection to
-    communicate with the server and other players.
-
-    The component displays a grid for the game and
-    shows an overlay while waiting for players to
-    join or the game to start.
-*/
-
-// +----------------- REQUIREMENTS -----------------+
-
-import io from 'socket.io-client';
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Button, Form, Alert } from 'react-bootstrap';
-import Grid from './Grid';
-
+import io from 'socket.io-client';
 import './../../css/game.css'; 
-import NavBar from './../global/NavBar';
-import config from './../../configs/config';
+import { Container, Form, Button, Alert, ListGroup, Modal } from 'react-bootstrap'; 
 import { SessionContext } from './../../contexts/sessionContext';
+import config from './../../configs/config';
 
-// +------------------- COMPONENT -------------------+
+import Grid from './Grid';
+import NavBar from './../global/NavBar';
 
 const socket = io(config.api_url);
 
 const Game = () => {
     const { session } = useContext(SessionContext);
-    const [errors, setErrors] = useState([]);
-    const [players, setPlayers] = useState([]);
-    const [isGameFull, setIsGameFull] = useState(false);
-    const [waitingForPlayers, setWaitingForPlayers] = useState(true);
-    const [isReady, setIsReady] = useState(false);
-    const [playersReady, setPlayersReady] = useState(new Set());
-    const [countdown, setCountdown] = useState(null);
-    const [countdownFinished, setCountdownFinished] = useState(false);
-    const [gameStarted, setGameStarted] = useState(false);
-    const [isReconnecting, setIsReconnecting] = useState(false);
-    const [socketReady, setSocketReady] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [errors, setErrors] = useState([]); 
+    const navigate = useNavigate(); 
+
     const { room } = useParams(); 
-    const navigate = useNavigate();
+
+    const [players, setPlayers] = useState([]); 
+    const [isCreator, setIsCreator] = useState(false);
+    const [showOverlay, setShowOverlay] = useState(true); 
+    const [countdown, setCountdown] = useState(null); 
+    const [isGameFull, setIsGameFull] = useState(false);
+    const [isSoloGame, setIsSoloGame] = useState(false);
+
+    const [showSoloModal, setShowSoloModal] = useState(false); 
+
+    const startCountdown = useCallback(() => {
+        let count = 3;
+        setCountdown(count);
+
+        const interval = setInterval(() => {
+            count -= 1;
+
+            if (count === 0) {
+                setCountdown('READY, STEADY, GO!');
+            } else if (count < 0) {
+                clearInterval(interval);
+                setCountdown(null); 
+                setShowOverlay(false); 
+                socket.emit('triggerGame', { roomName: room });
+            } else {
+                setCountdown(count);
+            }
+        }, 1000);
+    }, [room]);
 
     useEffect(() => {
+        if (room && session.username) {
+            socket.emit('joinGame', { roomName: room, playerName: session.username });
+        }
+    
         socket.on('error', ({ message }) => {
             setErrors((prevErrors) => [...prevErrors, message]);
             navigate('/home');
         });
-
-        socket.on('gameReconnected', ({ players }) => {
+    
+        socket.on('gamePlayers', (players) => {
             setPlayers(players);
-            setIsReconnecting(true);
+            if (isGameFull) {
+                setIsGameFull(false);
+            }
         });
 
-        socket.on('gameJoined', ({ players }) => {
-            setPlayers(players);
-            setWaitingForPlayers(players.length < 2);
+        socket.on('gameCreator', () => {
+            setIsCreator(true);
         });
 
-        socket.on('gameFull', ({ players }) => {
-            setPlayers(players);
-            setIsGameFull(true);
-            setWaitingForPlayers(false);
+        socket.on('gameFull', (bool) => {
+            setIsGameFull(bool);
         });
 
-        socket.on('gamePlayerReady', ({ playerName }) => {
-            setPlayersReady((prevReady) => new Set(prevReady).add(playerName));
+        socket.on('gameStarted', () => {
+            startCountdown();
         });
 
         socket.on('gameDeleted', () => {
             setErrors(['Game creator left, game deleted. Redirecting to home...']);
-            setTimeout(() => navigate('/home'), 5000);
+            setTimeout(() => navigate('/home'), 2500);
         });
 
         socket.on('gameSurrendered', () => {
-            setErrors(['A player has surrendered, game ended. Redirecting to home...']);
-            setTimeout(() => navigate('/home'), 5000);
+            setErrors(['A player has surrendered. Redirecting to home...']);
+            setTimeout(() => navigate('/home'), 2500);
         });
-
-        socket.on('gameStarted', () => {
-            setCountdown(3);
-            setCountdownFinished(false);
-        });
-
-        setSocketReady(true);
-        setLoading(false);
-
+    
         return () => {
             socket.off('error');
-            socket.off('gameDeleted');
-            socket.off('gameJoined');
-            socket.off('gameFull');
-            socket.off('gamePlayerReady');
-            socket.off('gameSurrendered');
+            socket.off('gamePlayers');
+            socket.off('gameCreator');
             socket.off('gameStarted');
+            socket.off('gameDeleted');
+            socket.off('gameSurrendered');
         };
-    }, [navigate]);
-
-    useEffect(() => {
-        if (socketReady) {
-            socket.emit('joinGame', { roomName: room, playerName: session.username });
-        }
-    }, [socketReady, room, session.username]);
-
-    useEffect(() => {
-        let timer;
-        if (countdown !== null) {
-            timer = setInterval(() => {
-                setCountdown(prevCountdown => {
-                    if (prevCountdown > 1) {
-                        return prevCountdown - 1;
-                    } else {
-                        clearInterval(timer);
-                        setCountdownFinished(true);
-                        setGameStarted(true);
-                        return null;
-                    }
-                });
-            }, 1000);
-        }
-
-        return () => {
-            if (timer) {
-                clearInterval(timer);
-            }
-        };
-    }, [countdown]);
+    }, [room, session, navigate, isGameFull, startCountdown]);
 
     const handleLeaveGame = (e) => {
         e.preventDefault();
-        socket.emit('leaveGame', { roomName: room, playerName: session.username });
-        navigate('/home');
-    };
-
-    const handleReady = () => {
-        socket.emit('readyGame', { roomName: room, playerName: session.username });
-        setIsReady(true);
-        if (allPlayersReady()) {
-            socket.emit('gameStarted', { roomName: room });
+        if (session.username) {
+            socket.emit('leaveGame', { roomName: room, playerName: session.username });
+            navigate('/home'); 
         }
     };
 
-    const allPlayersReady = () => {
-        return players.length >= 2 && players.every(player => playersReady.has(player.username));
+    const handleStartGame = () => {
+        if (players.length === 1) {
+            setShowSoloModal(true);
+        } else {
+            socket.emit('startGame', { roomName: room });
+        }
     };
 
-    const showOverlay = !isReconnecting && (waitingForPlayers || (isGameFull && !gameStarted));
+    const confirmStartGame = () => {
+        setShowSoloModal(false);
+        setIsSoloGame(true);
+        socket.emit('startGame', { roomName: room });
+    };
 
     return (
         <div>
             <NavBar />
             <Container fluid className="game-container d-flex flex-column justify-content-center align-items-center vh-100">
-                <Row className="w-100 justify-content-center align-items-start mt-4">
-                    <Col md={4} className="text-center">
-                        <h2>{room}</h2>
-                        {errors.length > 0 && (
-                            <Alert variant="danger" className="text-center mb-4">
+                {showOverlay && (
+                    errors.length > 0 ? (
+                        <div>
+                            <h2 className="game-overlay-message">{room}</h2>
+                            <Alert variant="danger" onClose={() => setErrors([])} dismissible>
                                 {errors.map((error, index) => (
-                                    <p key={index}>{error}</p>
+                                    <div key={index}>{error}</div>
                                 ))}
                             </Alert>
-                        )}
-
-                        <Form onSubmit={handleLeaveGame} className="mt-4">
-                            <Button variant="danger" type="submit" className="w-100 global-btn">
-                                <i className="bi bi-door-open"></i> Leave
-                            </Button>
-                        </Form>
-                    </Col>
-
-                    <Col md={6} className="d-flex justify-content-between">
-                        <Grid socket={socket} isInteractable={true}/>
-                    </Col>
-                </Row>
-
-                {loading && (
-                    <div className="loading-overlay">
-                        <div className="loading-overlay-content">
-                            <h2>{room}</h2>
-                            <div className="loading-message">Loading, please wait...</div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="game-overlay-content">
+                            {countdown === null ? (
+                                <>
+                                    <h2 className="game-overlay-message">{room}</h2>
+                                    <h5>Waiting for players to join...</h5>
+                                    <ListGroup className="my-4">
+                                        {Array.isArray(players) && players.map((player, index) => (
+                                            <ListGroup.Item key={index}>{player.username}</ListGroup.Item>
+                                        ))}
+                                    </ListGroup>
+                                    {isGameFull && isCreator && (
+                                        <Alert variant="info" className="mb-3">
+                                            The game is full. You can start the game now!
+                                        </Alert>
+                                    )}
+                                    {isCreator && (
+                                        <Button variant="primary" onClick={handleStartGame} className="mb-3">
+                                            Start Game
+                                        </Button>
+                                    )}
+                                    <Form onSubmit={handleLeaveGame}>
+                                        <Button variant="danger" type="submit">
+                                            <i className="bi bi-door-open"></i> Leave Game
+                                        </Button>
+                                    </Form>
+                                </>
+                            ) : (
+                                <h1 className="countdown-message">{countdown}</h1>
+                            )}
+                        </div>
+                    )
                 )}
 
-                {showOverlay && !loading && (
-                    <div className="game-overlay">
-                        <div className="game-overlay-content">
-                            <h2>{room}</h2>
-                            <div className="game-overlay-message">
-                                {waitingForPlayers
-                                    ? 'Waiting for players to join...'
-                                    : (isGameFull
-                                        ? (isReady
-                                            ? (allPlayersReady()
-                                                ? countdown !== null ? `Game starting in ${countdown}...` : 'Waiting for game to start...'
-                                                : 'Waiting for opponents to be ready...')
-                                            : 'Game is full! Are you ready to play?')
-                                        : 'Waiting for players to join...')}
-                            </div>
-                            {waitingForPlayers && (
-                                <Form onSubmit={handleLeaveGame} className="mt-4">
-                                    <Button variant="danger" type="submit" className="w-100 global-btn">
-                                        <i className="bi bi-door-open"></i> Leave
-                                    </Button>
-                                </Form>
+                {!showOverlay && (
+                    errors.length > 0 ? (
+                        <div>
+                            <h2 className="game-overlay-message">{room}</h2>
+                            <Alert variant="danger" onClose={() => setErrors([])} dismissible>
+                                {errors.map((error, index) => (
+                                    <div key={index}>{error}</div>
+                                ))}
+                            </Alert>
+                        </div>
+                    ) : (
+                        <div>
+                            <h2 className="room-name text-center">{room}</h2>
+                            {!isSoloGame ? (
+                                <div className='w-100 h-100 game-grids'>
+                                    <div className='game-player-container'>
+                                        <div className='game-player'>
+                                            <Grid socket={socket} isInteractable={true} />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="game-other-container">
+                                        <div className="game-other-subcontainer">
+                                            {players.filter(player => player.username !== session.username).map((player, index) => (
+                                                <div className="game-other mb-2" key={index}>
+                                                    <Grid socket={socket} isInteractable={false} />
+                                                    <div className="game-other-username">{player.username}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className='w-100 h-100 game-grids'> 
+                                    <div className='game-solo-container'>
+                                        <div className='game-player'>
+                                            <Grid socket={socket} isInteractable={true} />
+                                        </div>
+                                    </div>
+                                </div>
                             )}
-                            {isGameFull && !isReady && !waitingForPlayers && (
-                                <Button
-                                    variant="primary"
-                                    onClick={handleReady}
-                                    className="mt-3"
-                                >
-                                    Ready
+                            <Form onSubmit={handleLeaveGame} className="game-leave">
+                                <Button variant="danger" type="submit" className="global-btn bottom-0 end-0">
+                                    <i className="bi bi-door-open"></i> Leave
                                 </Button>
-                            )}
+                            </Form>
                         </div>
-                    </div>
+                    )
                 )}
 
-                {countdownFinished && !gameStarted && (
-                    <div className="game-overlay">
-                        <div className="game-overlay-content">
-                            <div className="game-overlay-message">
-                                GAME START!
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <Modal show={showSoloModal} onHide={() => setShowSoloModal(false)}>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Solo Game Confirmation</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <p>You are the only player in the room. Do you want to start the game solo?</p>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setShowSoloModal(false)}>
+                            Wait for Players
+                        </Button>
+                        <Button variant="primary" onClick={confirmStartGame}>
+                            Start Solo Game
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </Container>
         </div>
     );

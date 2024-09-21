@@ -1,0 +1,60 @@
+/* +------------------------------------------------+ */
+/* |             REDTETRIS GRID GAME CSS             | */
+/* +------------------------------------------------+ */
+
+@import './colors.css';
+
+.queue-container {
+    width: 180px; 
+    height: 300px;
+    display: flex;
+    padding: 10px 0px 0px 0px;
+    flex-direction: column;
+    align-items: center;
+    border: 8px solid var(--primary-red);
+    border-radius: 5px;
+    box-shadow: 0 0 20px 10px var(--secondary-eerie);
+    background-color: var(--secondary-eerie);
+}
+
+.queue-container h3 {
+    color: var(--primary-yellow);
+    font-size: 1.2em;
+    text-align: center;
+}
+
+.queue-piece {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    max-width: 150px;
+    padding: 5px;
+}
+
+.queue-row {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.queue-cell {
+    background-color: var(--secondary-eerie);
+    border: 0.07em solid var(--secondary-black);
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
+    width: 20px;
+    height: 20px;
+}
+
+.queue-cell.cell-S { background-color: var(--primary-green); }
+.queue-cell.cell-I { background-color: var(--primary-cyan); }
+.queue-cell.cell-O { background-color: var(--primary-yellow); }
+.queue-cell.cell-T { background-color: var(--primary-purple); }
+.queue-cell.cell-L { background-color: var(--primary-orange); }
+.queue-cell.cell-J { background-color: var(--primary-blue); }
+.queue-cell.cell-Z { background-color: var(--primary-red); }
+.queue-cell.cell-default { 
+    background-color: var(--secondary-eerie);
+    border: none;
+}

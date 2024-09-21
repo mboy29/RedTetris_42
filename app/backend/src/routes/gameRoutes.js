@@ -66,7 +66,7 @@ router.post('/join', async (req, res) => {
             return res.status(409).json({ message: 'Game has already started' });
         }
 
-        if (game.isGameFull()) {
+        if (game.isGameFull() === true) {
             return res.status(409).json({ message: 'Game is full' });
         }
 
@@ -84,15 +84,11 @@ router.post('/join', async (req, res) => {
 router.get('/:room/:playerName', async (req, res) => {
     const { room, playerName } = req.params;
 
-    console.log("[DEBUG]")
     try {
         const user = await Player.getByUsername(req.session.user.username);
         const player = await Player.getByUsername(playerName);
         const game = await Game.getByName(room);
-
-        console.log('[DEBUG] user', user);
-        console.log('[DEBUG] player', player);
-        console.log('[DEBUG] game', room, game.getName(), user.getRoomName());
+        
         if (!player || !user) {
             return res.status(404).json({ success: false, message: 'Player not found' });
         } else if (player.getId() != user.getId()) {

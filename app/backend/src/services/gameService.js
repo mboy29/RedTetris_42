@@ -51,13 +51,12 @@ const joinGame = async (io, socket, { roomName, playerName }) => {
         const players = await game.getPlayers();
 
         if (game.getStatus() === 'pending') {
-            if (game.isGameFull()) {
-                io.to(roomName).emit('gameFull', { players: players });
-            } else {
-                io.to(roomName).emit('gameJoined', { players: players });
+            io.to(roomName).emit('gamePlayers', ( players ));
+            io.to(roomName).emit('gameFull', ( game.isGameFull() ));
+            if (game.isGameCreator(player)) {
+                socket.emit('gameCreator', {});
             }
         } else {
-            console.log(`[DEBUG] Game reconnecting`);
             io.to(roomName).emit('gameReconnected', { players: players });
         }
 
@@ -66,44 +65,25 @@ const joinGame = async (io, socket, { roomName, playerName }) => {
     }
 };
 
-const readyGame = async (io, socket, { roomName, playerName }) => {
+const startGame = async (io, socket, { roomName }) => {
     try {
-        if (!roomName || !playerName) {
+        if (!roomName) {
             throw new Error('Invalid input');
         }
-        
-        const player = await Player.getByUsername(playerName);
-        if (!player) {
-            throw new Error('Player not found');
-        }
-        
         const game = await Game.getByName(roomName);
         if (!game) {
             throw new Error('Game not found');
-        }
-        if (!await game.isGamePlayer(player)) {
-            throw new Error('Player not in game');
-        }
-        if (!game.isGameFull()) {
-            throw new Error('Game is not full');
-        }
-        if (game.getStatus() !== 'pending') {
+        } else if (game.getStatus() !== 'pending') {
             throw new Error('Game is not in pending status');
         }
-        
-        await game.increaseReadyPlayers();
-        console.log(`[GAME] Player ${playerName} is ready in game ${roomName}`);
-        io.to(roomName).emit('gamePlayerReady', { playerName });
-        if (game.arePlayersReady()) {
-            await game.startGame();
-            console.log(`[GAME] Game ${roomName} started`);
-            io.to(roomName).emit('gameStarted', { roomName });
-            io.to(roomName).emit('gamePieces', { pieces: game.getPieces() });
-        }
+        await game.startGame();
+        console.log(`[GAME] Game ${roomName} started`);
+        io.to(roomName).emit('gameStarted', { roomName });
     } catch (error) {
-        console.log('[GAME] Error setting player ready:', error.message);
+        console.log('[GAME] Error starting game:', error.message);
     }
 };
+
 
 const leaveGame = async (io, socket, { roomName, playerName }) => {
     try {
@@ -133,7 +113,8 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
                 io.to(roomName).emit('gameDeleted', {});
             } else {
                 const players = await game.getPlayers();
-                io.to(roomName).emit('updatePlayers', players);
+                io.to(roomName).emit('gamePlayers', ( players ));
+                io.to(roomName).emit('gameFull', ( game.isGameFull() ));
             }
         } else {
             await game.endGame(true);
@@ -143,6 +124,24 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
         console.log('[GAME] Error handling player leaving game:', error.message);
     }
 };
+
+const triggerGame = async (io, socket, { roomName }) => {
+    try {
+        if (!roomName) {
+            throw new Error('Invalid input');
+        }
+        const game = await Game.getByName(roomName);
+        if (!game) {
+            throw new Error('Game not found');
+        } else if (game.getStatus() !== 'in progress') {
+            throw new Error('Game is not in progress');
+        }
+        io.to(roomName).emit('gamePieces', ( game.getPieces() ));
+
+    } catch (error) {
+        console.log('[GAME] Error starting game:', error.message);
+    }
+}
 
 const disconnect = async (io, socket) => {
     try {
@@ -190,7 +189,8 @@ const disconnect = async (io, socket) => {
 
 module.exports = {
     joinGame,
-    readyGame,
+    startGame,
     leaveGame,
+    triggerGame,
     disconnect
 };

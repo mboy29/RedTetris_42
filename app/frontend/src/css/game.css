@@ -6,6 +6,12 @@
 
 .game-container {
     padding: 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
 }
 
 .game-overlay {
@@ -14,7 +20,6 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -34,4 +39,61 @@
 
 .game-countdown {
     font-size: 3rem;
+}
+
+.game-grids {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+}
+
+.game-player-container, .game-other-container {
+    width: 50vw; 
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-player {
+    width: 100%;
+    max-width: 500px;
+}
+
+.game-other-subcontainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 40px;
+}
+
+.game-other {
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+    text-align: center; 
+}
+
+.game-other-username {
+    margin-top: 10px;
+    font-size: 1rem;
+    color: var(--primary-blue);
+    font-weight: bold;
+    text-align: center;
+}
+
+.game-leave {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+}
+
+.game-solo-container {
+    width: 50vw; 
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
