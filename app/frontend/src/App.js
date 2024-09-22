@@ -13,73 +13,51 @@
 
 // +----------------- REQUIREMENTS -----------------+
 
-
-
-import React, { useContext } from 'react';
-import { Route, Routes, Navigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Route, Routes } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
+
 
 import Home from './components/Home';
 import Register from './components/auth/Register';
 import Login from './components/auth/Login';
-import Logout from './components/auth/Logout';
 
 
 import CreateGame from './components/game/CreateGame';
 import JoinGame from './components/game/JoinGame';
-import Game from './components/game/Game';
-
-import { SessionContext } from './contexts/sessionContext';
 
 import './css/app.css';
-
-// +------------------- COMPONENT ------------------+
-
-const ProtectedRoute = ({ element }) => {
-    const { session } = useContext(SessionContext);
-    return session ? element : <Navigate to="/login" />;
-};
-
-const RedirectIfLoggedIn = ({ element }) => {
-    const { session } = useContext(SessionContext);
-    return session ? <Navigate to="/home" /> : element;
-};
-
-const LogoutRoute = () => {
-    const { session } = useContext(SessionContext);
-    if (!session) {
-        return <Navigate to="/login" />;
-    }
-    return <Logout />;
-};
-
+import routeHooks from './hooks/routeHooks';
 
 // +--------------------- APP ----------------------+
 
 const App = () => {
+    const [globalError, setGlobalError] = useState(null);
+
     return (
         <div>
             <div className="app-bg-wrapper">
                 <div className="app-bg-image"></div>
             </div>
             <Container fluid>
+                {globalError && <div className="error-message">{globalError}</div>} {/* Display error message here */}
                 <Routes>
-                    <Route path="/" element={<RedirectIfLoggedIn element={<Register />} />} />
-                    <Route path="/register" element={<RedirectIfLoggedIn element={<Register />} />} />
-                    <Route path="/login" element={<RedirectIfLoggedIn element={<Login />} />} />
-                    <Route path="/logout" element={<LogoutRoute />} />
+                    <Route path="/" element={<routeHooks.RedirectIfLoggedIn element={<Register />} />} />
+                    <Route path="/register" element={<routeHooks.RedirectIfLoggedIn element={<Register />} />} />
+                    <Route path="/login" element={<routeHooks.RedirectIfLoggedIn element={<Login />} />} />
+                    <Route path="/logout" element={<routeHooks.LogoutRoute />} />
 
-                    <Route path="/home" element={<ProtectedRoute element={<Home />} />} />
+                    <Route path="/home" element={<routeHooks.ProtectedRoute element={<Home globalError={globalError} />} />} />
 
-                    <Route path="/game/create" element={<ProtectedRoute element={<CreateGame />} />} />
-                    <Route path="/game/join" element={<ProtectedRoute element={<JoinGame />} />} />
-                    <Route path="/:room/:playerName" element={<ProtectedRoute element={<Game />} />} />
-
+                    <Route path="/game/create" element={<routeHooks.ProtectedRoute element={<CreateGame />} />} />
+                    <Route path="/game/join" element={<routeHooks.ProtectedRoute element={<JoinGame />} />} />
+                    <Route path="/:room/:playerName" element={<routeHooks.ProtectedRoute element={<routeHooks.GameRoute setGlobalError={setGlobalError} />} />} />
                 </Routes>
             </Container>
         </div>
     );
 };
+
 // +------------------- EXPORTS --------------------+
 
 export default App;

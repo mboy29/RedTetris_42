@@ -87,30 +87,27 @@ router.post('/join', async (req, res) => {
     }
 });
 
-router.get('/:room/:playerName', async (req, res) => {
-    const { room, playerName } = req.params;
-
+router.get('/check', async (req, res) => {
     try {
+        const { room, playerName } = req.query;
         const user = await Player.getByUsername(req.session.user.username);
         const player = await Player.getByUsername(playerName);
         const game = await Game.getByName(room);
         
         if (!player || !user) {
-            return res.status(404).json({ success: false, message: 'Player not found' });
+            console.log('[GAME] Player or user not found');
+            return res.status(403).json({ success: false, message: 'Access denied' });
         } else if (player.getId() != user.getId()) {
-            console.log('diff users');
+            console.log('[GAME] User and player do not match');
             return res.status(403).json({ success: false, message: 'Access denied' });
         } else if (!game) {
-            console.log('game not found');
+            console.log('[GAME] game not found');
             return res.status(404).json({ success: false, message: 'Game not found' });
-        } else if (game.getName() != user.getRoomName()) {
-            console.log('game not match');
-            return res.status(403).json({ success: false, message: 'Access denied' });
         }
         return res.status(200).json({ success: true });
 
     } catch (error) {
-        console.error('Error validating game access:', error);
+        console.error('[GAME] Error checking game access:', error.message);
         return res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });

@@ -14,19 +14,24 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Container, Row, Col, Button } from 'react-bootstrap';
+import { Container, Row, Col, Button, Alert } from 'react-bootstrap';
 
 import NavBar from './global/NavBar';
 
 // +------------------- COMPONENT -------------------+
 
-const Home = () => {
+const Home = ({ globalError }) => {
     return (
         <div>
             <NavBar />
             <Container className="d-flex justify-content-center align-items-center vh-100">
                 <Row>
                     <Col className="text-center">
+                        {globalError && 
+                            <Alert variant="danger" className="text-center mb-4">
+                                <p>{globalError}</p>
+                            </Alert>
+                        }
                         <div className="mt-4">
                             <Button
                                 as={Link}
