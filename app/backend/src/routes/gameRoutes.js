@@ -20,12 +20,18 @@ const Player = require('./../models/playerModel');
 
 // +------------------- FUNCTIONS ------------------+
 
+const isValidRoomName = (roomName) => /^[a-zA-Z0-9]+$/.test(roomName);
+
 router.post('/create', async (req, res) => {
     try {
         const { roomName, playerName } = req.body;
 
         if (!roomName || !playerName) {
             return res.status(400).json({ message: 'Invalid input' });
+        }
+
+        if (!isValidRoomName(roomName)) {
+            return res.status(400).json({ message: 'Room name must contain only letters and numbers' });
         }
 
         const player = await Player.getByUsername(playerName);

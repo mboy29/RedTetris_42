@@ -3,6 +3,7 @@
 /* +------------------------------------------------+ */
 
 @import './colors.css';
+@import './global.css';
 
 .queue-container {
     width: 180px; 

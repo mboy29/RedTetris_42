@@ -3,6 +3,7 @@
 /* +------------------------------------------------+ */
 
 @import './colors.css';
+@import './global.css';
 
 .game-container {
     padding: 20px;
@@ -26,15 +27,47 @@
     z-index: 1000; 
 }
 
+.game-overlay-content {
+    color: white;
+    text-align: center;
+    width: 500px;
+    padding: 30px;
+}
+
+.game-overlay-players-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.game-overlay-players {
+    background-color: var(--secondary-dark-grey);
+    border: 2px solid var(--secondary-grey);
+    border-radius: 8px;
+    color: var(--secondary-light-grey);
+    padding: 10px; 
+    margin-top: 5px;
+}
+
+.game-overlay-players:first-child {
+    margin-top: 0; 
+    border-radius: 8px;
+}
+
+.game-overlay-players:not(:first-child) {
+    border-top: none;
+    border-radius: 8px;
+}
+
 .game-overlay-message {
     color: var(--primary-red);
     margin-bottom: 20px;
     font-size: 1.5rem;
 }
 
-.game-overlay-content {
-    color: white;
-    text-align: center;
+.game-countdown-message {
+    color: var(--primary-red);
+    font-size: 2rem;
 }
 
 .game-countdown {
@@ -96,4 +129,49 @@
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.game-custom-alert {
+    margin: 10px 0 !important;
+    padding: 10px !important;
+    background-color: var(--secondary-eerie);
+    border-color: var(--primary-red);
+    color: var(--primary-red);
+}
+
+.game-solo-modal .modal-content {
+    background-color: var(--secondary-dark-grey);
+    border: 2px solid var(--secondary-grey);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.game-solo-modal-header {
+    border-bottom: none;
+}
+
+.game-solo-modal-title {
+    color: var(--primary-red);
+    font-size: 1rem;
+    text-transform: uppercase;
+}
+
+.game-solo-modal-body {
+    padding: 10px 0;
+    text-align: center;
+}
+
+.game-solo-modal-message {
+    color: var(--secondary-white);
+    font-size: 1.1rem;
+}
+
+.game-solo-modal-footer {
+    border-top: none;
+    display: flex;
+    justify-content: space-between;
+}
+
+.game-solo-modal-button {
+    width: 45%;
 }

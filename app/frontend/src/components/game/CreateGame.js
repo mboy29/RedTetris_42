@@ -1,5 +1,5 @@
 // +------------------------------------------------+
-// |         REDTETRIS CREATE GAME COMPONENT         |
+// |         REDTETRIS CREATE GAME COMPONENT        |
 // +------------------------------------------------+
 
 // +------------------- SUMMARY --------------------+
@@ -58,7 +58,7 @@ const CreateGame = () => {
     return (
         <div>
             <NavBar />
-            <Container fluid className="join-game-container d-flex flex-column justify-content-center align-items-center vh-100">
+            <Container fluid className="d-flex flex-column justify-content-center align-items-center vh-100">
                 <div className="global-form-container">
                     <h2 className="text-center mb-4">Create a game</h2>
                     {errors.length > 0 && (

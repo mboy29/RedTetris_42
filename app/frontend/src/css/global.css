@@ -50,6 +50,23 @@
     background-color: var(--primary-cyan);
 }
 
+.global-secondary-btn {
+    background-color: var(--secondary-dark-grey);
+    border: 2px solid var(--primary-red);
+    color: var(--primary-red);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.global-secondary-btn:hover {
+    border: 2px solid var(--primary-blue);
+    color: var(--primary-blue);
+}
+
+.global-secondary-btn:active:focus {
+    border: 2px solid var(--primary-cyan);
+    color: var(--primary-cyan);
+}
+
 .global-link {
     color: var(--primary-red);
     text-decoration: none;
@@ -59,3 +76,4 @@
 .global-link:hover {
     color: var(--primary-blue);
 }
+

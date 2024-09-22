@@ -1,13 +1,29 @@
+// +------------------------------------------------+
+// |            REDTETRIS GAME COMPONENT            |
+// +------------------------------------------------+
+
+// +------------------- SUMMARY --------------------+
+
+/*
+    This module defines the `Game` component for
+    the RedTetris frontend. The component provides
+    the game room interface and handles game logic.
+*/
+
+// +----------------- REQUIREMENTS -----------------+
+
 import React, { useEffect, useState, useContext, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
-import './../../css/game.css'; 
 import { Container, Form, Button, Alert, ListGroup, Modal } from 'react-bootstrap'; 
 import { SessionContext } from './../../contexts/sessionContext';
-import config from './../../configs/config';
 
 import Grid from './Grid';
+import './../../css/game.css'; 
 import NavBar from './../global/NavBar';
+import config from './../../configs/config';
+
+// +------------------- COMPONENT -------------------+
 
 const socket = io(config.api_url);
 
@@ -126,7 +142,7 @@ const Game = () => {
                     errors.length > 0 ? (
                         <div>
                             <h2 className="game-overlay-message">{room}</h2>
-                            <Alert variant="danger" onClose={() => setErrors([])} dismissible>
+                            <Alert variant="danger" onClose={() => setErrors([])} dismissible className="game-custom-alert">
                                 {errors.map((error, index) => (
                                     <div key={index}>{error}</div>
                                 ))}
@@ -135,32 +151,43 @@ const Game = () => {
                     ) : (
                         <div className="game-overlay-content">
                             {countdown === null ? (
-                                <>
+                                <div className="overlay-card">
                                     <h2 className="game-overlay-message">{room}</h2>
-                                    <h5>Waiting for players to join...</h5>
-                                    <ListGroup className="my-4">
+                                    {isGameFull ? (
+                                        isCreator ? (
+                                            <Alert variant="info" className="mb-3 game-custom-alert">
+                                                The game is full. You can start the game now!
+                                            </Alert>
+                                        ) : (
+                                            <Alert variant="info" className="mb-3 game-custom-alert">
+                                                The game is full. Waiting for the creator to start the game...
+                                            </Alert>
+                                        )
+                                    ) : (
+                                        <h5>Waiting for players to join...</h5>
+                                    )}
+                                    <ListGroup className="my-4 game-overlay-players-container ">
                                         {Array.isArray(players) && players.map((player, index) => (
-                                            <ListGroup.Item key={index}>{player.username}</ListGroup.Item>
+                                            <div key={index}>
+                                                <ListGroup.Item className="game-overlay-players">
+                                                    {player.username}
+                                                </ListGroup.Item>
+                                            </div>
                                         ))}
                                     </ListGroup>
-                                    {isGameFull && isCreator && (
-                                        <Alert variant="info" className="mb-3">
-                                            The game is full. You can start the game now!
-                                        </Alert>
-                                    )}
                                     {isCreator && (
-                                        <Button variant="primary" onClick={handleStartGame} className="mb-3">
+                                        <Button variant="primary" onClick={handleStartGame} className="w-100 global-btn mb-3">
                                             Start Game
                                         </Button>
                                     )}
-                                    <Form onSubmit={handleLeaveGame}>
-                                        <Button variant="danger" type="submit">
+                                    <Form onSubmit={handleLeaveGame} className="game-leave">
+                                        <Button variant="danger" type="submit" className="w-100 global-btn mb-3">
                                             <i className="bi bi-door-open"></i> Leave Game
                                         </Button>
                                     </Form>
-                                </>
+                                </div>
                             ) : (
-                                <h1 className="countdown-message">{countdown}</h1>
+                                <h1 className="game-countdown-message">{countdown}</h1>
                             )}
                         </div>
                     )
@@ -209,32 +236,34 @@ const Game = () => {
                             )}
                             <Form onSubmit={handleLeaveGame} className="game-leave">
                                 <Button variant="danger" type="submit" className="global-btn bottom-0 end-0">
-                                    <i className="bi bi-door-open"></i> Leave
+                                    <i className="bi bi-door-open"></i> Leave Game
                                 </Button>
                             </Form>
                         </div>
                     )
                 )}
 
-                <Modal show={showSoloModal} onHide={() => setShowSoloModal(false)}>
-                    <Modal.Header closeButton>
-                        <Modal.Title>Solo Game Confirmation</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <p>You are the only player in the room. Do you want to start the game solo?</p>
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button variant="secondary" onClick={() => setShowSoloModal(false)}>
-                            Wait for Players
-                        </Button>
-                        <Button variant="primary" onClick={confirmStartGame}>
-                            Start Solo Game
-                        </Button>
-                    </Modal.Footer>
-                </Modal>
+            <Modal show={showSoloModal} onHide={() => setShowSoloModal(false)} centered className="game-solo-modal">
+                <Modal.Header closeButton className="text-center game-solo-modal-header">
+                    <Modal.Title className="game-solo-modal-title">Solo Game Confirmation</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="game-solo-modal-body">
+                    <p className="game-solo-modal-message">You are the only player in the room. Do you want to start the game solo?</p>
+                </Modal.Body>
+                <Modal.Footer className="game-solo-modal-footer">
+                    <Button variant="secondary" onClick={() => setShowSoloModal(false)} className="game-solo-modal-button global-secondary-btn">
+                        Wait for Players
+                    </Button>
+                    <Button variant="primary" onClick={confirmStartGame} className="game-solo-modal-button global-btn">
+                        Start Solo Game
+                    </Button>
+                </Modal.Footer>
+            </Modal>
             </Container>
         </div>
     );
 };
+
+// +------------------- EXPORTS -------------------+
 
 export default Game;
