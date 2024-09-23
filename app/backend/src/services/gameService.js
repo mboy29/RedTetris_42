@@ -143,6 +143,31 @@ const triggerGame = async (io, socket, { roomName }) => {
     }
 }
 
+const updateGame = async (io, socket, { roomName, playerName, grid }) => {
+    try {
+        if (!roomName || !playerName || !grid) {
+            throw new Error('Invalid input');
+        }
+        const game = await Game.getByName(roomName);
+        if (!game) {
+            throw new Error('Game not found');
+        } else if (game.getStatus() !== 'in progress') {
+            throw new Error('Game is not in progress');
+        }
+        
+        const player = await Player.getByUsername(playerName);
+        if (!player) {
+            throw new Error('Player not found');
+        } else if (!await game.isGamePlayer(player)) {
+            throw new Error('Player not in game');
+        }
+        console.log(`[GAME] Player ${playerName} updated game ${roomName}`);
+        io.to(roomName).emit('gameUpdated', { playerName, grid });
+    } catch (error) {
+        console.log('[GAME] Error updating game:', error.message);
+    }
+}
+
 const disconnect = async (io, socket) => {
     try {
         const socketInfo = socketRooms.get(socket.id);
@@ -192,5 +217,6 @@ module.exports = {
     startGame,
     leaveGame,
     triggerGame,
+    updateGame,
     disconnect
 };

@@ -35,6 +35,10 @@ function setupSocket(io) {
         socket.on('leaveGame', async ({ roomName, playerName }) => {
             gameService.leaveGame(io, socket, { roomName, playerName });
         });
+
+        socket.on('updatedGame', async ({ roomName, playerName, grid }) => {
+            gameService.updateGame(io, socket, { roomName, playerName, grid });
+        });
         
         // socket.on('disconnect', async () => {
         //     gameService.disconnect(io, socket);

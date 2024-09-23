@@ -157,7 +157,6 @@ class Game {
 
     isGameFull() {
         const playerCount = this.getPlayers().length;
-        console.log('[DEGUG] isGameFUll', playerCount, this.getSize());
         if (playerCount === this.getSize()) {
             return true;
         }

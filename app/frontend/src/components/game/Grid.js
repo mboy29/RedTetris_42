@@ -23,11 +23,13 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Queue from './Queue';
+
 import './../../css/grid.css';
+
 
 // +------------------- COMPONENT -------------------+
 
-const Grid = ({ socket, isInteractable }) => {
+const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, otherGrid = null}) => {
     const numRows = 20;
     const numCols = 10;
     const [grid, setGrid] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
@@ -37,7 +39,6 @@ const Grid = ({ socket, isInteractable }) => {
     const [isFastDropping, setIsFastDropping] = useState(false);
     const [pieceQueue, setPieceQueue] = useState([]); // Updated for queue system
     const [shadowPosition, setShadowPosition] = useState({ x: 0, y: 0 });
-
 
     const canPlacePiece = useCallback((piece, posX, posY) => {
         for (let row = 0; row < piece.length; row++) {
@@ -70,7 +71,8 @@ const Grid = ({ socket, isInteractable }) => {
             }
         }
         setPile(newPile);
-    }, [pile, currentPiece]);
+        socket.emit('updatedGame', { roomName: room, playerName: playerName, grid: newPile });
+    }, [pile, currentPiece, room, socket, playerName]);
 
     // Update the grid to reflect the current piece and pile state
     const updateGridWithPieceAndPile = useCallback((piece, posX, posY) => {
@@ -165,18 +167,15 @@ const Grid = ({ socket, isInteractable }) => {
         return () => clearInterval(interval);
     }, [currentPiece, piecePosition, isFastDropping, pieceQueue, canPlacePiece, mergePieceToPile, numCols]);
 
-    // Update the grid when the piece or pile changes
     useEffect(() => {
         if (currentPiece) {
             updateGridWithPieceAndPile(currentPiece.piece, piecePosition.x, piecePosition.y);
         }
     }, [currentPiece, piecePosition, pile, updateGridWithPieceAndPile]);
 
-    // Handle game pieces sent from the server
     useEffect(() => {
         if (socket && isInteractable) {
             socket.on('gamePieces', (pieces) => {
-                console.log('Received game pieces:', pieces);
                 if (pieces.length) {
                     setPieceQueue(prevQueue => [...prevQueue, ...pieces]);
                     if (!currentPiece) {
@@ -247,6 +246,19 @@ const Grid = ({ socket, isInteractable }) => {
 
         setShadowPosition({ x: dropX, y: dropY });
     }, [currentPiece, piecePosition, canPlacePiece]);
+
+    useEffect(() => {
+        if (otherPlayer && otherPlayer !== playerName && otherGrid) {
+            setGrid(prevGrid => {
+                const newGrid = prevGrid.map((row, rowIndex) => {
+                    return row.map((cell, colIndex) => {
+                        return otherGrid[rowIndex][colIndex] || cell;
+                    });
+                });
+                return newGrid;
+            });
+        }
+    }, [otherPlayer, otherGrid, playerName]);
 
     const getCellClassName = (value, isShadow = false) => {
         if (isShadow) {

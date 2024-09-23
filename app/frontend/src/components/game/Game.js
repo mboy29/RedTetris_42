@@ -35,6 +35,8 @@ const Game = () => {
     const { room } = useParams(); 
 
     const [players, setPlayers] = useState([]); 
+    const [playerGrids, setPlayerGrids] = useState({});
+
     const [isCreator, setIsCreator] = useState(false);
     const [showOverlay, setShowOverlay] = useState(true); 
     const [countdown, setCountdown] = useState(null); 
@@ -101,6 +103,13 @@ const Game = () => {
             setErrors(['A player has surrendered. Redirecting to home...']);
             setTimeout(() => navigate('/home'), 2500);
         });
+
+        socket.on('gameUpdated', ({ playerName, grid }) => {
+            setPlayerGrids((prevGrids) => ({
+                ...prevGrids,
+                [playerName]: grid,
+            }));
+        });
     
         return () => {
             socket.off('error');
@@ -108,6 +117,7 @@ const Game = () => {
             socket.off('gameCreator');
             socket.off('gameStarted');
             socket.off('gameDeleted');
+            socket.off('gameUpdated');
             socket.off('gameSurrendered');
         };
     }, [room, session, navigate, isGameFull, startCountdown]);
@@ -128,10 +138,26 @@ const Game = () => {
         }
     };
 
-    const confirmStartGame = () => {
+    const confirmStartGame = async () => {
         setShowSoloModal(false);
         setIsSoloGame(true);
-        socket.emit('startGame', { roomName: room });
+        try {
+            const response = await fetch(`${config.api_url}/game/solo/set?room=${room}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+            });
+    
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to set solo mode');
+            }
+            socket.emit('startGame', { roomName: room });
+        } catch (error) {
+            setErrors((prevErrors) => [...prevErrors, error.message]);
+        }
     };
 
     return (
@@ -210,7 +236,7 @@ const Game = () => {
                                 <div className='w-100 h-100 game-grids'>
                                     <div className='game-player-container'>
                                         <div className='game-player'>
-                                            <Grid socket={socket} isInteractable={true} />
+                                            <Grid socket={socket} isInteractable={true} room={room} playerName={session.username}/>
                                         </div>
                                     </div>
                                     
@@ -218,7 +244,14 @@ const Game = () => {
                                         <div className="game-other-subcontainer">
                                             {players.filter(player => player.username !== session.username).map((player, index) => (
                                                 <div className="game-other mb-2" key={index}>
-                                                    <Grid socket={socket} isInteractable={false} />
+                                                    <Grid 
+                                                        socket={socket} 
+                                                        isInteractable={false} 
+                                                        room={room} 
+                                                        playerName={session.username}
+                                                        otherPlayer={player.username}
+                                                        otherGrid={playerGrids[player.username] || null} // Pass the updated grid or an empty array
+                                                    />
                                                     <div className="game-other-username">{player.username}</div>
                                                 </div>
                                             ))}
@@ -229,7 +262,7 @@ const Game = () => {
                                 <div className='w-100 h-100 game-grids'> 
                                     <div className='game-solo-container'>
                                         <div className='game-player'>
-                                            <Grid socket={socket} isInteractable={true} />
+                                            <Grid socket={socket} isInteractable={true} room={room} playerName={session.username}/>
                                         </div>
                                     </div>
                                 </div>

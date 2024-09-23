@@ -87,13 +87,34 @@ router.post('/join', async (req, res) => {
     }
 });
 
+router.get('/solo/set', async (req, res) => {
+    try {
+        const { room } = req.query;
+        const game = await Game.getByName(room);
+        if (!game) {
+            return res.status(404).json({ message: 'Game not found' });
+        }
+        game.updateMode('solo');
+        console.log(`[GAME] Game ${room} set to solo mode`);
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.log('[GAME] Error setting solo game:', error.message);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 router.get('/check', async (req, res) => {
     try {
         const { room, playerName } = req.query;
-        const user = await Player.getByUsername(req.session.user.username);
+        
         const player = await Player.getByUsername(playerName);
         const game = await Game.getByName(room);
         
+        if (!req.session || !req.session.user) {
+            console.log('[GAME] User not logged in');
+            return res.status(401).json({ success: false, message: 'Not logged in' });
+        }
+        const user = await Player.getByUsername(req.session.user.username);
         if (!player || !user) {
             console.log('[GAME] Player or user not found');
             return res.status(403).json({ success: false, message: 'Access denied' });
