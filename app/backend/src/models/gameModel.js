@@ -32,14 +32,16 @@ const Player = require('./playerModel');
 // +--------------------- CLASS ---------------------+
 
 class Game {
-    constructor(id, name, mode, creator, status = "pending") {
+    constructor(id, name, mode, creator, status = "pending", winner = null) {
         this.setId(id);
         this.setName(name);
         this.setMode(mode);
         this.setCreator(creator);
         this.setStatus(status);
         this.setSize(4);
-
+        this.setWinner(winner);
+       
+        this.scores = {};
         this.players = [];
         this.pieces = [];
     }
@@ -75,6 +77,8 @@ class Game {
 
     setSize(size) { this.size = size; }
 
+    setWinner(winner) { this.winner = winner; }
+
     getId() {
         return this.id;
     }
@@ -107,13 +111,21 @@ class Game {
         return this.pieces;
     }
 
+    getWinner() {
+        return this.winner;
+    }
+
+    getScores() {
+        return this.scores;
+    }
+
     static async getByName(name) {
         const game = await queries.getGameByName(name);
         if (!game) {
             return null;
         }
         const creator = await Player.getById(game.creator_id);
-        const newGame = new Game(game.id, game.name, game.mode, creator, game.status);
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.status, game.winner_id);
         const players = await queries.getGamePlayers(game.id);
         for (const player of players) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
@@ -121,21 +133,28 @@ class Game {
         for (const piece of await Piece.getPieces(game.id)) {
             newGame.pieces.push(new Piece(piece.type));
         }
+        for (const score of await queries.getGameScores(game.id)) {
+            newGame.scores[score.player_id] = score.score;
+        }
         return newGame;
     }
 
     static async getById(id) {
         const game = await queries.getGameById(id);
+        
         if (!game) {
             return null;
         }
         const creator = await Player.getById(game.creator_id);
-        const newGame = new Game(game.id, game.name, game.mode, creator, game.status);
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.status, game.winner_id);
         for (const player of await queries.getGamePlayers(id)) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
         }
         for (const piece of await Piece.getPieces(game.id)) {
             newGame.pieces.push(new Piece(piece.type));
+        }
+        for (const score of await queries.getGameScores(id)) {
+            newGame.scores[score.player_id] = score.score;
         }
         return newGame;
     }
@@ -193,6 +212,28 @@ class Game {
         await queries.updateGameNbPlayers(this.id, size);
     }
 
+    async updateReadyPlayers(increment) {
+        await queries.updateReadyPlayers(this.id, increment);
+    }
+
+    async updateWinner(player) {
+        await queries.updateGameWinner(this.id, player.id);
+    }
+
+
+    async updateScore(player, lines) {
+        const TetrisScores = {
+            1: 40,   // SINGLE
+            2: 100,  // DOUBLE
+            3: 300,  // TRIPLE
+            4: 1200  // TETRIS
+        };
+    
+        const newScore = TetrisScores[lines] || 0;
+        await queries.updateGameScore(this.id, player.id, newScore);
+        this.scores[player.id] += newScore;
+    }
+
     async addPlayers(socket, ...players) {
         for (const player of players) {
             if (this.isGamePlayer(player) === false) {
@@ -203,14 +244,13 @@ class Game {
         }
     }
     
-
-    async removePlayers(socket, ...players) {
+    async removePlayers(socket, score, ...players) {
         for (const player of players) {
             if (this.isGamePlayer(player) === true) {
                 const index = this.players.findIndex(p => p.id === player.id);
                 this.players.splice(index, 1);
                 await queries.removePlayerFromGame(this.id, player.id);
-                await player.leaveGame(socket);
+                await player.leaveGame(socket, score);
             }
         }
     }
@@ -239,6 +279,10 @@ class Game {
             await this.addPiece();
         }
         await this.updateStatus('in progress');
+        for (const player of this.players) {
+            await queries.createGameScore(this.id, player.id, 0);
+            this.scores[player.id] = 0;
+        }
     }
 
     async endGame(surrender = false) {

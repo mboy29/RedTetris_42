@@ -12,6 +12,8 @@
         - players
         - games
         - game_players (to link players to games)
+        - game_pieces (to store game pieces)
+        - scores (to store player scores)
 */
 
 // +----------------- REQUIREMENTS -----------------+ 
@@ -29,7 +31,8 @@ async function initPlayer() {
             username TEXT NOT NULL CHECK(length(username) >= 4 AND length(username) <= 12) UNIQUE,
             roomName TEXT,
             connect BOOLEAN NOT NULL,
-            password TEXT NOT NULL
+            password TEXT NOT NULL,
+            score INTEGER DEFAULT 0
         )`);
         console.log('[DATABASE] Players table created or already exists.');
     } catch (err) {
@@ -48,6 +51,7 @@ async function initGame() {
             mode TEXT NOT NULL CHECK(mode IN ('solo', 'multiplayer')),
             creator_id INTEGER NOT NULL,
             size INTEGER NOT NULL CHECK(size >= 1 AND size <= 4),
+            winner_id INTEGER DEFAULT NULL,
             FOREIGN KEY (creator_id) REFERENCES players(id)
         )`);
 
@@ -94,6 +98,25 @@ async function initGamePieces() {
     }
 }
 
+async function initGameScores() {
+    try {
+        const db = await dbModule.connect();
+
+        await dbModule.run(`CREATE TABLE IF NOT EXISTS game_scores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            player_id INTEGER NOT NULL,
+            score INTEGER NOT NULL,
+            FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )`);
+
+        console.log('[DATABASE] Game Scores table created or already exists.');
+    } catch (err) {
+        console.error('[DATABASE] Error creating scores table:', err.message);
+    }
+}
+
 
 async function init() {
     try {
@@ -101,6 +124,7 @@ async function init() {
         await initGame();
         await initGamePlayers();
         await initGamePieces();
+        await initGameScores();
     } catch (err) {
         console.error('[DATABASE] Error initializing database:', err.message);
     }

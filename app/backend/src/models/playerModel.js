@@ -42,11 +42,12 @@ const queries = require('./../database/queries/playerQueries');
 // +--------------------- CLASS ---------------------+
 
 class Player {
-    constructor(id, username, connect = false, roomName = null) {
+    constructor(id, username, connect = false, roomName = null, score = 0) {
         this.setId(id);
         this.setUsername(username);
         this.setConnect(connect);
         this.setRoomName(roomName); 
+        this.setScore(score);
     }
 
     setId(id) { 
@@ -85,6 +86,8 @@ class Player {
 
     setRoomName(roomName) { this.roomName = roomName; }
 
+    setScore(score) { this.score = score; }
+
     getId() { return this.id; }
 
     getUsername() { return this.username; }
@@ -93,12 +96,14 @@ class Player {
 
     getRoomName() { return this.roomName; }
 
+    getScore() { return this.score; }
+
     static async getByUsername(username) {
         const playerData = await queries.getPlayerByUsername(username);
         if (!playerData) {
             return null;
         }
-        return new Player(Number(playerData.id), playerData.username, playerData.connect, playerData.roomName);
+        return new Player(Number(playerData.id), playerData.username, playerData.connect, playerData.roomName, playerData.score);
     }
 
     static async getById(id) {
@@ -106,7 +111,7 @@ class Player {
         if (!playerData) {
             return null;
         }
-        return new Player(Number(playerData.id), playerData.username, playerData.connect, playerData.roomName);
+        return new Player(Number(playerData.id), playerData.username, playerData.connect, playerData.roomName, playerData.score);
     }
 
     static async getPlayerPassword(username) {
@@ -122,7 +127,7 @@ class Player {
         if (!playersData) {
             return null;
         }
-        return playersData.map(playerData => new Player(Number(Number), playerData.username, playerData.connect, playerData.roomName));
+        return playersData.map(playerData => new Player(Number(Number), playerData.username, playerData.connect, playerData.roomName, playerData.score));
     }
 
 
@@ -150,6 +155,15 @@ class Player {
             await queries.updatePlayerRoomName(this.getId(), this.getRoomName());
         } catch (err) {
             throw new Error(`Error updating player room name: ${err.message}`);
+        }
+    }
+
+    async updateScore(score) {
+        try {
+            this.setScore(score);
+            await queries.updatePlayerScore(this.getId(), this.getScore());
+        } catch (err) {
+            throw new Error(`Error updating player score: ${err.message}`);
         }
     }
 
@@ -224,11 +238,13 @@ class Player {
         socket.roomName = this.getRoomName();
     }
 
-    async leaveGame(socket) {
+    async leaveGame(socket, score) {
         await this.updateRoomName(null);
         if (socket != null) {
             socket.leave(this.getRoomName());
         }
+        const newScore = this.getScore() + score;
+        await this.updateScore(newScore);
         socket.roomName = null;
         socket.playerName = null;
         

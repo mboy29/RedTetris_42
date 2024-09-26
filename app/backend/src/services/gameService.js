@@ -104,9 +104,10 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
             throw new Error('Player not in game');
         }
     
-        await game.removePlayers(socket, player);
+       
         console.log(`[GAME] Player ${playerName} left game ${roomName}`);
         if (game.getStatus() === 'pending') {
+            await game.removePlayers(socket, 0, player);
             if (game.isGameCreator(player)) {
                 await game.remove(roomName);
                 console.log(`[GAME] Game ${roomName} deleted as creator left`);
@@ -117,6 +118,7 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
                 io.to(roomName).emit('gameFull', ( game.isGameFull() ));
             }
         } else {
+            await game.removePlayers(socket, -100, player);
             await game.endGame(true);
             io.to(roomName).emit('gameSurrendered', { playerName });
         }
@@ -168,6 +170,31 @@ const updateGame = async (io, socket, { roomName, playerName, grid }) => {
     }
 }
 
+const scoreGame = async (io, socket, { roomName, playerName, lines }) => {
+    try {
+        console.log('[DEBUG] scoreGame', roomName, playerName, lines);
+        if (!roomName || !playerName || !lines) {
+            throw new Error('Invalid input');
+        }
+        const game = await Game.getByName(roomName);
+        if (!game) {
+            throw new Error('Game not found');
+        } else if (game.getStatus() !== 'in progress') {
+            throw new Error('Game is not in progress');
+        }
+        const player = await Player.getByUsername(playerName);
+        if (!player) {
+            throw new Error('Player not found');
+        } else if (!await game.isGamePlayer(player)) {
+            throw new Error('Player not in game');
+        }
+        await game.updateScore(player, lines);
+        io.to(roomName).emit('gameScored', { scoredPlayerGame: playerName, lines: lines });
+    } catch (error) {
+        console.log('[GAME] Error scoring game:', error.message);
+    }
+}
+
 const disconnect = async (io, socket) => {
     try {
         const socketInfo = socketRooms.get(socket.id);
@@ -194,7 +221,7 @@ const disconnect = async (io, socket) => {
             throw new Error('Player not in game');
         }
 
-        await game.removePlayers(socket, player);
+        await game.removePlayers(socket, 0, player);
         console.log(`[GAME] Player ${playerName} left game ${roomName}`);
         if (game.isGameCreator(player) && game.getStatus() === 'pending') {
             await game.remove(roomName);
@@ -218,5 +245,6 @@ module.exports = {
     leaveGame,
     triggerGame,
     updateGame,
+    scoreGame,
     disconnect
 };

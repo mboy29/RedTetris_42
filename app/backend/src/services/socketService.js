@@ -39,6 +39,10 @@ function setupSocket(io) {
         socket.on('updatedGame', async ({ roomName, playerName, grid }) => {
             gameService.updateGame(io, socket, { roomName, playerName, grid });
         });
+
+        socket.on('scoreGame', async ({ roomName, playerName, lines }) => {
+            gameService.scoreGame(io, socket, { roomName, playerName, lines });
+        });
         
         // socket.on('disconnect', async () => {
         //     gameService.disconnect(io, socket);

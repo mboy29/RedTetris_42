@@ -110,7 +110,7 @@ const Game = () => {
                 [playerName]: grid,
             }));
         });
-    
+
         return () => {
             socket.off('error');
             socket.off('gamePlayers');

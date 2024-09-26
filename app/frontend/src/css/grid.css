@@ -64,4 +64,5 @@
 .cell-L { background-color: var(--primary-orange); }
 .cell-J { background-color: var(--primary-blue); }
 .cell-Z { background-color: var(--primary-red); }
+.cell-malus { background-color: var(--secondary-dark-grey); }
 .cell-default { background-color: var(--secondary-eerie); }

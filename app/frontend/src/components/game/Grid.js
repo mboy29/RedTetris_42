@@ -26,7 +26,6 @@ import Queue from './Queue';
 
 import './../../css/grid.css';
 
-
 // +------------------- COMPONENT -------------------+
 
 const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, otherGrid = null}) => {
@@ -36,10 +35,12 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
     const [currentPiece, setCurrentPiece] = useState(null);
     const [piecePosition, setPiecePosition] = useState({ x: 0, y: 0 });
     const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
+    const [isGameOver, setIsGameOver] = useState(false);
     const [isFastDropping, setIsFastDropping] = useState(false);
     const [pieceQueue, setPieceQueue] = useState([]); // Updated for queue system
     const [shadowPosition, setShadowPosition] = useState({ x: 0, y: 0 });
 
+    // Check if a piece can be placed at a given position
     const canPlacePiece = useCallback((piece, posX, posY) => {
         for (let row = 0; row < piece.length; row++) {
             for (let col = 0; col < piece[row].length; col++) {
@@ -60,9 +61,11 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
         return true;
     }, [numRows, numCols, pile]);
 
-    // Merge the current piece into the pile once it reaches the bottom
+    // Merge the current piece to the pile
     const mergePieceToPile = useCallback((piece, posX, posY) => {
         const newPile = pile.map(row => [...row]);
+        let linesCleared = 0;
+    
         for (let row = 0; row < piece.length; row++) {
             for (let col = 0; col < piece[row].length; col++) {
                 if (piece[row][col]) {
@@ -70,9 +73,21 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
                 }
             }
         }
+        for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
+            if (newPile[rowIndex].every(cell => cell) && !newPile[rowIndex].includes('M')) {
+                linesCleared++;
+                newPile.splice(rowIndex, 1);
+                newPile.unshift(Array(numCols).fill(null)); // Add a new empty row at the top
+            }
+        }
+    
+        if (linesCleared > 0) {
+            socket.emit('scoreGame', { roomName: room, playerName: playerName, lines: linesCleared });
+        }
         setPile(newPile);
         socket.emit('updatedGame', { roomName: room, playerName: playerName, grid: newPile });
     }, [pile, currentPiece, room, socket, playerName]);
+    
 
     // Update the grid to reflect the current piece and pile state
     const updateGridWithPieceAndPile = useCallback((piece, posX, posY) => {
@@ -126,7 +141,7 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
             setCurrentPiece(null);
         }
     }, [currentPiece, piecePosition, pieceQueue, mergePieceToPile, canPlacePiece, numCols]);
-
+    
     // Move the current piece horizontally
     const movePieceHorizontally = useCallback((direction) => {
         if (!currentPiece) return;
@@ -139,6 +154,7 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
         }
     }, [currentPiece, piecePosition, canPlacePiece]);
 
+    // Automatically drop the piece down or merge it to the pile if it can't move further
     // Automatically drop the piece down or merge it to the pile if it can't move further
     useEffect(() => {
         if (!currentPiece) return;
@@ -166,7 +182,7 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
         }, isFastDropping ? 100 : 1000);
         return () => clearInterval(interval);
     }, [currentPiece, piecePosition, isFastDropping, pieceQueue, canPlacePiece, mergePieceToPile, numCols]);
-
+    
     useEffect(() => {
         if (currentPiece) {
             updateGridWithPieceAndPile(currentPiece.piece, piecePosition.x, piecePosition.y);
@@ -198,7 +214,7 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
     // Handle keyboard input for piece movement
     useEffect(() => {
         const handleKeyDown = (event) => {
-            if (!currentPiece) return;
+            if (!currentPiece || isGameOver) return; // Disable controls if game is over
             switch (event.key) {
                 case 'ArrowLeft':
                     movePieceHorizontally(-1);
@@ -219,21 +235,23 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
                     break;
             }
         };
-
+    
         const handleKeyUp = (event) => {
             if (event.key === 'ArrowDown') {
                 setIsFastDropping(false);
             }
         };
-
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
+    
+        if (!isGameOver) {
+            window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keyup', handleKeyUp);
+        }
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, [currentPiece, piecePosition, movePieceHorizontally, rotatePiece, dropPieceToBottom]);
-
+    }, [currentPiece, piecePosition, movePieceHorizontally, rotatePiece, dropPieceToBottom, isGameOver]);
+    
     // Update shadow position of the piece
     useEffect(() => {
         if (!currentPiece) return;
@@ -247,6 +265,8 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
         setShadowPosition({ x: dropX, y: dropY });
     }, [currentPiece, piecePosition, canPlacePiece]);
 
+
+    // Merge the other player's grid with the current player's grid
     useEffect(() => {
         if (otherPlayer && otherPlayer !== playerName && otherGrid) {
             setGrid(prevGrid => {
@@ -260,6 +280,46 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
         }
     }, [otherPlayer, otherGrid, playerName]);
 
+    useEffect(() => {
+        socket.on('gameScored', ({ scoredPlayerGame, lines }) => {
+            if (scoredPlayerGame !== playerName) {
+                setPile(prevPile => {
+                    let newPile = [...prevPile];
+    
+                    for (let i = 0; i < lines; i++) {
+                        newPile.shift();
+                        newPile.push(Array(numCols).fill('M'));
+                    }
+    
+                    const newGrid = Array(numRows).fill().map(() => Array(numCols).fill(null));
+                    for (let row = 0; row < numRows; row++) {
+                        for (let col = 0; col < numCols; col++) {
+                            newGrid[row][col] = newPile[row][col];
+                        }
+                    }
+                    if (currentPiece) {
+                        const { piece, type } = currentPiece;
+                        for (let row = 0; row < piece.length; row++) {
+                            for (let col = 0; col < piece[row].length; col++) {
+                                if (piece[row][col]) {
+                                    newGrid[piecePosition.x + row][piecePosition.y + col] = type;
+                                }
+                            }
+                        }
+                    }
+                    socket.emit('updatedGame', { roomName: room, playerName: playerName, grid: newGrid });
+                    return newPile;
+                });
+            }
+        });
+        return () => {
+            socket.off('gameScored');
+        };
+    }, [socket, playerName, numCols, currentPiece, piecePosition, room, numRows]);
+
+       
+
+
     const getCellClassName = (value, isShadow = false) => {
         if (isShadow) {
             return 'cell-shadow';
@@ -272,6 +332,7 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
             case 'L': return 'cell-L';
             case 'J': return 'cell-J';
             case 'Z': return 'cell-Z';
+            case 'M': return 'cell-malus';
             default: return 'cell-default';
         }
     };

@@ -98,6 +98,7 @@ help:
 	@echo "$(CYAN)- all$(RESET)		Build, start, and show the logs of the docker containers"
 	@echo "$(CYAN)- re$(RESET)		Clean everything and start the docker containers"
 	@echo "$(CYAN)- test$(RESET)		Run the tests"
+	@echo "$(CYAN)- db$(RESET)		Access the database"
 
 .DEFAULT:
 	@echo "[ERROR] Unknown target '$@'. Use 'make help' to see available commands."

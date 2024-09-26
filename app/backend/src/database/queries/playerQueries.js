@@ -125,6 +125,21 @@ async function updatePlayerRoomName(id, roomName) {
     }
 }
 
+async function updatePlayerScore(id, score) {
+    try {
+        const db = await dbModule.connect();
+        const queryGet = 'SELECT * FROM players WHERE id = ?';
+        if (!await dbModule.get(queryGet, [id])) {
+            throw new Error('Player not found');
+        }
+        const query = 'UPDATE players SET score = ? WHERE id = ?';
+        const result = await dbModule.run(query, [score, id]);
+        return result.changes; 
+    } catch (err) {
+        throw new Error(`Error updating player score: ${err.message}`);
+    }
+}
+
 async function deletePlayerById(id) {
     try {
         const db = await dbModule.connect();
@@ -151,5 +166,6 @@ module.exports = {
     updatePlayerUsername,
     updatePlayerConnect,
     updatePlayerRoomName,
+    updatePlayerScore,
     deletePlayerById
 };
