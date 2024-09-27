@@ -36,7 +36,6 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
     const [currentPiece, setCurrentPiece] = useState(null);
     const [piecePosition, setPiecePosition] = useState({ x: 0, y: 0 });
     const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
-    const [isGameOver, setIsGameOver] = useState(false);
     const [isFastDropping, setIsFastDropping] = useState(false);
     const [pieceQueue, setPieceQueue] = useState([]); // Updated for queue system
     const [shadowPosition, setShadowPosition] = useState({ x: 0, y: 0 });
@@ -63,6 +62,22 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
         return true;
     }, [numRows, numCols, pile]);
 
+    const spawnPiece = useCallback(() => {
+        const [nextPiece, ...remainingQueue] = pieceQueue;
+        setPieceQueue(remainingQueue);
+
+        if (nextPiece) {
+            const initialPosition = {
+                x: 0,
+                y: Math.floor(numCols / 2) - Math.floor(nextPiece.piece[0].length / 2)
+            };
+            setCurrentPiece(nextPiece);
+            setPiecePosition(initialPosition);
+        } else {
+            setCurrentPiece(null);
+        }
+    }, [numCols, pieceQueue]);
+    
     // Merge the current piece to the pile
     const mergePieceToPile = useCallback((piece, posX, posY) => {
         const newPile = pile.map(row => [...row]);
@@ -147,28 +162,8 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
         setPiecePosition({ x: dropX, y: piecePosition.y });
         mergePieceToPile(currentPiece.piece, dropX, piecePosition.y);
     
-        const [nextPiece, ...remainingQueue] = pieceQueue;
-        setPieceQueue(remainingQueue);
-    
-        if (nextPiece) {
-            const initialPosition = {
-                x: 0,
-                y: Math.floor(numCols / 2) - Math.floor(nextPiece.piece[0].length / 2)
-            };
-    
-            // Check if the new piece can be placed at the top of the grid
-            if (canPlacePiece(nextPiece.piece, initialPosition.x, initialPosition.y)) {
-                setCurrentPiece(nextPiece);
-                setPiecePosition(initialPosition);
-            } else {
-                // Game Over if the new piece can't be placed
-                setIsGameOver(true);
-                alert("Game Over!");
-            }
-        } else {
-            setCurrentPiece(null);
-        }
-    }, [currentPiece, piecePosition, pieceQueue, mergePieceToPile, canPlacePiece, numCols]);
+        spawnPiece();
+    }, [currentPiece, piecePosition, mergePieceToPile, canPlacePiece, spawnPiece]);
     
     // Move the current piece horizontally
     const movePieceHorizontally = useCallback((direction) => {
@@ -184,7 +179,7 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
 
     // Automatically drop the piece down or merge it to the pile if it can't move further
     useEffect(() => {
-        if (!currentPiece || isGameOver) return;
+        if (!currentPiece) return;
         const interval = setInterval(() => {
             if (canPlacePiece(currentPiece.piece, piecePosition.x + 1, piecePosition.y)) {
                 setPiecePosition(prevPosition => ({
@@ -193,30 +188,11 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
                 }));
             } else {
                 mergePieceToPile(currentPiece.piece, piecePosition.x, piecePosition.y);
-                const [nextPiece, ...remainingQueue] = pieceQueue;
-                setPieceQueue(remainingQueue);
-    
-                if (nextPiece) {
-                    const initialPosition = {
-                        x: 0,
-                        y: Math.floor(numCols / 2) - Math.floor(nextPiece.piece[0].length / 2)
-                    };
-    
-                    // Check if the new piece can be placed at the top of the grid
-                    if (canPlacePiece(nextPiece.piece, initialPosition.x, initialPosition.y)) {
-                        setCurrentPiece(nextPiece);
-                        setPiecePosition(initialPosition);
-                    } else {
-                        setIsGameOver(true);
-                        alert("Game Over!");
-                    }
-                } else {
-                    setCurrentPiece(null);
-                }
+                spawnPiece();
             }
         }, isFastDropping ? 100 : 1000);
         return () => clearInterval(interval);
-    }, [currentPiece, piecePosition, isFastDropping, pieceQueue, canPlacePiece, mergePieceToPile, numCols, isGameOver]);
+    }, [currentPiece, piecePosition, isFastDropping, pieceQueue, canPlacePiece, mergePieceToPile, numCols, spawnPiece]);
     
     useEffect(() => {
         if (currentPiece) {
@@ -249,7 +225,7 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
     // Handle keyboard input for piece movement
     useEffect(() => {
         const handleKeyDown = (event) => {
-            if (!currentPiece || isGameOver) return; // Disable controls if game is over
+            if (!currentPiece) return; // Disable controls if game is over
             switch (event.key) {
                 case 'ArrowLeft':
                     movePieceHorizontally(-1);
@@ -276,16 +252,13 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
                 setIsFastDropping(false);
             }
         };
-    
-        if (!isGameOver) {
-            window.addEventListener('keydown', handleKeyDown);
-            window.addEventListener('keyup', handleKeyUp);
-        }
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, [currentPiece, piecePosition, movePieceHorizontally, rotatePiece, dropPieceToBottom, isGameOver]);
+    }, [currentPiece, piecePosition, movePieceHorizontally, rotatePiece, dropPieceToBottom]);
     
     // Update shadow position of the piece
     useEffect(() => {
