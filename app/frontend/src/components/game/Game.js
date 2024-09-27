@@ -36,6 +36,7 @@ const Game = () => {
 
     const [players, setPlayers] = useState([]); 
     const [playerGrids, setPlayerGrids] = useState({});
+    const [playerScores, setPlayerScores] = useState({});
 
     const [isCreator, setIsCreator] = useState(false);
     const [showOverlay, setShowOverlay] = useState(true); 
@@ -104,10 +105,16 @@ const Game = () => {
             setTimeout(() => navigate('/home'), 2500);
         });
 
-        socket.on('gameUpdated', ({ playerName, grid }) => {
+        socket.on('gameUpdated', ({ playerName, grid, score }) => {
             setPlayerGrids((prevGrids) => ({
                 ...prevGrids,
                 [playerName]: grid,
+
+            }));
+
+            setPlayerScores((prevScores) => ({
+                ...prevScores,
+                [playerName]: score, // Assuming `score` is the new score received
             }));
         });
 

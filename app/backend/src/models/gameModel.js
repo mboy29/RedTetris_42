@@ -133,7 +133,8 @@ class Game {
         for (const piece of await Piece.getPieces(game.id)) {
             newGame.pieces.push(new Piece(piece.type));
         }
-        for (const score of await queries.getGameScores(game.id)) {
+        const scores = await queries.getGameScoresByGame(game.id);
+        for (const score of await queries.getGameScoresByGame(game.id)) {
             newGame.scores[score.player_id] = score.score;
         }
         return newGame;
@@ -153,10 +154,15 @@ class Game {
         for (const piece of await Piece.getPieces(game.id)) {
             newGame.pieces.push(new Piece(piece.type));
         }
-        for (const score of await queries.getGameScores(id)) {
+        const scores = await queries.getGameScoresByGame(game.id);
+        for (const score of await queries.getGameScoresByGame(id)) {
             newGame.scores[score.player_id] = score.score;
         }
         return newGame;
+    }
+
+    async getPlayerScore(player) {
+        return this.scores[player.id];
     }
 
     isGamePlayer(player) {
@@ -240,6 +246,7 @@ class Game {
                 this.players.push(player);
                 await queries.addPlayerToGame(this.id, player.id);
                 await player.joinGame(socket, this.getName());
+                this.scores[player.id] = 0;
             }
         }
     }
@@ -251,6 +258,7 @@ class Game {
                 this.players.splice(index, 1);
                 await queries.removePlayerFromGame(this.id, player.id);
                 await player.leaveGame(socket, score);
+                delete this.scores[player.id];
             }
         }
     }

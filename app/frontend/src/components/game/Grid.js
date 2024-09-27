@@ -69,7 +69,15 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
         for (let row = 0; row < piece.length; row++) {
             for (let col = 0; col < piece[row].length; col++) {
                 if (piece[row][col]) {
-                    newPile[posX + row][posY + col] = currentPiece.type;
+                    const newRow = posX + row;
+                    const newCol = posY + col;
+    
+                    // Boundary Checks
+                    if (newRow < 0 || newRow >= numRows || newCol < 0 || newCol >= numCols) {
+                        continue; // Skip setting this cell
+                    }
+    
+                    newPile[newRow][newCol] = currentPiece.type;
                 }
             }
         }
@@ -100,12 +108,21 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
         for (let row = 0; row < piece.length; row++) {
             for (let col = 0; col < piece[row].length; col++) {
                 if (piece[row][col]) {
-                    newGrid[posX + row][posY + col] = currentPiece.type;
+                    const newRow = posX + row;
+                    const newCol = posY + col;
+    
+                    // Boundary Checks
+                    if (newRow < 0 || newRow >= numRows || newCol < 0 || newCol >= numCols) {
+                        continue; // Skip setting this cell
+                    }
+    
+                    newGrid[newRow][newCol] = currentPiece.type;
                 }
             }
         }
         setGrid(newGrid);
     }, [numRows, numCols, pile, currentPiece]);
+    
 
     // Rotate the current piece
     const rotatePiece = useCallback(() => {
@@ -127,16 +144,25 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
         }
         setPiecePosition({ x: dropX, y: piecePosition.y });
         mergePieceToPile(currentPiece.piece, dropX, piecePosition.y);
-
+    
         const [nextPiece, ...remainingQueue] = pieceQueue;
         setPieceQueue(remainingQueue);
-
+    
         if (nextPiece) {
-            setCurrentPiece(nextPiece);
-            setPiecePosition({
+            const initialPosition = {
                 x: 0,
                 y: Math.floor(numCols / 2) - Math.floor(nextPiece.piece[0].length / 2)
-            });
+            };
+    
+            // Check if the new piece can be placed at the top of the grid
+            if (canPlacePiece(nextPiece.piece, initialPosition.x, initialPosition.y)) {
+                setCurrentPiece(nextPiece);
+                setPiecePosition(initialPosition);
+            } else {
+                // Game Over if the new piece can't be placed
+                setIsGameOver(true);
+                alert("Game Over!");
+            }
         } else {
             setCurrentPiece(null);
         }
@@ -155,9 +181,8 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
     }, [currentPiece, piecePosition, canPlacePiece]);
 
     // Automatically drop the piece down or merge it to the pile if it can't move further
-    // Automatically drop the piece down or merge it to the pile if it can't move further
     useEffect(() => {
-        if (!currentPiece) return;
+        if (!currentPiece || isGameOver) return;
         const interval = setInterval(() => {
             if (canPlacePiece(currentPiece.piece, piecePosition.x + 1, piecePosition.y)) {
                 setPiecePosition(prevPosition => ({
@@ -168,20 +193,28 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
                 mergePieceToPile(currentPiece.piece, piecePosition.x, piecePosition.y);
                 const [nextPiece, ...remainingQueue] = pieceQueue;
                 setPieceQueue(remainingQueue);
-
+    
                 if (nextPiece) {
-                    setCurrentPiece(nextPiece);
-                    setPiecePosition({
+                    const initialPosition = {
                         x: 0,
                         y: Math.floor(numCols / 2) - Math.floor(nextPiece.piece[0].length / 2)
-                    });
+                    };
+    
+                    // Check if the new piece can be placed at the top of the grid
+                    if (canPlacePiece(nextPiece.piece, initialPosition.x, initialPosition.y)) {
+                        setCurrentPiece(nextPiece);
+                        setPiecePosition(initialPosition);
+                    } else {
+                        setIsGameOver(true);
+                        alert("Game Over!");
+                    }
                 } else {
                     setCurrentPiece(null);
                 }
             }
         }, isFastDropping ? 100 : 1000);
         return () => clearInterval(interval);
-    }, [currentPiece, piecePosition, isFastDropping, pieceQueue, canPlacePiece, mergePieceToPile, numCols]);
+    }, [currentPiece, piecePosition, isFastDropping, pieceQueue, canPlacePiece, mergePieceToPile, numCols, isGameOver]);
     
     useEffect(() => {
         if (currentPiece) {
@@ -284,30 +317,20 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
         socket.on('gameScored', ({ scoredPlayerGame, lines }) => {
             if (scoredPlayerGame !== playerName) {
                 setPile(prevPile => {
-                    let newPile = [...prevPile];
-    
+                    const newPile = [...prevPile];
+        
                     for (let i = 0; i < lines; i++) {
                         newPile.shift();
                         newPile.push(Array(numCols).fill('M'));
                     }
     
-                    const newGrid = Array(numRows).fill().map(() => Array(numCols).fill(null));
-                    for (let row = 0; row < numRows; row++) {
-                        for (let col = 0; col < numCols; col++) {
-                            newGrid[row][col] = newPile[row][col];
-                        }
-                    }
                     if (currentPiece) {
-                        const { piece, type } = currentPiece;
-                        for (let row = 0; row < piece.length; row++) {
-                            for (let col = 0; col < piece[row].length; col++) {
-                                if (piece[row][col]) {
-                                    newGrid[piecePosition.x + row][piecePosition.y + col] = type;
-                                }
-                            }
-                        }
+                        updateGridWithPieceAndPile(currentPiece.piece, piecePosition.x, piecePosition.y);
+                    } else {
+                        setGrid(newPile.map(row => row.map(cell => cell || null)));  // Ensure null cells are updated
                     }
-                    socket.emit('updatedGame', { roomName: room, playerName: playerName, grid: newGrid });
+    
+                    socket.emit('updatedGame', { roomName: room, playerName: playerName, grid: newPile });
                     return newPile;
                 });
             }
@@ -315,14 +338,20 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
         return () => {
             socket.off('gameScored');
         };
-    }, [socket, playerName, numCols, currentPiece, piecePosition, room, numRows]);
-
-       
-
+    }, [socket, playerName, numCols, currentPiece, piecePosition, room, numRows, updateGridWithPieceAndPile]);
+    
+    useEffect(() => {
+        if (otherPlayer && otherPlayer !== playerName && otherGrid) {
+            setGrid(otherGrid);
+        }
+    }, [otherPlayer, playerName, otherGrid]); // Dependencies for when the effect should run
+    
 
     const getCellClassName = (value, isShadow = false) => {
         if (isShadow) {
             return 'cell-shadow';
+        } else if (value === null) {
+            return 'cell-default';
         }
         switch (value) {
             case 'S': return 'cell-S';
@@ -352,6 +381,7 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
     return (
         <div className="grid-container">
             <div className={`grid ${!isInteractable ? 'grid-non-interactable' : ''}`}>
+
                 {grid.map((row, rowIndex) => (
                     <div key={rowIndex} className="grid-row">
                         {row.map((cell, colIndex) => (
