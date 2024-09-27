@@ -243,7 +243,7 @@ const Game = () => {
                                 <div className='w-100 h-100 game-grids'>
                                     <div className='game-player-container'>
                                         <div className='game-player'>
-                                            <Grid socket={socket} isInteractable={true} room={room} playerName={session.username}/>
+                                            <Grid socket={socket} isInteractable={true} room={room} playerName={session.username} playerScore={playerScores[session.username] || 0}/>
                                         </div>
                                     </div>
                                     
@@ -254,12 +254,14 @@ const Game = () => {
                                                     <Grid 
                                                         socket={socket} 
                                                         isInteractable={false} 
-                                                        room={room} 
+                                                        room={room}
                                                         playerName={session.username}
+                                                        playerScore={playerScores[player.username] || 0}
                                                         otherPlayer={player.username}
                                                         otherGrid={playerGrids[player.username] || null} // Pass the updated grid or an empty array
+                                                        otherScore={playerScores[player.username] || 0} // Pass the updated
                                                     />
-                                                    <div className="game-other-username">{player.username}</div>
+                                                    <div className="game-other-username">{player.username} {playerScores[player.username] || 0}</div>
                                                 </div>
                                             ))}
                                         </div>
@@ -269,7 +271,7 @@ const Game = () => {
                                 <div className='w-100 h-100 game-grids'> 
                                     <div className='game-solo-container'>
                                         <div className='game-player'>
-                                            <Grid socket={socket} isInteractable={true} room={room} playerName={session.username}/>
+                                            <Grid socket={socket} isInteractable={true} room={room} playerName={session.username} playerScore={playerScores[session.username] || 0}/>
                                         </div>
                                     </div>
                                 </div>

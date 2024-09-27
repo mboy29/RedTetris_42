@@ -28,10 +28,11 @@ import './../../css/grid.css';
 
 // +------------------- COMPONENT -------------------+
 
-const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, otherGrid = null}) => {
+const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlayer = null, otherGrid = null, otherScore = null}) => {
     const numRows = 20;
     const numCols = 10;
     const [grid, setGrid] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
+    const [score, setScore] = useState(0);
     const [currentPiece, setCurrentPiece] = useState(null);
     const [piecePosition, setPiecePosition] = useState({ x: 0, y: 0 });
     const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
@@ -39,6 +40,7 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
     const [isFastDropping, setIsFastDropping] = useState(false);
     const [pieceQueue, setPieceQueue] = useState([]); // Updated for queue system
     const [shadowPosition, setShadowPosition] = useState({ x: 0, y: 0 });
+    
 
     // Check if a piece can be placed at a given position
     const canPlacePiece = useCallback((piece, posX, posY) => {
@@ -341,10 +343,13 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
     }, [socket, playerName, numCols, currentPiece, piecePosition, room, numRows, updateGridWithPieceAndPile]);
     
     useEffect(() => {
-        if (otherPlayer && otherPlayer !== playerName && otherGrid) {
+        if (otherPlayer && otherPlayer !== playerName && otherScore && otherGrid) {
             setGrid(otherGrid);
+            setScore(otherScore);
+        } else {
+            setScore(playerScore);
         }
-    }, [otherPlayer, playerName, otherGrid]); // Dependencies for when the effect should run
+    }, [otherPlayer, playerName, playerScore, otherGrid, otherScore]); // Dependencies for when the effect should run
     
 
     const getCellClassName = (value, isShadow = false) => {
@@ -397,7 +402,10 @@ const Grid = ({ socket, isInteractable, room, playerName, otherPlayer = null, ot
             </div>
     
             {isInteractable && (
-                <Queue pieceQueue={pieceQueue} getCellClassName={getCellClassName} />
+                <div className="queue-and-score d-flex flex-column align-items-center">
+                    <Queue pieceQueue={pieceQueue} getCellClassName={getCellClassName} />
+                    <h3 className="mt-3">Score {score}</h3>
+                </div>
             )}
         </div>
     );

@@ -190,7 +190,6 @@ const scoreGame = async (io, socket, { roomName, playerName, lines }) => {
             throw new Error('Player not in game');
         }
         await game.updateScore(player, lines);
-        console.log("HERE")
         io.to(roomName).emit('gameScored', { scoredPlayerGame: playerName, lines: lines });
     } catch (error) {
         console.log('[GAME] Error scoring game:', error.message);
