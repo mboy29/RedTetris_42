@@ -1,329 +1,213 @@
-// +------------------------------------------------+
-// |          REDTETRIS GRID GAME COMPONENT         |
-// +------------------------------------------------+
-
-// +------------------- SUMMARY --------------------+
-/*
-    This module defines the `Grid` component for the
-    RedTetris frontend. It displays the game grid and
-    handles the logic for the game pieces :
-    - Moving horizontally
-    - Rotating
-    - Dropping to the bottom
-    - Fast dropping
-    - Merging piece to pile
-    - Updating grid with piece and pile
-    - Handling game pieces from the server
-    - Handling key events
-    - Handling shadow cells
-    - Displaying the next 4 pieces in the queue
-*/
-
-// +----------------- REQUIREMENTS -----------------+
-
-import React, { useEffect, useState, useCallback } from 'react';
-import Queue from './Queue';
-
+import React, { useState, useEffect, useCallback } from 'react';
 import './../../css/grid.css';
 
-// +------------------- COMPONENT -------------------+
-
-const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlayer = null, otherGrid = null, otherScore = null}) => {
+const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlayer = null, otherGrid = null, otherScore = null }) => {
     const numRows = 20;
     const numCols = 10;
-    const [grid, setGrid] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
-    const [score, setScore] = useState(0);
+    const dropInterval = 1000; // 1 second drop interval
+
+    const [pieceQueue, setPieceQueue] = useState([]);
     const [currentPiece, setCurrentPiece] = useState(null);
-    const [piecePosition, setPiecePosition] = useState({ x: 0, y: 0 });
+    const [currentPosition, setCurrentPosition] = useState({ row: 0, col: 3 }); // Initial spawn position
     const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
-    const [isFastDropping, setIsFastDropping] = useState(false);
-    const [pieceQueue, setPieceQueue] = useState([]); // Updated for queue system
-    const [shadowPosition, setShadowPosition] = useState({ x: 0, y: 0 });
-    
+    const [gameOver, setGameOver] = useState(false); // New state for game over
 
-    // Check if a piece can be placed at a given position
-    const canPlacePiece = useCallback((piece, posX, posY) => {
-        for (let row = 0; row < piece.length; row++) {
-            for (let col = 0; col < piece[row].length; col++) {
-                if (piece[row][col]) {
-                    const newRow = posX + row;
-                    const newCol = posY + col;
-                    if (
-                        newRow >= numRows ||
-                        newCol < 0 ||
-                        newCol >= numCols ||
-                        (newRow >= 0 && pile[newRow][newCol])
-                    ) {
-                        return false;
+    // Function to check collision with the pile or grid bottom
+    const checkCollision = useCallback((newPile, newRow, newCol, piece) => {
+        if (newRow >= numRows) return true; // Bottom of grid
+        for (let row = 0; row < piece.piece.length; row++) {
+            for (let col = 0; col < piece.piece[row].length; col++) {
+                if (piece.piece[row][col] !== null) {
+                    const targetRow = newRow + row;
+                    const targetCol = newCol + col;
+                    if (targetRow >= numRows || targetCol < 0 || targetCol >= numCols || newPile[targetRow][targetCol] !== null) {
+                        return true;
                     }
                 }
             }
         }
-        return true;
-    }, [numRows, numCols, pile]);
+        return false;
+    }, [numRows, numCols]);
 
-    const spawnPiece = useCallback(() => {
-        const [nextPiece, ...remainingQueue] = pieceQueue;
-        setPieceQueue(remainingQueue);
+    // Function to spawn a new piece from the queue
+    const spawnNewPiece = useCallback((newPile, piece) => {
+        if (gameOver) {
+            console.log('Game over! Cannot spawn new piece.');
+            return; // Do nothing if the game is over
+        }
 
-        if (nextPiece) {
-            const initialPosition = {
-                x: 0,
-                y: Math.floor(numCols / 2) - Math.floor(nextPiece.piece[0].length / 2)
-            };
-            setCurrentPiece(nextPiece);
-            setPiecePosition(initialPosition);
-        } else {
+        console.log('Spawning new piece:', piece, newPile);
+        setCurrentPiece(piece);
+        // Set piece to spawn at the top center of the grid
+        setCurrentPosition({ 
+            row: 0, 
+            col: Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2) 
+        });
+
+        // Check for immediate collision to set game over
+        if (checkCollision(newPile, 0, Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2), piece)) {
+            setGameOver(true);
             setCurrentPiece(null);
+            console.log("Game Over! No space to place new piece.", newPile);
         }
-    }, [numCols, pieceQueue]);
-    
-    // Merge the current piece to the pile
-    const mergePieceToPile = useCallback((piece, posX, posY) => {
-        const newPile = pile.map(row => [...row]);
-        let linesCleared = 0;
-    
-        for (let row = 0; row < piece.length; row++) {
-            for (let col = 0; col < piece[row].length; col++) {
-                if (piece[row][col]) {
-                    const newRow = posX + row;
-                    const newCol = posY + col;
-    
-                    // Boundary Checks
-                    if (newRow < 0 || newRow >= numRows || newCol < 0 || newCol >= numCols) {
-                        continue; // Skip setting this cell
-                    }
-    
-                    newPile[newRow][newCol] = currentPiece.type;
+    }, [gameOver, numCols, checkCollision]);
+
+    // Function to merge current piece into the pile when it can no longer move
+    const mergePieceToPile = useCallback((position) => {
+        const newPile = pile.map((row) => [...row]); // Clone pile
+        for (let row = 0; row < currentPiece.piece.length; row++) {
+            for (let col = 0; col < currentPiece.piece[row].length; col++) {
+                if (currentPiece.piece[row][col] !== null) {
+                    const targetRow = position.row + row;
+                    const targetCol = position.col + col;
+                    newPile[targetRow][targetCol] = currentPiece.type;
                 }
             }
-        }
-        for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
-            if (newPile[rowIndex].every(cell => cell) && !newPile[rowIndex].includes('M')) {
-                linesCleared++;
-                newPile.splice(rowIndex, 1);
-                newPile.unshift(Array(numCols).fill(null)); // Add a new empty row at the top
-            }
-        }
-    
-        if (linesCleared > 0) {
-            socket.emit('scoreGame', { roomName: room, playerName: playerName, lines: linesCleared });
         }
         setPile(newPile);
-        socket.emit('updatedGame', { roomName: room, playerName: playerName, grid: newPile });
-    }, [pile, currentPiece, room, socket, playerName]);
-    
+        setCurrentPiece(null); // Clear current piece
+        // Only spawn a new piece if the game is still ongoing
+        if (!gameOver && pieceQueue.length > 0) {
+            const nextPiece = pieceQueue[0];
+            setPieceQueue(pieceQueue.slice(1)); // Remove the used piece from the queue
+            spawnNewPiece(newPile, nextPiece); // Spawn the next piece
+        }
+    }, [currentPiece, pieceQueue, spawnNewPiece, pile, gameOver]);
 
-    // Update the grid to reflect the current piece and pile state
-    const updateGridWithPieceAndPile = useCallback((piece, posX, posY) => {
-        const newGrid = Array(numRows).fill().map(() => Array(numCols).fill(null));
-        for (let row = 0; row < numRows; row++) {
-            for (let col = 0; col < numCols; col++) {
-                newGrid[row][col] = pile[row][col];
-            }
-        }
-        for (let row = 0; row < piece.length; row++) {
-            for (let col = 0; col < piece[row].length; col++) {
-                if (piece[row][col]) {
-                    const newRow = posX + row;
-                    const newCol = posY + col;
-    
-                    // Boundary Checks
-                    if (newRow < 0 || newRow >= numRows || newCol < 0 || newCol >= numCols) {
-                        continue; // Skip setting this cell
-                    }
-    
-                    newGrid[newRow][newCol] = currentPiece.type;
-                }
-            }
-        }
-        setGrid(newGrid);
-    }, [numRows, numCols, pile, currentPiece]);
-    
-
-    // Rotate the current piece
-    const rotatePiece = useCallback(() => {
-        if (!currentPiece) return;
-        const rotatedPiece = currentPiece.piece[0].map((_, index) =>
-            currentPiece.piece.map(row => row[index]).reverse()
-        );
-        if (canPlacePiece(rotatedPiece, piecePosition.x, piecePosition.y)) {
-            setCurrentPiece({ ...currentPiece, piece: rotatedPiece });
-        }
-    }, [currentPiece, piecePosition, canPlacePiece]);
-
-    // Drop the current piece to the bottom of the grid
-    const dropPieceToBottom = useCallback(() => {
-        if (!currentPiece) return;
-        let dropX = piecePosition.x;
-        while (canPlacePiece(currentPiece.piece, dropX + 1, piecePosition.y)) {
-            dropX += 1;
-        }
-        setPiecePosition({ x: dropX, y: piecePosition.y });
-        mergePieceToPile(currentPiece.piece, dropX, piecePosition.y);
-    
-        spawnPiece();
-    }, [currentPiece, piecePosition, mergePieceToPile, canPlacePiece, spawnPiece]);
-    
-    // Move the current piece horizontally
-    const movePieceHorizontally = useCallback((direction) => {
-        if (!currentPiece) return;
-        const newY = piecePosition.y + direction;
-        if (canPlacePiece(currentPiece.piece, piecePosition.x, newY)) {
-            setPiecePosition(prevPosition => ({
-                ...prevPosition,
-                y: newY,
-            }));
-        }
-    }, [currentPiece, piecePosition, canPlacePiece]);
-
-    // Automatically drop the piece down or merge it to the pile if it can't move further
-    useEffect(() => {
-        if (!currentPiece) return;
-        const interval = setInterval(() => {
-            if (canPlacePiece(currentPiece.piece, piecePosition.x + 1, piecePosition.y)) {
-                setPiecePosition(prevPosition => ({
-                    x: prevPosition.x + 1,
-                    y: prevPosition.y,
-                }));
-            } else {
-                mergePieceToPile(currentPiece.piece, piecePosition.x, piecePosition.y);
-                spawnPiece();
-            }
-        }, isFastDropping ? 100 : 1000);
-        return () => clearInterval(interval);
-    }, [currentPiece, piecePosition, isFastDropping, pieceQueue, canPlacePiece, mergePieceToPile, numCols, spawnPiece]);
-    
-    useEffect(() => {
-        if (currentPiece) {
-            updateGridWithPieceAndPile(currentPiece.piece, piecePosition.x, piecePosition.y);
-        }
-    }, [currentPiece, piecePosition, pile, updateGridWithPieceAndPile]);
-
+    // Fetch pieces from the server on mount
     useEffect(() => {
         if (socket && isInteractable) {
             socket.on('gamePieces', (pieces) => {
-                if (pieces.length) {
-                    setPieceQueue(prevQueue => [...prevQueue, ...pieces]);
-                    if (!currentPiece) {
-                        const [firstPiece, ...remainingQueue] = pieces;
-                        setPieceQueue(remainingQueue);
-                        setCurrentPiece(firstPiece);
-                        setPiecePosition({
-                            x: 0,
-                            y: Math.floor(numCols / 2) - Math.floor(firstPiece.piece[0].length / 2)
-                        });
-                    }
+                console.log('Received game pieces:', pieces);
+                setPieceQueue(pieces);  // Assuming 'pieces' is an array of piece objects
+                if (!gameOver) {
+                    spawnNewPiece(pile, pieces[0]); // Spawn the first piece on receiving pieces only if game is not over
                 }
             });
             return () => {
                 socket.off('gamePieces');
             };
         }
-    }, [socket, numCols, currentPiece, isInteractable]);
+    }, [socket, isInteractable, spawnNewPiece, gameOver, pile]); // Added gameOver to dependencies
+
+    // Move the piece down every 'dropInterval'
+    useEffect(() => {
+        const dropPiece = () => {
+            if (!currentPiece || gameOver) return; // No piece to move or game over
+
+            const newRow = currentPosition.row + 1;
+            const newCol = currentPosition.col;
+
+            if (checkCollision(pile, newRow, newCol, currentPiece)) {
+                mergePieceToPile(currentPosition); // If there's a collision, merge the piece to the pile
+            } else {
+                setCurrentPosition({ row: newRow, col: newCol });
+            }
+        };
+
+        const interval = setInterval(dropPiece, dropInterval);
+        return () => clearInterval(interval); // Clean up interval on unmount
+    }, [currentPosition, currentPiece, gameOver, dropInterval, checkCollision, mergePieceToPile, pile]); // Dropping logic depends on position and piece
 
     // Handle keyboard input for piece movement
     useEffect(() => {
+        const moveLeft = (pile) => {
+            if (!gameOver && !checkCollision(pile, currentPosition.row, currentPosition.col - 1, currentPiece)) {
+                setCurrentPosition((pos) => ({ ...pos, col: pos.col - 1 }));
+            }
+        };
+
+        const moveRight = (pile) => {
+            if (!gameOver && !checkCollision(pile, currentPosition.row, currentPosition.col + 1, currentPiece)) {
+                setCurrentPosition((pos) => ({ ...pos, col: pos.col + 1 }));
+            }
+        };
+
+        const rotatePiece = (pile) => {
+            // Rotate the piece 90 degrees clockwise
+            const rotatedPiece = {
+                ...currentPiece,
+                piece: currentPiece.piece[0].map((_, index) => currentPiece.piece.map(row => row[index])).reverse() // Rotate logic
+            };
+
+            // Check for collision after rotation
+            if (!gameOver && !checkCollision(pile, currentPosition.row, currentPosition.col, rotatedPiece)) {
+                console.log('setCurrentPiece', rotatedPiece);
+                setCurrentPiece(rotatedPiece);
+            }
+        };
+
+        const fastDrop = (pile) => {
+            if (gameOver) return; // Do nothing if the game is over
+
+            const newRow = currentPosition.row + 1;
+            const newCol = currentPosition.col;
+
+            // Move the piece down immediately if no collision
+            if (!checkCollision(pile, newRow, newCol, currentPiece)) {
+                setCurrentPosition({ row: newRow, col: newCol });
+            } else {
+                mergePieceToPile(currentPosition); // Merge if collision occurs
+            }
+        };
+
+        const instantDrop = (pile) => {
+            if (gameOver) return; // Do nothing if the game is over
+            
+            let newRow = currentPosition.row;
+    
+            while (!checkCollision(pile, newRow + 1, currentPosition.col, currentPiece)) {
+                newRow++;
+            }
+            setCurrentPosition({ row: newRow, col: currentPosition.col });
+            mergePieceToPile({ row: newRow, col: currentPosition.col }); // Pass final position
+        };
+
         const handleKeyDown = (event) => {
-            if (!currentPiece) return; // Disable controls if game is over
             switch (event.key) {
                 case 'ArrowLeft':
-                    movePieceHorizontally(-1);
+                    moveLeft(pile);
                     break;
                 case 'ArrowRight':
-                    movePieceHorizontally(1);
+                    moveRight(pile);
                     break;
-                case 'ArrowUp':
-                    rotatePiece();
+                case 'ArrowUp': // Handle rotation
+                    rotatePiece(pile);
                     break;
-                case 'ArrowDown':
-                    setIsFastDropping(true);
+                case 'ArrowDown': // Handle fast drop
+                    fastDrop(pile);
                     break;
                 case ' ':
-                    dropPieceToBottom();
+                    instantDrop(pile);
                     break;
                 default:
                     break;
             }
         };
-    
-        const handleKeyUp = (event) => {
-            if (event.key === 'ArrowDown') {
-                setIsFastDropping(false);
-            }
-        };
+
         window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('keyup', handleKeyUp);
         };
-    }, [currentPiece, piecePosition, movePieceHorizontally, rotatePiece, dropPieceToBottom]);
-    
-    // Update shadow position of the piece
-    useEffect(() => {
-        if (!currentPiece) return;
-        let dropY = piecePosition.y;
-        let dropX = piecePosition.x;
+    }, [currentPosition, currentPiece, gameOver, checkCollision, mergePieceToPile, pile]); // Dependencies remain the same
 
-        while (canPlacePiece(currentPiece.piece, dropX + 1, dropY)) {
-            dropX += 1;
-        }
-
-        setShadowPosition({ x: dropX, y: dropY });
-    }, [currentPiece, piecePosition, canPlacePiece]);
-
-
-    // Merge the other player's grid with the current player's grid
-    useEffect(() => {
-        if (otherPlayer && otherPlayer !== playerName && otherGrid) {
-            setGrid(prevGrid => {
-                const newGrid = prevGrid.map((row, rowIndex) => {
-                    return row.map((cell, colIndex) => {
-                        return otherGrid[rowIndex][colIndex] || cell;
-                    });
-                });
-                return newGrid;
-            });
-        }
-    }, [otherPlayer, otherGrid, playerName]);
-
-    useEffect(() => {
-        socket.on('gameScored', ({ scoredPlayerGame, lines }) => {
-            if (scoredPlayerGame !== playerName) {
-                setPile(prevPile => {
-                    const newPile = [...prevPile];
-        
-                    for (let i = 0; i < lines; i++) {
-                        newPile.shift();
-                        newPile.push(Array(numCols).fill('M'));
+    const renderGrid = () => {
+        const newGrid = pile.map((row) => [...row]);
+        if (currentPiece) {
+            for (let row = 0; row < currentPiece.piece.length; row++) {
+                for (let col = 0; col < currentPiece.piece[row].length; col++) {
+                    if (currentPiece.piece[row][col] !== null) {
+                        const targetRow = currentPosition.row + row;
+                        const targetCol = currentPosition.col + col;
+                        if (targetRow < numRows && targetCol < numCols) {
+                            newGrid[targetRow][targetCol] = currentPiece.type;
+                        }
                     }
-    
-                    if (currentPiece) {
-                        updateGridWithPieceAndPile(currentPiece.piece, piecePosition.x, piecePosition.y);
-                    } else {
-                        setGrid(newPile.map(row => row.map(cell => cell || null)));  // Ensure null cells are updated
-                    }
-    
-                    socket.emit('updatedGame', { roomName: room, playerName: playerName, grid: newPile });
-                    return newPile;
-                });
+                }
             }
-        });
-        return () => {
-            socket.off('gameScored');
-        };
-    }, [socket, playerName, numCols, currentPiece, piecePosition, room, numRows, updateGridWithPieceAndPile]);
-    
-    useEffect(() => {
-        if (otherPlayer && otherPlayer !== playerName && otherScore && otherGrid) {
-            setGrid(otherGrid);
-            setScore(otherScore);
-        } else {
-            setScore(playerScore);
         }
-    }, [otherPlayer, playerName, playerScore, otherGrid, otherScore]); // Dependencies for when the effect should run
-    
+        return newGrid;
+    };
 
     const getCellClassName = (value, isShadow = false) => {
         if (isShadow) {
@@ -344,46 +228,29 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
         }
     };
 
-    const isShadowCell = (rowIndex, colIndex) => {
-        if (!currentPiece) return false;
-        const piece = currentPiece.piece;
-        const shadowX = shadowPosition.x;
-        const shadowY = shadowPosition.y;
-
-        if (piece[rowIndex - piecePosition.x]?.[colIndex - piecePosition.y]) {
-            return false;
-        }
-        return piece[rowIndex - shadowX]?.[colIndex - shadowY] ? true : false;
-    };
-
     return (
         <div className="grid-container">
-            <div className={`grid ${!isInteractable ? 'grid-non-interactable' : ''}`}>
-
-                {grid.map((row, rowIndex) => (
+            <div className={`grid ${!isInteractable || gameOver ? 'grid-non-interactable' : ''}`}>
+                {renderGrid().map((row, rowIndex) => (
                     <div key={rowIndex} className="grid-row">
                         {row.map((cell, colIndex) => (
                             <div
                                 key={colIndex}
-                                className={`grid-cell ${getCellClassName(cell)} ${
-                                    isShadowCell(rowIndex, colIndex) ? getCellClassName(currentPiece?.type, true) : ''
-                                }`}
+                                className={`grid-cell ${getCellClassName(cell)}`}
                             ></div>
                         ))}
                     </div>
                 ))}
             </div>
-    
-            {isInteractable && (
-                <div className="queue-and-score d-flex flex-column align-items-center">
-                    <Queue pieceQueue={pieceQueue} getCellClassName={getCellClassName} />
-                    <h3 className="mt-3">Score {score}</h3>
+            {gameOver && (
+                <div className="game-over">
+                    <h1>Game Over!</h1>
+                    <p>Your score: {playerScore}</p>
+                    {/* You can add more actions like restart or quit here */}
                 </div>
             )}
         </div>
     );
 };
-
-// +------------------- EXPORTS ---------------------+
 
 export default Grid;

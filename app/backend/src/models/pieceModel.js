@@ -24,40 +24,40 @@ const queries = require('../database/queries/piecesQueries');
 
 const tetrominos = {
     L: [
-        [0, 0, 1],
-        [1, 1, 1],
-        [0, 0, 0],
+        [null, null, 'L'],
+        ['L', 'L', 'L'],
+        [null, null, null],
     ],
     I: [
-        [1, 1, 1, 1],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
+        ['I', 'I', 'I', 'I'],
+        [null, null, null, null],
+        [null, null, null, null],
+        [null, null, null, null],
     ],
     J: [
-        [1, 0, 0],
-        [1, 1, 1],
-        [0, 0, 0],
+        ['J', null, null],
+        ['J', 'J', 'J'],
+        [null, null, null],
     ],
     S: [
-        [0, 1, 1],
-        [1, 1, 0],
-        [0, 0, 0],
+        [null, 'S', 'S'],
+        ['S', 'S', null],
+        [null, null, null],
     ],
     Z: [
-        [1, 1, 0],
-        [0, 1, 1],
-        [0, 0, 0],
+        ['Z', 'Z', null],
+        [null, 'Z', 'Z'],
+        [null, null, null],
     ],
     T: [
-        [0, 1, 0],
-        [1, 1, 1],
-        [0, 0, 0],
+        [null, 'T', null],
+        ['T', 'T', 'T'],
+        [null, null, null],
     ],
     O: [
-        [1, 1],
-        [1, 1],
-    ]
+        ['O', 'O'],
+        ['O', 'O'],
+    ],
 };
 
 
