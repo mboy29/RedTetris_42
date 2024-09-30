@@ -29,41 +29,57 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
         return false;
     }, [numRows, numCols]);
 
-    // Function to spawn a new piece from the queue
-    const spawnNewPiece = useCallback((newPile, piece) => {
-        if (gameOver) {
-            console.log('Game over! Cannot spawn new piece.');
-            return; // Do nothing if the game is over
+    const updatePile = useCallback((pile, position, piece = null) => {
+        if (!piece) {
+            piece = currentPiece;
         }
-
-        console.log('Spawning new piece:', piece, newPile);
-        setCurrentPiece(piece);
-        // Set piece to spawn at the top center of the grid
-        setCurrentPosition({ 
-            row: 0, 
-            col: Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2) 
-        });
-
-        // Check for immediate collision to set game over
-        if (checkCollision(newPile, 0, Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2), piece)) {
-            setGameOver(true);
-            setCurrentPiece(null);
-            console.log("Game Over! No space to place new piece.", newPile);
-        }
-    }, [gameOver, numCols, checkCollision]);
-
-    // Function to merge current piece into the pile when it can no longer move
-    const mergePieceToPile = useCallback((position) => {
         const newPile = pile.map((row) => [...row]); // Clone pile
-        for (let row = 0; row < currentPiece.piece.length; row++) {
-            for (let col = 0; col < currentPiece.piece[row].length; col++) {
-                if (currentPiece.piece[row][col] !== null) {
+        for (let row = 0; row < piece.piece.length; row++) {
+            for (let col = 0; col < piece.piece[row].length; col++) {
+                if (piece.piece[row][col] !== null) {
                     const targetRow = position.row + row;
                     const targetCol = position.col + col;
-                    newPile[targetRow][targetCol] = currentPiece.type;
+                    newPile[targetRow][targetCol] = piece.type;
                 }
             }
         }
+        return newPile;
+    }, [currentPiece]);
+
+    const spawnNewPiece = useCallback((newPile, piece) => {
+        if (gameOver) {
+            return;
+        }
+        setCurrentPiece(piece);
+        const initialPosition = { row: 0, col: Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2) };
+        setCurrentPosition(initialPosition);
+        if (checkCollision(newPile, 0, Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2), piece)) {
+            let lastLine = 0;
+            for (let i = piece.piece.length - 1; i >= 0; i--) {
+                if (piece.piece[i].some(cell => cell !== null)) {
+                    lastLine = piece.piece[i];
+                    break;
+                }
+            }
+
+            const lastPiece = {
+                piece: [lastLine],
+                type: piece.type
+            };
+            if (!checkCollision(newPile, 0, Math.floor(numCols / 2) - Math.floor(lastPiece.piece[0].length / 2), lastPiece)) {
+                const finalPile = updatePile(newPile, initialPosition, lastPiece);
+                setPile(finalPile);
+            }
+            setGameOver(true);
+            setCurrentPiece(null);
+        }
+    }, [gameOver, numCols, checkCollision, updatePile]);
+
+    
+
+    // Function to merge current piece into the pile when it can no longer move
+    const mergePieceToPile = useCallback((position) => {
+        const newPile = updatePile(pile, position);
         setPile(newPile);
         setCurrentPiece(null); // Clear current piece
         // Only spawn a new piece if the game is still ongoing
@@ -72,13 +88,12 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
             setPieceQueue(pieceQueue.slice(1)); // Remove the used piece from the queue
             spawnNewPiece(newPile, nextPiece); // Spawn the next piece
         }
-    }, [currentPiece, pieceQueue, spawnNewPiece, pile, gameOver]);
+    }, [pieceQueue, spawnNewPiece, gameOver, updatePile, pile]);
 
     // Fetch pieces from the server on mount
     useEffect(() => {
         if (socket && isInteractable) {
             socket.on('gamePieces', (pieces) => {
-                console.log('Received game pieces:', pieces);
                 setPieceQueue(pieces);  // Assuming 'pieces' is an array of piece objects
                 if (!gameOver) {
                     spawnNewPiece(pile, pieces[0]); // Spawn the first piece on receiving pieces only if game is not over
@@ -132,7 +147,6 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
 
             // Check for collision after rotation
             if (!gameOver && !checkCollision(pile, currentPosition.row, currentPosition.col, rotatedPiece)) {
-                console.log('setCurrentPiece', rotatedPiece);
                 setCurrentPiece(rotatedPiece);
             }
         };
