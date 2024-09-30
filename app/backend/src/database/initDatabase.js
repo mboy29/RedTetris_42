@@ -118,6 +118,24 @@ async function initGameScores() {
     }
 }
 
+async function initGameLosers() {
+    try {
+        const db = await dbModule.connect();
+
+        await dbModule.run(`CREATE TABLE IF NOT EXISTS game_losers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game_id INTEGER NOT NULL,
+            player_id INTEGER NOT NULL,
+            FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+        )`);
+
+        console.log('[DATABASE] Game Losers table created or already exists.');
+    } catch (err) {
+        console.error('[DATABASE] Error creating game_losers table:', err.message);
+    }
+}
+
 
 async function init() {
     try {
@@ -126,6 +144,7 @@ async function init() {
         await initGamePlayers();
         await initGamePieces();
         await initGameScores();
+        await initGameLosers();
     } catch (err) {
         console.error('[DATABASE] Error initializing database:', err.message);
     }

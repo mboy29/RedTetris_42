@@ -38,14 +38,17 @@ const Game = () => {
     const [playerGrids, setPlayerGrids] = useState({});
     const [playerScores, setPlayerScores] = useState({});
     const [playerLost, setPlayerLost] = useState([]);
+    
+    const [winner, setWinner] = useState(null);
+
+    const [countdown, setCountdown] = useState(null); 
+    const [showOverlay, setShowOverlay] = useState(true); 
+    const [showSoloModal, setShowSoloModal] = useState(false); 
 
     const [isCreator, setIsCreator] = useState(false);
-    const [showOverlay, setShowOverlay] = useState(true); 
-    const [countdown, setCountdown] = useState(null); 
     const [isGameFull, setIsGameFull] = useState(false);
     const [isSoloGame, setIsSoloGame] = useState(false);
-
-    const [showSoloModal, setShowSoloModal] = useState(false); 
+    const [isGameOver, setIsGameOver] = useState(false);
 
     const startCountdown = useCallback(() => {
         let count = 3;
@@ -119,9 +122,17 @@ const Game = () => {
             }));
         });
 
-        socket.on('gameLost', ({ playerName }) => {
+        socket.on('gameLost', ({ playerName, scores }) => {
             setPlayerLost((prevLost) => [...prevLost, playerName]);
+            setPlayerScores(scores);
         });
+
+        socket.on('gameEnded', ({ winner, scores }) => {
+            setIsGameOver(true);
+            setWinner(winner);
+            setPlayerScores(scores);
+        });
+
 
         return () => {
             socket.off('error');
@@ -131,6 +142,7 @@ const Game = () => {
             socket.off('gameDeleted');
             socket.off('gameUpdated');
             socket.off('gameLost');
+            socket.off('gameEnded');
             socket.off('gameSurrendered');
         };
     }, [room, session, navigate, isGameFull, startCountdown]);
@@ -177,7 +189,35 @@ const Game = () => {
         <div>
             <NavBar />
             <Container fluid className="game-container d-flex flex-column justify-content-center align-items-center vh-100">
-                {showOverlay && (
+                {isGameOver ? (
+                    <div className="game-overlay-content">
+                        <div className="overlay-card">
+                            <h2 className="game-overlay-message">{room}</h2>
+                            {isSoloGame ? (
+                                <h5>Game Over! Your score: {playerScores[session.username] || 0}</h5>
+                            ) : (
+                                <>
+                                    {winner && winner.username && (
+                                        <h5>Game Over! {winner.username} wins!</h5>
+                                    )}
+                                   <ListGroup className="my-4 game-overlay-players-container">
+                                        {Object.entries(playerScores).map(([playerName, score], index) => (
+                                            <ListGroup.Item key={index} className="game-overlay-players">
+                                                {playerName}: {score} points
+                                            </ListGroup.Item>
+                                        ))}
+                                    </ListGroup>
+                                </>
+                            )}
+                            <Form onSubmit={handleLeaveGame} className="game-leave">
+                                <Button variant="danger" type="submit" className="global-btn bottom-0 end-0">
+                                    <i className="bi bi-door-open"></i> Leave Game
+                                </Button>
+                            </Form>
+                        </div>
+                    </div>
+                ) : (
+                showOverlay && (
                     errors.length > 0 ? (
                         <div>
                             <h2 className="game-overlay-message">{room}</h2>
@@ -230,9 +270,9 @@ const Game = () => {
                             )}
                         </div>
                     )
-                )}
-
-                {!showOverlay && (
+                ))}
+    
+                {!showOverlay && !isGameOver && (
                     errors.length > 0 ? (
                         <div>
                             <h2 className="game-overlay-message">{room}</h2>
@@ -249,7 +289,7 @@ const Game = () => {
                                 <div className='w-100 h-100 game-grids'>
                                     <div className='game-player-container'>
                                         <div className='game-player'>
-                                            <Grid socket={socket} isInteractable={true} room={room} playerName={session.username} playerScore={playerScores[session.username] || 0}/>
+                                            <Grid socket={socket} isGameOver={isGameOver} isInteractable={true} room={room} playerName={session.username} playerScore={playerScores[session.username] || 0}/>
                                         </div>
                                     </div>
                                     
@@ -259,6 +299,7 @@ const Game = () => {
                                                 <div className="game-other mb-2" key={index}>
                                                     <Grid 
                                                         socket={socket} 
+                                                        isGameOver={isGameOver}
                                                         isInteractable={false} 
                                                         room={room}
                                                         playerName={session.username}
@@ -278,7 +319,7 @@ const Game = () => {
                                 <div className='w-100 h-100 game-grids'> 
                                     <div className='game-solo-container'>
                                         <div className='game-player'>
-                                            <Grid socket={socket} isInteractable={true} room={room} playerName={session.username} playerScore={playerScores[session.username] || 0}/>
+                                            <Grid socket={socket} isGameOver={isGameOver} isInteractable={true} room={room} playerName={session.username} playerScore={playerScores[session.username] || 0}/>
                                         </div>
                                     </div>
                                 </div>
@@ -291,26 +332,27 @@ const Game = () => {
                         </div>
                     )
                 )}
-
-            <Modal show={showSoloModal} onHide={() => setShowSoloModal(false)} centered className="game-solo-modal">
-                <Modal.Header closeButton className="text-center game-solo-modal-header">
-                    <Modal.Title className="game-solo-modal-title">Solo Game Confirmation</Modal.Title>
-                </Modal.Header>
-                <Modal.Body className="game-solo-modal-body">
-                    <p className="game-solo-modal-message">You are the only player in the room. Do you want to start the game solo?</p>
-                </Modal.Body>
-                <Modal.Footer className="game-solo-modal-footer">
-                    <Button variant="secondary" onClick={() => setShowSoloModal(false)} className="game-solo-modal-button global-secondary-btn">
-                        Wait for Players
-                    </Button>
-                    <Button variant="primary" onClick={confirmStartGame} className="game-solo-modal-button global-btn">
-                        Start Solo Game
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+    
+                <Modal show={showSoloModal} onHide={() => setShowSoloModal(false)} centered className="game-solo-modal">
+                    <Modal.Header closeButton className="text-center game-solo-modal-header">
+                        <Modal.Title className="game-solo-modal-title">Solo Game Confirmation</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="game-solo-modal-body">
+                        <p className="game-solo-modal-message">You are the only player in the room. Do you want to start the game solo?</p>
+                    </Modal.Body>
+                    <Modal.Footer className="game-solo-modal-footer">
+                        <Button variant="secondary" onClick={() => setShowSoloModal(false)} className="game-solo-modal-button global-secondary-btn">
+                            Wait for Players
+                        </Button>
+                        <Button variant="primary" onClick={confirmStartGame} className="game-solo-modal-button global-btn">
+                            Start Solo Game
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </Container>
         </div>
     );
+    
 };
 
 // +------------------- EXPORTS -------------------+

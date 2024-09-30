@@ -118,10 +118,14 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
                 io.to(roomName).emit('gamePlayers', ( players ));
                 io.to(roomName).emit('gameFull', ( game.isGameFull() ));
             }
-        } else {
+        } else if (game.getStatus() === 'in progress') {
             await game.removePlayers(socket, -100, player);
             await game.endGame(true);
             io.to(roomName).emit('gameSurrendered', { playerName });
+        } else {
+            await game.removePlayers(socket, 0, player);
+            const players = await game.getPlayers();
+            io.to(roomName).emit('gamePlayers', ( players ));
         }
     } catch (error) {
         console.log('[GAME] Error handling player leaving game:', error.message);
@@ -189,7 +193,8 @@ const scoreGame = async (io, socket, { roomName, playerName, lines }) => {
         } else if (!await game.isGamePlayer(player)) {
             throw new Error('Player not in game');
         }
-        await game.updateScore(player, lines);
+      
+        await game.updateScore(player, 0, lines);
         io.to(roomName).emit('gameScored', { scoredPlayerGame: playerName, lines: lines });
     } catch (error) {
         console.log('[GAME] Error scoring game:', error.message);
@@ -197,6 +202,20 @@ const scoreGame = async (io, socket, { roomName, playerName, lines }) => {
 }
 
 const lostGame = async (io, socket, { roomName, playerName }) => {
+
+    const formatScores = async (game) => {
+        const scoresObj = {};
+        const scores = await game.getScores();
+    
+        for (const playerId in scores) {
+            const player = await Player.getById(playerId);
+            scoresObj[player.username] = scores[playerId];
+        }
+        const sortedScoresArray = Object.entries(scoresObj).sort((a, b) => b[1] - a[1]);
+        const sortedScoresObj = Object.fromEntries(sortedScoresArray);
+        return sortedScoresObj;
+    };
+    
     try {
         if (!roomName || !playerName) {
             throw new Error('Invalid input');
@@ -213,9 +232,16 @@ const lostGame = async (io, socket, { roomName, playerName }) => {
         } else if (!await game.isGamePlayer(player)) {
             throw new Error('Player not in game');
         }
-        await game.updateLosers(1);
-        io.to(roomName).emit('gameLost', { playerName });
-        console.log('[DEBUG] Game ended by player', playerName);
+        await game.updateLosers(player);
+        const scores = await formatScores(game);
+        io.to(roomName).emit('gameLost', { playerName, scores });
+        console.log('[GAME] Game lost for', playerName, game.isEndGame());
+        if (game.isEndGame()) {
+            await game.endGame();
+            const winner = game.getWinner()
+            console.log('[GAME] Game ended with player', winner.username, 'as winner');
+            io.to(roomName).emit('gameEnded', { winner, scores });
+        }
     } catch (error) {
         console.log('[GAME] Error ending game:', error.message);
     }

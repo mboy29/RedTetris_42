@@ -192,18 +192,14 @@ async function updateGameWinner(id, winnerId) {
     }
 }
 
-async function updateGameLosers(id, increment) {
+async function updateGameLosers(gameId, playerId) {
     try {
-        if (typeof increment !== 'number' || isNaN(increment)) {
-            throw new Error('Increment must be a valid number');
-        }
         const db = await dbModule.connect();
-        const query = 'UPDATE games SET losers = losers + ? WHERE id = ?';
-        const result = await dbModule.run(query, [increment, id]);
+        const result = await dbModule.run(`INSERT INTO game_losers (game_id, player_id) VALUES (?, ?)`, [gameId, playerId]);
         if (result.changes === 0) {
             throw new Error('Game not found');
         }
-        return result.changes;
+        return result.lastID;
     } catch (err) {
         throw new Error(`Error updating game losers: ${err.message}`);
     }
@@ -311,6 +307,27 @@ async function getGameScoreByGamePlayer(gameId, playerId) {
     }
 }
 
+async function getGameLosers() {
+    try {
+        const db = await dbModule.connect();
+        const query = 'SELECT * FROM game_losers;';
+        const rows = await dbModule.all(query);
+        return rows || [];
+    } catch (err) {
+        throw new Error(`Error getting all game losers: ${err.message}`);
+    }
+}
+
+async function getGameLosersByGame(gameId) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'SELECT * FROM game_losers WHERE game_id = ?;';
+        const rows = await dbModule.all(query, [gameId]);
+        return rows || [];
+    } catch (err) {
+        throw new Error(`Error getting losers for game ${gameId}: ${err.message}`);
+    }
+}
 
 async function isGamePlayer(gameId, playerId) {
     try {
@@ -379,6 +396,8 @@ module.exports = {
     getGameScoresByPlayer,
     getGameScoresByGame,
     getGameScoreByGamePlayer,
+    getGameLosers,
+    getGameLosersByGame,
     isGamePlayer,
     addPlayerToGame,
     removePlayerFromGame,

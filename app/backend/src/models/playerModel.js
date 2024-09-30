@@ -243,8 +243,6 @@ class Player {
         if (socket != null) {
             socket.leave(this.getRoomName());
         }
-        const newScore = this.getScore() + score;
-        await this.updateScore(newScore);
         socket.roomName = null;
         socket.playerName = null;
         

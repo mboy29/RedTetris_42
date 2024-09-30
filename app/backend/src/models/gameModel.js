@@ -40,8 +40,8 @@ class Game {
         this.setStatus(status);
         this.setSize(4);
         this.setWinner(winner);
-        this.setLosers(0);
        
+        this.losers = [];
         this.scores = {};
         this.players = [];
         this.pieces = [];
@@ -79,8 +79,6 @@ class Game {
     setSize(size) { this.size = size; }
 
     setWinner(winner) { this.winner = winner; }
-
-    setLosers(losers) { this.losers = losers; }
 
     getId() {
         return this.id;
@@ -132,10 +130,11 @@ class Game {
             return null;
         }
         const creator = await Player.getById(game.creator_id);
-        const newGame = new Game(game.id, game.name, game.mode, creator, game.status, game.winner_id);
+        const winner = game.winner_id ? await Player.getById(game.winner_id) : null;
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.status, winner);
         const players = await queries.getGamePlayers(game.id);
         for (const player of players) {
-            newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
+            newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName, player.score));
         }
         for (const piece of await Piece.getPieces(game.id)) {
             newGame.pieces.push(new Piece(piece.type));
@@ -143,7 +142,9 @@ class Game {
         for (const score of await queries.getGameScoresByGame(game.id)) {
             newGame.scores[score.player_id] = score.score;
         }
-        newGame.setLosers(game.losers);
+        for (const loser of await queries.getGameLosersByGame(game.id)) {
+            newGame.losers.push(loser.player_id);
+        }
         return newGame;
     }
 
@@ -154,18 +155,20 @@ class Game {
             return null;
         }
         const creator = await Player.getById(game.creator_id);
-        const newGame = new Game(game.id, game.name, game.mode, creator, game.status, game.winner_id);
+        const winner = game.winner_id ? await Player.getById(game.winner_id) : null;
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.status, winner);
         for (const player of await queries.getGamePlayers(id)) {
-            newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName));
+            newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName, player.score));
         }
         for (const piece of await Piece.getPieces(game.id)) {
             newGame.pieces.push(new Piece(piece.type));
         }
-        const scores = await queries.getGameScoresByGame(game.id);
         for (const score of await queries.getGameScoresByGame(id)) {
             newGame.scores[score.player_id] = score.score;
         }
-        newGame.setLosers(game.losers);
+        for (const loser of await queries.getGameLosersByGame(id)) {
+            newGame.losers.push(loser.player_id);
+        }
         return newGame;
     }
 
@@ -227,22 +230,34 @@ class Game {
         await queries.updateGameWinner(this.id, player.id);
     }
 
-    async updateLosers(increment) {
-        this.setLosers(this.getLosers() + increment);
-        await queries.updateGameLosers(this.id, increment);
+    async updateLosers(loser) {
+        this.losers.push(loser.id);
+        await queries.updateGameLosers(this.id, loser.id);
+        const players = this.getPlayers();
+        const loserScore = this.scores[loser.id];
+        for (const player of players) {
+            if (!this.losers.includes(player.id) && player.id !== loser.id) {
+                if (loserScore == 0) {
+                    await this.updateScore(player, 40 * 1.5);
+                } else {
+                    await this.updateScore(player, loserScore * 1.5);
+                }
+            }
+        }
     }
 
-    async updateScore(player, lines) {
+    async updateScore(player, score, lines = -1) {
         const TetrisScores = {
             1: 40,   // SINGLE
             2: 100,  // DOUBLE
             3: 300,  // TRIPLE
             4: 1200  // TETRIS
         };
-    
-        const newScore = TetrisScores[lines] || 0;
-        await queries.updateGameScore(this.id, player.id, newScore);
-        this.scores[player.id] += newScore;
+        if (lines !== -1) {
+            score += TetrisScores[lines] || 0;
+        }
+        await queries.updateGameScore(this.id, player.id, score);
+        this.scores[player.id] += score;
     }
 
     async addPlayers(socket, ...players) {
@@ -298,7 +313,36 @@ class Game {
         }
     }
 
-    async endGame(surrender = false) {
+    isEndGame() {
+        const losers = this.getLosers();
+        const players = this.getPlayers();
+        if (this.getMode() === 'solo' && losers.length > 0) {
+            return true;
+        }
+        if (losers.length === players.length - 1) {
+            return true;
+        }
+        return false;
+
+    }
+
+    async endGame() {
+        const players = this.getPlayers();
+        if (this.getMode() == 'solo') {
+            await this.updateWinner(players[0]);
+        } else {
+            for (const player of players) {
+                if (!this.losers.includes(player.id)) {
+                    await this.updateWinner(player);
+                    break;
+                }
+            }
+        }
+        for (const player of players) {
+            const score = this.scores[player.id];
+            const playerScore = await player.getScore();
+            await player.updateScore(playerScore + score);
+        }
         await this.updateStatus('finished');
     }
 }

@@ -19,7 +19,7 @@ import './../../css/queue.css';
 
 // +------------------- COMPONENT -------------------+
 
-const Queue = ({ pieceQueue, getCellClassName, lostGame }) => {
+const Queue = ({ pieceQueue, getCellClassName, isGameLost, isGameOver }) => {
 
     function cleanPiece(piece) {
         piece = piece.filter(row => row.some(cell => cell !== null));
@@ -48,7 +48,7 @@ const Queue = ({ pieceQueue, getCellClassName, lostGame }) => {
                     </div>
                 );
             })}
-            {lostGame && (
+            {(isGameLost || isGameOver) && (
                 <div className="queue-lost"></div> // Overlay without message
             )}
         </div>
