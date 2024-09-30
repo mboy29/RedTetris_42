@@ -22,12 +22,13 @@ import './../../css/queue.css';
 const Queue = ({ pieceQueue, getCellClassName }) => {
 
     function cleanPiece(piece) {
-        piece = piece.filter(row => row.some(cell => cell !== 0));
+        piece = piece.filter(row => row.some(cell => cell !== null));
         const transposed = piece[0].map((_, colIndex) => piece.map(row => row[colIndex]));
-        const cleaned = transposed.filter(col => col.some(cell => cell !== 0));
-        return cleaned[0].map((_, colIndex) => cleaned.map(row => row[colIndex]));
+        const cleanedTransposed = transposed.filter(col => col.some(cell => cell !== null));
+        const cleaned = cleanedTransposed[0].map((_, colIndex) => cleanedTransposed.map(row => row[colIndex]));
+        return cleaned;
     }
-
+    
     return (
         <div className="queue-container">
             {pieceQueue.slice(0, 4).map((pieceObj, index) => {

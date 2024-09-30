@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './../../css/grid.css';
+import Queue from './Queue';
 
 const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlayer = null, otherGrid = null, otherScore = null }) => {
     const numRows = 20;
@@ -10,9 +11,9 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
     const [currentPiece, setCurrentPiece] = useState(null);
     const [currentPosition, setCurrentPosition] = useState({ row: 0, col: 3 }); // Initial spawn position
     const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
-    const [gameOver, setGameOver] = useState(false); // New state for game over
+    const [gameOver, setGameOver] = useState(false);
 
-    // Function to check collision with the pile or grid bottom
+    // Check for collision with the pile or grid bottom
     const checkCollision = useCallback((newPile, newRow, newCol, piece) => {
         if (newRow >= numRows) return true; // Bottom of grid
         for (let row = 0; row < piece.piece.length; row++) {
@@ -75,20 +76,44 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
         }
     }, [gameOver, numCols, checkCollision, updatePile]);
 
-    
-
     // Function to merge current piece into the pile when it can no longer move
     const mergePieceToPile = useCallback((position) => {
         const newPile = updatePile(pile, position);
-        setPile(newPile);
-        setCurrentPiece(null); // Clear current piece
-        // Only spawn a new piece if the game is still ongoing
+        
+        const clearFullRows = (pile) => {
+            const fullRows = [];
+            const updatedPile = pile.filter((row, rowIndex) => {
+                const isFull = row.every(cell => cell !== null && cell !== 'M'); // Check for full rows excluding malus lines
+                if (isFull) fullRows.push(rowIndex);
+                return !isFull; // Keep only non-full rows
+            });
+            return { updatedPile, fullRows };
+        };
+    
+        const { updatedPile: pileAfterClear, fullRows } = clearFullRows(newPile);
+        
+        // Add empty rows for each cleared line at the top (not including malus lines)
+        for (let i = 0; i < fullRows.length; i++) {
+            pileAfterClear.unshift(Array(numCols).fill(null));
+        }
+    
+        setPile(pileAfterClear);
+        setCurrentPiece(null);
+    
+        const linesCleared = fullRows.length;
+        if (linesCleared > 0) {
+            socket.emit('scoreGame', { roomName: room, playerName, lines: linesCleared });
+        }
+    
         if (!gameOver && pieceQueue.length > 0) {
             const nextPiece = pieceQueue[0];
-            setPieceQueue(pieceQueue.slice(1)); // Remove the used piece from the queue
-            spawnNewPiece(newPile, nextPiece); // Spawn the next piece
+            setPieceQueue(pieceQueue.slice(1));
+            spawnNewPiece(pileAfterClear, nextPiece);
         }
-    }, [pieceQueue, spawnNewPiece, gameOver, updatePile, pile]);
+    
+        socket.emit('updatedGame', { roomName: room, playerName, grid: pileAfterClear });
+    }, [pieceQueue, spawnNewPiece, gameOver, updatePile, pile, playerName, room, socket]);
+    
 
     // Fetch pieces from the server on mount
     useEffect(() => {
@@ -178,6 +203,7 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
         };
 
         const handleKeyDown = (event) => {
+            if (!currentPiece) return;
             switch (event.key) {
                 case 'ArrowLeft':
                     moveLeft(pile);
@@ -205,7 +231,38 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
         };
     }, [currentPosition, currentPiece, gameOver, checkCollision, mergePieceToPile, pile]); // Dependencies remain the same
 
+    // Handle scoring from other players
+    useEffect(() => {
+        socket.on('gameScored', ({ scoredPlayerGame, lines }) => {
+            if (scoredPlayerGame !== playerName) {
+                // Handle malus lines for the opponent
+                const newPile = [...pile]; // Create a shallow copy of the current pile
+    
+                // Add malus lines at the bottom
+                for (let i = 0; i < lines; i++) {
+                    newPile.push(Array(numCols).fill('M')); // Add new malus line
+                }
+    
+                // Remove the top rows to maintain grid size
+                for (let i = 0; i < lines; i++) {
+                    newPile.shift(); // Remove the top row
+                }
+    
+                // Update the pile with the new lines
+                setPile(newPile);
+                socket.emit('updatedGame', { roomName: room, playerName, grid: newPile }); // Emit the updated grid
+            }
+        });
+        return () => {
+            socket.off('gameScored');
+        };
+    }, [socket, playerName, room, pile, numCols]);    
+
     const renderGrid = () => {
+        if (otherPlayer && otherGrid) {
+            const newPile = otherGrid.map((row) => [...row]);
+            return newPile;
+        }
         const newGrid = pile.map((row) => [...row]);
         if (currentPiece) {
             for (let row = 0; row < currentPiece.piece.length; row++) {
@@ -220,6 +277,7 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
                 }
             }
         }
+
         return newGrid;
     };
 
@@ -256,11 +314,10 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
                     </div>
                 ))}
             </div>
-            {gameOver && (
-                <div className="game-over">
-                    <h1>Game Over!</h1>
-                    <p>Your score: {playerScore}</p>
-                    {/* You can add more actions like restart or quit here */}
+            {isInteractable && (
+                <div className="queue-and-score d-flex flex-column align-items-center">
+                    <Queue pieceQueue={pieceQueue} getCellClassName={getCellClassName} />
+                    <h3 className="mt-3">Score {playerScore}</h3>
                 </div>
             )}
         </div>

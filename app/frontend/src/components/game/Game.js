@@ -258,8 +258,8 @@ const Game = () => {
                                                         playerName={session.username}
                                                         playerScore={playerScores[player.username] || 0}
                                                         otherPlayer={player.username}
-                                                        otherGrid={playerGrids[player.username] || null} // Pass the updated grid or an empty array
-                                                        otherScore={playerScores[player.username] || 0} // Pass the updated
+                                                        otherGrid={playerGrids[player.username]}
+                                                        otherScore={playerScores[player.username] || 0}
                                                     />
                                                     <div className="game-other-username">{player.username} {playerScores[player.username] || 0}</div>
                                                 </div>
