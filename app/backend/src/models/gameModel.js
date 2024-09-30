@@ -230,14 +230,19 @@ class Game {
         await queries.updateGameWinner(this.id, player.id);
     }
 
-    async updateLosers(loser) {
+    async updateLosers(loser, surrendered = false) {
         this.losers.push(loser.id);
         await queries.updateGameLosers(this.id, loser.id);
+        if (surrendered) {
+            if (this.getMode() !== 'solo') {
+                await this.updateScore(loser, -1200);
+            }
+        } 
         const players = this.getPlayers();
         const loserScore = this.scores[loser.id];
         for (const player of players) {
             if (!this.losers.includes(player.id) && player.id !== loser.id) {
-                if (loserScore == 0) {
+                if (loserScore <= 0) {
                     await this.updateScore(player, 40 * 1.5);
                 } else {
                     await this.updateScore(player, loserScore * 1.5);

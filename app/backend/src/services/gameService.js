@@ -107,7 +107,9 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
     
        
         console.log(`[GAME] Player ${playerName} left game ${roomName}`);
-        if (game.getStatus() === 'pending') {
+        if (game.getStatus() === 'in progress') {
+            await lostGame(io, socket, { roomName, playerName, surrendered: true });
+        } else if (game.getStatus() === 'pending') {
             await game.removePlayers(socket, 0, player);
             if (game.isGameCreator(player)) {
                 await game.remove(roomName);
@@ -118,10 +120,6 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
                 io.to(roomName).emit('gamePlayers', ( players ));
                 io.to(roomName).emit('gameFull', ( game.isGameFull() ));
             }
-        } else if (game.getStatus() === 'in progress') {
-            await game.removePlayers(socket, -100, player);
-            await game.endGame(true);
-            io.to(roomName).emit('gameSurrendered', { playerName });
         } else {
             await game.removePlayers(socket, 0, player);
             const players = await game.getPlayers();
@@ -201,7 +199,7 @@ const scoreGame = async (io, socket, { roomName, playerName, lines }) => {
     }
 }
 
-const lostGame = async (io, socket, { roomName, playerName }) => {
+const lostGame = async (io, socket, { roomName, playerName, surrendered = false }) => {
 
     const formatScores = async (game) => {
         const scoresObj = {};
@@ -232,7 +230,7 @@ const lostGame = async (io, socket, { roomName, playerName }) => {
         } else if (!await game.isGamePlayer(player)) {
             throw new Error('Player not in game');
         }
-        await game.updateLosers(player);
+        await game.updateLosers(player, surrendered);
         const scores = await formatScores(game);
         io.to(roomName).emit('gameLost', { playerName, scores });
         console.log('[GAME] Game lost for', playerName, game.isEndGame());
