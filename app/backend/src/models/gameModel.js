@@ -24,10 +24,10 @@
 // +----------------- REQUIREMENTS -----------------+ 
 
 const queries = require('./../database/queries/gameQueries');
-const piecesQueries = require('./../database/queries/piecesQueries');
 
 const Piece = require('./pieceModel');
 const Player = require('./playerModel');
+const Score = require('./scoreModel');
 
 // +--------------------- CLASS ---------------------+
 
@@ -231,38 +231,22 @@ class Game {
     }
 
     async updateLosers(loser, surrendered = false) {
+        const scoreManager = new Score(this);
+
         this.losers.push(loser.id);
         await queries.updateGameLosers(this.id, loser.id);
-        if (surrendered) {
-            if (this.getMode() !== 'solo') {
-                await this.updateScore(loser, -1200);
-            }
-        } 
-        const players = this.getPlayers();
-        const loserScore = this.scores[loser.id];
-        for (const player of players) {
-            if (!this.losers.includes(player.id) && player.id !== loser.id) {
-                if (loserScore <= 0) {
-                    await this.updateScore(player, 40 * 1.5);
-                } else {
-                    await this.updateScore(player, loserScore * 1.5);
-                }
-            }
+    
+        if (surrendered && this.getMode() !== 'solo') {
+            await scoreManager.handleSurrender(loser);
         }
+    
+        await scoreManager.distributeBonusPoints(loser);
     }
 
     async updateScore(player, score, lines = -1) {
-        const TetrisScores = {
-            1: 40,   // SINGLE
-            2: 100,  // DOUBLE
-            3: 300,  // TRIPLE
-            4: 1200  // TETRIS
-        };
-        if (lines !== -1) {
-            score += TetrisScores[lines] || 0;
-        }
-        await queries.updateGameScore(this.id, player.id, score);
-        this.scores[player.id] += score;
+        const scoreManager = new Score(this);
+        const newScore = await scoreManager.adjustPlayerScore(this.id, player, score, lines);
+        this.scores[player.id] += newScore;
     }
 
     async addPlayers(socket, ...players) {
