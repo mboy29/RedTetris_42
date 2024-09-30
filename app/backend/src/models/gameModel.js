@@ -40,6 +40,7 @@ class Game {
         this.setStatus(status);
         this.setSize(4);
         this.setWinner(winner);
+        this.setLosers(0);
        
         this.scores = {};
         this.players = [];
@@ -79,6 +80,8 @@ class Game {
 
     setWinner(winner) { this.winner = winner; }
 
+    setLosers(losers) { this.losers = losers; }
+
     getId() {
         return this.id;
     }
@@ -115,6 +118,10 @@ class Game {
         return this.winner;
     }
 
+    getLosers() {
+        return this.losers;
+    }
+
     getScores() {
         return this.scores;
     }
@@ -133,10 +140,10 @@ class Game {
         for (const piece of await Piece.getPieces(game.id)) {
             newGame.pieces.push(new Piece(piece.type));
         }
-        const scores = await queries.getGameScoresByGame(game.id);
         for (const score of await queries.getGameScoresByGame(game.id)) {
             newGame.scores[score.player_id] = score.score;
         }
+        newGame.setLosers(game.losers);
         return newGame;
     }
 
@@ -158,6 +165,7 @@ class Game {
         for (const score of await queries.getGameScoresByGame(id)) {
             newGame.scores[score.player_id] = score.score;
         }
+        newGame.setLosers(game.losers);
         return newGame;
     }
 
@@ -214,18 +222,15 @@ class Game {
         await queries.updateGameStatus(this.id, status);
     }
 
-    async updateNbPlayers(size) {
-        await queries.updateGameNbPlayers(this.id, size);
-    }
-
-    async updateReadyPlayers(increment) {
-        await queries.updateReadyPlayers(this.id, increment);
-    }
-
     async updateWinner(player) {
+        this.setWinner(player);
         await queries.updateGameWinner(this.id, player.id);
     }
 
+    async updateLosers(increment) {
+        this.setLosers(this.getLosers() + increment);
+        await queries.updateGameLosers(this.id, increment);
+    }
 
     async updateScore(player, lines) {
         const TetrisScores = {

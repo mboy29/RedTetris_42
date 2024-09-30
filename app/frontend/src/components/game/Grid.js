@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './../../css/grid.css';
 import Queue from './Queue';
 
-const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlayer = null, otherGrid = null, otherScore = null }) => {
+const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlayer = null, otherGrid = null, otherScore = null, otherLost = null}) => {
     const numRows = 20;
     const numCols = 10;
     const dropInterval = 1000; // 1 second drop interval
@@ -11,7 +11,7 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
     const [currentPiece, setCurrentPiece] = useState(null);
     const [currentPosition, setCurrentPosition] = useState({ row: 0, col: 3 }); // Initial spawn position
     const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
-    const [gameOver, setGameOver] = useState(false);
+    const [lostGame, setGameOver] = useState(false);
 
     // Check for collision with the pile or grid bottom
     const checkCollision = useCallback((newPile, newRow, newCol, piece) => {
@@ -48,7 +48,7 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
     }, [currentPiece]);
 
     const spawnNewPiece = useCallback((newPile, piece) => {
-        if (gameOver) {
+        if (lostGame) {
             return;
         }
         setCurrentPiece(piece);
@@ -70,11 +70,13 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
             if (!checkCollision(newPile, 0, Math.floor(numCols / 2) - Math.floor(lastPiece.piece[0].length / 2), lastPiece)) {
                 const finalPile = updatePile(newPile, initialPosition, lastPiece);
                 setPile(finalPile);
+                socket.emit('updatedGame', { roomName: room, playerName, grid: finalPile });
             }
             setGameOver(true);
             setCurrentPiece(null);
+            socket.emit('lostGame', { roomName: room, playerName });
         }
-    }, [gameOver, numCols, checkCollision, updatePile]);
+    }, [socket, lostGame, numCols, checkCollision, updatePile, playerName, room]);
 
     // Function to merge current piece into the pile when it can no longer move
     const mergePieceToPile = useCallback((position) => {
@@ -105,14 +107,14 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
             socket.emit('scoreGame', { roomName: room, playerName, lines: linesCleared });
         }
     
-        if (!gameOver && pieceQueue.length > 0) {
+        if (!lostGame && pieceQueue.length > 0) {
             const nextPiece = pieceQueue[0];
             setPieceQueue(pieceQueue.slice(1));
             spawnNewPiece(pileAfterClear, nextPiece);
         }
     
         socket.emit('updatedGame', { roomName: room, playerName, grid: pileAfterClear });
-    }, [pieceQueue, spawnNewPiece, gameOver, updatePile, pile, playerName, room, socket]);
+    }, [pieceQueue, spawnNewPiece, lostGame, updatePile, pile, playerName, room, socket]);
     
 
     // Fetch pieces from the server on mount
@@ -120,7 +122,7 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
         if (socket && isInteractable) {
             socket.on('gamePieces', (pieces) => {
                 setPieceQueue(pieces);  // Assuming 'pieces' is an array of piece objects
-                if (!gameOver) {
+                if (!lostGame) {
                     spawnNewPiece(pile, pieces[0]); // Spawn the first piece on receiving pieces only if game is not over
                 }
             });
@@ -128,12 +130,12 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
                 socket.off('gamePieces');
             };
         }
-    }, [socket, isInteractable, spawnNewPiece, gameOver, pile]); // Added gameOver to dependencies
+    }, [socket, isInteractable, spawnNewPiece, lostGame, pile]); // Added lostGame to dependencies
 
     // Move the piece down every 'dropInterval'
     useEffect(() => {
         const dropPiece = () => {
-            if (!currentPiece || gameOver) return; // No piece to move or game over
+            if (!currentPiece || lostGame) return; // No piece to move or game over
 
             const newRow = currentPosition.row + 1;
             const newCol = currentPosition.col;
@@ -147,18 +149,18 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
 
         const interval = setInterval(dropPiece, dropInterval);
         return () => clearInterval(interval); // Clean up interval on unmount
-    }, [currentPosition, currentPiece, gameOver, dropInterval, checkCollision, mergePieceToPile, pile]); // Dropping logic depends on position and piece
+    }, [currentPosition, currentPiece, lostGame, dropInterval, checkCollision, mergePieceToPile, pile]); // Dropping logic depends on position and piece
 
     // Handle keyboard input for piece movement
     useEffect(() => {
         const moveLeft = (pile) => {
-            if (!gameOver && !checkCollision(pile, currentPosition.row, currentPosition.col - 1, currentPiece)) {
+            if (!lostGame && !checkCollision(pile, currentPosition.row, currentPosition.col - 1, currentPiece)) {
                 setCurrentPosition((pos) => ({ ...pos, col: pos.col - 1 }));
             }
         };
 
         const moveRight = (pile) => {
-            if (!gameOver && !checkCollision(pile, currentPosition.row, currentPosition.col + 1, currentPiece)) {
+            if (!lostGame && !checkCollision(pile, currentPosition.row, currentPosition.col + 1, currentPiece)) {
                 setCurrentPosition((pos) => ({ ...pos, col: pos.col + 1 }));
             }
         };
@@ -171,13 +173,13 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
             };
 
             // Check for collision after rotation
-            if (!gameOver && !checkCollision(pile, currentPosition.row, currentPosition.col, rotatedPiece)) {
+            if (!lostGame && !checkCollision(pile, currentPosition.row, currentPosition.col, rotatedPiece)) {
                 setCurrentPiece(rotatedPiece);
             }
         };
 
         const fastDrop = (pile) => {
-            if (gameOver) return; // Do nothing if the game is over
+            if (lostGame) return; // Do nothing if the game is over
 
             const newRow = currentPosition.row + 1;
             const newCol = currentPosition.col;
@@ -191,7 +193,7 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
         };
 
         const instantDrop = (pile) => {
-            if (gameOver) return; // Do nothing if the game is over
+            if (lostGame) return; // Do nothing if the game is over
             
             let newRow = currentPosition.row;
     
@@ -229,7 +231,7 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [currentPosition, currentPiece, gameOver, checkCollision, mergePieceToPile, pile]); // Dependencies remain the same
+    }, [currentPosition, currentPiece, lostGame, checkCollision, mergePieceToPile, pile]); // Dependencies remain the same
 
     // Handle scoring from other players
     useEffect(() => {
@@ -302,7 +304,7 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
 
     return (
         <div className="grid-container">
-            <div className={`grid ${!isInteractable || gameOver ? 'grid-non-interactable' : ''}`}>
+            <div className={`grid ${!isInteractable || lostGame || otherLost ? 'grid-non-interactable' : ''} ${otherPlayer ? 'grid-other' : ''}`}>
                 {renderGrid().map((row, rowIndex) => (
                     <div key={rowIndex} className="grid-row">
                         {row.map((cell, colIndex) => (
@@ -313,15 +315,26 @@ const Grid = ({ socket, isInteractable, room, playerName, playerScore, otherPlay
                         ))}
                     </div>
                 ))}
+                {lostGame && (
+                    <div className="grid-lost">
+                        <h3 className='text-center'>You've been eliminated!</h3>
+                    </div>
+                )}
+                {otherLost && (
+                    <div className="grid-lost">
+                        <h4 className='text-center'>Eliminated</h4>
+                    </div>
+                )}
             </div>
             {isInteractable && (
                 <div className="queue-and-score d-flex flex-column align-items-center">
-                    <Queue pieceQueue={pieceQueue} getCellClassName={getCellClassName} />
+                    <Queue pieceQueue={pieceQueue} getCellClassName={getCellClassName} lostGame={lostGame}/>
                     <h3 className="mt-3">Score {playerScore}</h3>
                 </div>
             )}
         </div>
     );
+    
 };
 
 export default Grid;

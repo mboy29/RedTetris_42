@@ -37,6 +37,7 @@ const Game = () => {
     const [players, setPlayers] = useState([]); 
     const [playerGrids, setPlayerGrids] = useState({});
     const [playerScores, setPlayerScores] = useState({});
+    const [playerLost, setPlayerLost] = useState([]);
 
     const [isCreator, setIsCreator] = useState(false);
     const [showOverlay, setShowOverlay] = useState(true); 
@@ -118,6 +119,10 @@ const Game = () => {
             }));
         });
 
+        socket.on('gameLost', ({ playerName }) => {
+            setPlayerLost((prevLost) => [...prevLost, playerName]);
+        });
+
         return () => {
             socket.off('error');
             socket.off('gamePlayers');
@@ -125,6 +130,7 @@ const Game = () => {
             socket.off('gameStarted');
             socket.off('gameDeleted');
             socket.off('gameUpdated');
+            socket.off('gameLost');
             socket.off('gameSurrendered');
         };
     }, [room, session, navigate, isGameFull, startCountdown]);
@@ -260,6 +266,7 @@ const Game = () => {
                                                         otherPlayer={player.username}
                                                         otherGrid={playerGrids[player.username]}
                                                         otherScore={playerScores[player.username] || 0}
+                                                        otherLost={playerLost.includes(player.username)}
                                                     />
                                                     <div className="game-other-username">{player.username} {playerScores[player.username] || 0}</div>
                                                 </div>

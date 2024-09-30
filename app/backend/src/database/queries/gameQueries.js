@@ -181,7 +181,7 @@ async function updateGameStatus(id, status) {
 async function updateGameWinner(id, winnerId) {
     try {
         const db = await dbModule.connect();
-        const query = 'UPDATE games SET winner_id = ? WHERE id = ?';
+        const query = 'UPDATE games SET winner = ? WHERE id = ?';
         const result = await dbModule.run(query, [winnerId, id]);
         if (result.changes === 0) {
             throw new Error('Game not found');
@@ -191,6 +191,24 @@ async function updateGameWinner(id, winnerId) {
         throw new Error(`Error updating game winner: ${err.message}`);
     }
 }
+
+async function updateGameLosers(id, increment) {
+    try {
+        if (typeof increment !== 'number' || isNaN(increment)) {
+            throw new Error('Increment must be a valid number');
+        }
+        const db = await dbModule.connect();
+        const query = 'UPDATE games SET losers = losers + ? WHERE id = ?';
+        const result = await dbModule.run(query, [increment, id]);
+        if (result.changes === 0) {
+            throw new Error('Game not found');
+        }
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error updating game losers: ${err.message}`);
+    }
+}
+
 
 async function updateGameScore(gameId, playerId, score) {
     try {
@@ -352,6 +370,7 @@ module.exports = {
     updateGameSize,
     updateReadyPlayers,
     updateGameWinner,
+    updateGameLosers,
     updateGameScore,
     getGameById,
     getGameByName,

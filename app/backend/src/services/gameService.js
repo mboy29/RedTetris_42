@@ -196,6 +196,31 @@ const scoreGame = async (io, socket, { roomName, playerName, lines }) => {
     }
 }
 
+const lostGame = async (io, socket, { roomName, playerName }) => {
+    try {
+        if (!roomName || !playerName) {
+            throw new Error('Invalid input');
+        }
+        const game = await Game.getByName(roomName);
+        if (!game) {
+            throw new Error('Game not found');
+        } else if (game.getStatus() !== 'in progress') {
+            throw new Error('Game is not in progress');
+        }
+        const player = await Player.getByUsername(playerName);
+        if (!player) {
+            throw new Error('Player not found');
+        } else if (!await game.isGamePlayer(player)) {
+            throw new Error('Player not in game');
+        }
+        await game.updateLosers(1);
+        io.to(roomName).emit('gameLost', { playerName });
+        console.log('[DEBUG] Game ended by player', playerName);
+    } catch (error) {
+        console.log('[GAME] Error ending game:', error.message);
+    }
+}
+
 const disconnect = async (io, socket) => {
     try {
         const socketInfo = socketRooms.get(socket.id);
@@ -247,5 +272,6 @@ module.exports = {
     triggerGame,
     updateGame,
     scoreGame,
+    lostGame,
     disconnect
 };

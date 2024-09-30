@@ -43,6 +43,10 @@ function setupSocket(io) {
         socket.on('scoreGame', async ({ roomName, playerName, lines }) => {
             gameService.scoreGame(io, socket, { roomName, playerName, lines });
         });
+
+        socket.on('lostGame', async ({ roomName, playerName }) => {
+            gameService.lostGame(io, socket, { roomName, playerName });
+        });
         
         // socket.on('disconnect', async () => {
         //     gameService.disconnect(io, socket);
