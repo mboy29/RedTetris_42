@@ -210,12 +210,12 @@ async function updateGameScore(gameId, playerId, score) {
     try {
         const db = await dbModule.connect();
         const query = `
-            UPDATE game_scores 
-            SET score = score + ? 
+            UPDATE game_scores
+            SET score = score + ?
             WHERE game_id = ? AND player_id = ?;
         `;
         const result = await dbModule.run(query, [score, gameId, playerId]);
-
+        
         if (result.changes === 0) {
             throw new Error('Score not found for this player in the specified game.');
         }

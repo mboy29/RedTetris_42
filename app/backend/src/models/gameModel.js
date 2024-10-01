@@ -24,14 +24,24 @@
 // +----------------- REQUIREMENTS -----------------+ 
 
 const queries = require('./../database/queries/gameQueries');
+const piecesQueries = require('./../database/queries/piecesQueries');
 
 const Piece = require('./pieceModel');
 const Player = require('./playerModel');
-const Score = require('./scoreModel');
 
 // +--------------------- CLASS ---------------------+
 
 class Game {
+    static TETRIS_SCORES = {
+        1: 40,
+        2: 100,
+        2: 300,
+        3: 1200
+    };
+
+    static SURRENDER_PENALTY = -1200; 
+    static LOSER_BONUS_MULTIPLIER = 1.5;
+
     constructor(id, name, mode, creator, status = "pending", winner = null) {
         this.setId(id);
         this.setName(name);
@@ -231,22 +241,32 @@ class Game {
     }
 
     async updateLosers(loser, surrendered = false) {
-        const scoreManager = new Score(this);
-
         this.losers.push(loser.id);
         await queries.updateGameLosers(this.id, loser.id);
-    
-        if (surrendered && this.getMode() !== 'solo') {
-            await scoreManager.handleSurrender(loser);
+        if (surrendered) {
+            if (this.getMode() !== 'solo') {
+                await this.updateScore(loser,Game.SURRENDER_PENALTY);
+            }
+        } 
+        const players = this.getPlayers();
+        const loserScore = this.scores[loser.id];
+        for (const player of players) {
+            if (!this.losers.includes(player.id) && player.id !== loser.id) {
+                if (loserScore <= 0) {
+                    await this.updateScore(player, Game.TETRIS_SCORES[1] * Game.LOSER_BONUS_MULTIPLIER);
+                } else {
+                    await this.updateScore(player, loserScore * Game.LOSER_BONUS_MULTIPLIER);
+                }
+            }
         }
-    
-        await scoreManager.distributeBonusPoints(loser);
     }
 
     async updateScore(player, score, lines = -1) {
-        const scoreManager = new Score(this);
-        const newScore = await scoreManager.adjustPlayerScore(this.id, player, score, lines);
-        this.scores[player.id] += newScore;
+        if (lines !== -1) {
+            score += Game.TETRIS_SCORES[lines] || 0;
+        }
+        await queries.updateGameScore(this.id, player.id, score);
+        this.scores[player.id] += score;
     }
 
     async addPlayers(socket, ...players) {

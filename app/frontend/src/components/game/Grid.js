@@ -9,9 +9,9 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
 
     const [queue, setQueue] = useState([]);
     const [currentPiece, setCurrentPiece] = useState(null);
-    const [currentPosition, setCurrentPosition] = useState({ row: 0, col: 3 }); // Initial spawn position
+    const [shadowPosition, setShadowPosition] = useState({ x: 0, y: 0 });
+    const [currentPosition, setCurrentPosition] = useState({ row: 0, col: 0 }); // Initial spawn position
     const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
-   
     const [isGameLost, setIsGameLost] = useState(false);
 
     // Check for collision with the pile or grid bottom
@@ -30,6 +30,7 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
         }
         return false;
     }, [numRows, numCols]);
+    
 
     const updatePile = useCallback((pile, position, piece = null) => {
         if (!piece) {
@@ -80,7 +81,9 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
             setIsGameLost(true);
             setCurrentPiece(null);
             socket.emit('lostGame', { roomName: room, playerName });
+            return false;
         }
+        return true;
     }, [socket, isGameOver, isGameLost, numCols, checkCollision, updatePile, playerName, room]);
 
     // Function to merge current piece into the pile when it can no longer move
@@ -112,13 +115,15 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
             socket.emit('scoreGame', { roomName: room, playerName, lines: linesCleared });
         }
     
+        let ret = true;
         if (!isGameLost && !isGameOver && queue.length > 0) {
             const nextPiece = queue[0];
             setQueue(queue.slice(1));
-            spawnNewPiece(pileAfterClear, nextPiece);
+            ret = spawnNewPiece(pileAfterClear, nextPiece);
         }
-    
-        socket.emit('updatedGame', { roomName: room, playerName, grid: pileAfterClear });
+        if (ret) {
+            socket.emit('updatedGame', { roomName: room, playerName, grid: pileAfterClear });
+        }
     }, [queue, spawnNewPiece, isGameOver, isGameLost, updatePile, pile, playerName, room, socket]);
     
 
@@ -155,6 +160,19 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
         const interval = setInterval(dropPiece, dropInterval);
         return () => clearInterval(interval); // Clean up interval on unmount
     }, [currentPosition, currentPiece, isGameOver, isGameLost, dropInterval, checkCollision, mergePieceToPile, pile]); // Dropping logic depends on position and piece
+
+    // Update shadow position of the piece
+    useEffect(() => {
+        if (!currentPiece) return;
+
+        let newRow = currentPosition.row;
+        let newCol = currentPosition.col;
+
+        while (!checkCollision(pile, newRow + 1, newCol, currentPiece)) {
+            newRow++;
+        }
+        setShadowPosition({ row: newRow, col: newCol });
+    }, [currentPosition, currentPiece, pile, checkCollision]);
 
     // Handle keyboard input for piece movement
     useEffect(() => {
@@ -224,8 +242,6 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
             }
         };
         
-        
-
         const fastDrop = (pile) => {
             if (isGameLost || isGameOver) return; // Do nothing if the game is over
 
@@ -301,6 +317,31 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
         };
     }, [socket, playerName, room, pile, numCols]);    
 
+
+    const isShadowCell = (row, col) => {
+        if (!currentPiece) return false; // No current piece, no shadow
+    
+        // Get the shadow's position
+        const shadowRow = shadowPosition.row;
+        const shadowCol = shadowPosition.col;
+    
+        // Check if the given row and column match the shadow position
+        for (let r = 0; r < currentPiece.piece.length; r++) {
+            for (let c = 0; c < currentPiece.piece[r].length; c++) {
+                if (currentPiece.piece[r][c] !== null) {
+                    const targetRow = shadowRow + r; // Calculate the target row based on the shadow
+                    const targetCol = shadowCol + c; // Calculate the target column based on the shadow
+    
+                    if (row === targetRow && col === targetCol) {
+                        return true; // This cell is part of the shadow
+                    }
+                }
+            }
+        }
+    
+        return false; // The cell is not part of the shadow
+    };
+    
     const renderGrid = () => {
         if (otherPlayer && otherGrid) {
             const newPile = otherGrid.map((row) => [...row]);
@@ -320,12 +361,13 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
                 }
             }
         }
+        
 
         return newGrid;
     };
 
     const getCellClassName = (value, isShadow = false) => {
-        if (isShadow) {
+        if (isShadow && value === null) {
             return 'cell-shadow';
         } else if (value === null) {
             return 'cell-default';
@@ -351,7 +393,7 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
                         {row.map((cell, colIndex) => (
                             <div
                                 key={colIndex}
-                                className={`grid-cell ${getCellClassName(cell)}`}
+                                className={`grid-cell ${getCellClassName(cell, isShadowCell(rowIndex, colIndex))}`}
                             ></div>
                         ))}
                     </div>
