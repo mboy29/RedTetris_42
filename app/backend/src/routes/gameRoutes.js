@@ -30,7 +30,9 @@ router.post('/create', async (req, res) => {
             return res.status(400).json({ message: 'Invalid input' });
         }
 
-        if (!isValidRoomName(roomName)) {
+        if (roomName.length < 4 || roomName.length > 12) {
+            return res.status(400).json({ message: 'Room name must be between 3 and 20 characters' });
+        } else if (!isValidRoomName(roomName)) {
             return res.status(400).json({ message: 'Room name must contain only letters and numbers' });
         }
 
@@ -69,7 +71,7 @@ router.post('/join', async (req, res) => {
         }
 
         if (!game.isGameJoinable()) {
-            return res.status(409).json({ message: 'Game has already started' });
+            return res.status(409).json({ message: 'Game is no longer joinable' });
         }
 
         if (game.isGameFull() === true) {
@@ -124,7 +126,16 @@ router.get('/check', async (req, res) => {
         } else if (!game) {
             console.log('[GAME] game not found');
             return res.status(404).json({ success: false, message: 'Game not found' });
-        }
+        } else if (!game.isGameJoinable()) {
+            console.log('[GAME] Game is not joinable');
+            return res.status(403).json({ success: false, message: 'Game is no longer joinable' });
+        } else if (!game.isGameJoinable(player)) {
+            console.log('[GAME] Player is not in game');
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        } else if (game.isGameLoser(player)) {
+            console.log('[GAME] Player is loser');
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        } 
         return res.status(200).json({ success: true });
 
     } catch (error) {

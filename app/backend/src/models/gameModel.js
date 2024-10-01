@@ -201,6 +201,13 @@ class Game {
         return false;
     }
 
+    isGameLoser(player) {
+        if (this.losers.includes(player.id)) {
+            return true;
+        }
+        return false;
+    }
+
     isGameFull() {
         const playerCount = this.getPlayers().length;
         if (playerCount === this.getSize()) {
@@ -215,6 +222,8 @@ class Game {
         }
         return false;
     }
+
+    
 
     async updateName(name) {
         try {

@@ -217,6 +217,7 @@ class Player {
     }
 
     async disconnect() {
+        await this.updateRoomName(null);
         await this.updateConnect(false);
     }
 
@@ -225,7 +226,6 @@ class Player {
         if (!player) {
             throw new Error('Player not found.');
         } else {
-            await this.updateRoomName(null);
             await player.disconnect();
             player = null;
         }

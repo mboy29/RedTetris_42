@@ -247,40 +247,15 @@ const lostGame = async (io, socket, { roomName, playerName, surrendered = false 
 
 const disconnect = async (io, socket) => {
     try {
-        const socketInfo = socketRooms.get(socket.id);
-        if (!socketInfo) {
-            return;
+        if (socketRooms.has(socket.id)) {
+            const { roomName, playerName } = socketRooms.get(socket.id);
+            const player = await Player.getByUsername(playerName);
+            if (player) {
+                await leaveGame(io, socket, { roomName, playerName });
+            }
+            console.log(`[GAME] Player ${playerName} disconnected from game ${roomName}`);
         }
-
-        const { roomName, playerName } = socketInfo;
-
-        if (!roomName || !playerName) {
-            throw new Error('Room or player information not found');
-        }
-        const game = await Game.getByName(roomName);
-        if (!game) {
-            throw new Error('Game not found');
-        }
-
-        const player = await Player.getByUsername(playerName);
-        if (!player) {
-            throw new Error('Player not found');
-        }
-
-        if (!await game.isGamePlayer(player)) {
-            throw new Error('Player not in game');
-        }
-
-        await game.removePlayers(socket, 0, player);
-        console.log(`[GAME] Player ${playerName} left game ${roomName}`);
-        if (game.isGameCreator(player) && game.getStatus() === 'pending') {
-            await game.remove(roomName);
-            console.log(`[GAME] Game ${roomName} deleted as creator left`);
-            io.to(roomName).emit('gameDeleted');
-        } else {
-            const players = await game.getPlayers();
-            io.to(roomName).emit('updatePlayers', { players: players });
-        }       
+            
     } catch (error) {
         console.log('[GAME] Error handling player leaving game:', error.message);
     }

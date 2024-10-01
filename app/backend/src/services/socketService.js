@@ -48,9 +48,9 @@ function setupSocket(io) {
             gameService.lostGame(io, socket, { roomName, playerName });
         });
         
-        // socket.on('disconnect', async () => {
-        //     gameService.disconnect(io, socket);
-        // });
+        socket.on('disconnect', async () => {
+            gameService.disconnect(io, socket);
+        });
         
     });
 }

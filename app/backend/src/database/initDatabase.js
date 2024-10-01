@@ -46,7 +46,7 @@ async function initGame() {
 
         await dbModule.run(`CREATE TABLE IF NOT EXISTS games (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL CHECK(length(name) >= 1),
+            name TEXT NOT NULL CHECK(length(name) >= 4 AND length(name) <= 12) UNIQUE,
             status TEXT NOT NULL CHECK(status IN ('pending', 'in progress', 'finished')),
             mode TEXT NOT NULL CHECK(mode IN ('solo', 'multiplayer')),
             creator_id INTEGER NOT NULL,
