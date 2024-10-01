@@ -62,13 +62,12 @@ const Game = () => {
             } else if (count < 0) {
                 clearInterval(interval);
                 setCountdown(null); 
-                setShowOverlay(false); 
-                socket.emit('triggerGame', { roomName: room });
+                setShowOverlay(false);
             } else {
                 setCountdown(count);
             }
         }, 1000);
-    }, [room]);
+    }, []);
 
     useEffect(() => {
         if (room && session.username) {

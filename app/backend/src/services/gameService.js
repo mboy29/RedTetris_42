@@ -233,7 +233,6 @@ const lostGame = async (io, socket, { roomName, playerName, surrendered = false 
         await game.updateLosers(player, surrendered);
         const scores = await formatScores(game);
         io.to(roomName).emit('gameLost', { playerName, scores });
-        console.log('[GAME] Game lost for', playerName, game.isEndGame());
         if (game.isEndGame()) {
             await game.endGame();
             const winner = game.getWinner()
@@ -260,7 +259,6 @@ const disconnect = async (io, socket) => {
         console.log('[GAME] Error handling player leaving game:', error.message);
     }
 };
-
 
 // +------------------- EXPORTS --------------------+
 

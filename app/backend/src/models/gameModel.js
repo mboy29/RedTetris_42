@@ -302,12 +302,16 @@ class Game {
     }
 
     async addPiece() {
-        for (let idx = 0; idx < 50; idx++) {
+        const existingPieces = await Piece.getPieces(this.id);
+        let startIdx = existingPieces.length;
+    
+        for (let idx = startIdx; idx < startIdx + 50; idx++) {
             const piece = new Piece();
             this.pieces.push(piece);
             await Piece.updatPieces(this.id, piece.getType(), idx);
         }
     }
+    
     
     static async create(name, mode, creator) {
         const id = await queries.createGame(name, mode, creator.id, 'pending');

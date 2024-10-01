@@ -131,16 +131,16 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
     useEffect(() => {
         if (socket && isInteractable) {
             socket.on('gamePieces', (pieces) => {
-                setQueue(pieces);  // Assuming 'pieces' is an array of piece objects
+                setQueue([...queue, ...pieces]);
                 if (!isGameLost && !isGameOver) {
-                    spawnNewPiece(pile, pieces[0]); // Spawn the first piece on receiving pieces only if game is not over
+                    spawnNewPiece(pile, pieces[0]);
                 }
             });
             return () => {
                 socket.off('gamePieces');
             };
         }
-    }, [socket, isInteractable, spawnNewPiece, isGameOver, isGameLost, pile]); // Added isGameLost to dependencies
+    }, [socket, isInteractable, spawnNewPiece, isGameOver, isGameLost, pile, queue]); // Added isGameLost to dependencies
 
     // Move the piece down every 'dropInterval'
     useEffect(() => {
@@ -317,6 +317,13 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
         };
     }, [socket, playerName, room, pile, numCols]);    
 
+    useEffect(() => {
+        if (!isGameOver) {
+            if (queue.length <= 8) {
+                socket.emit('triggerGame', { roomName: room });
+            }
+        }
+    }, [isGameOver, queue, socket, room, playerName]);
 
     const isShadowCell = (row, col) => {
         if (!currentPiece) return false; // No current piece, no shadow
