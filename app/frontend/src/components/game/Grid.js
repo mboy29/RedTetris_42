@@ -54,7 +54,11 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
         }
         setCurrentPiece(piece);
         const initialPosition = { row: 0, col: Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2) };
+        if (piece.type === "I") {
+            initialPosition.row = -1;
+        }
         setCurrentPosition(initialPosition);
+    
         if (checkCollision(newPile, 0, Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2), piece)) {
             let lastLine = 0;
             for (let i = piece.piece.length - 1; i >= 0; i--) {
@@ -167,17 +171,60 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
         };
 
         const rotatePiece = (pile) => {
-            // Rotate the piece 90 degrees clockwise
+            if (!currentPiece) return;
+
+            if (currentPiece.type === 'I') {
+                if (currentPosition.row === -1) {
+                    currentPosition.row = 0;
+                }
+                if (currentPosition.col < 0) {
+                    currentPosition.col = 0;
+                }
+                if (currentPosition.col >= numCols - 2) {
+                    currentPosition.col = numCols - 3;
+                }
+                setCurrentPosition(currentPosition);
+            
+            }
+        
             const rotatedPiece = {
                 ...currentPiece,
-                piece: currentPiece.piece[0].map((_, index) => currentPiece.piece.map(row => row[index])).reverse() // Rotate logic
+                piece: currentPiece.piece[0].map((_, index) => currentPiece.piece.map(row => row[index])).reverse()
             };
 
-            // Check for collision after rotation
-            if (!isGameLost && !isGameOver  && !checkCollision(pile, currentPosition.row, currentPosition.col, rotatedPiece)) {
-                setCurrentPiece(rotatedPiece);
+            const rowOffset = currentPosition.row;
+            const colOffset = currentPosition.col;
+        
+            const rotationOffsets = [
+                { row: 0, col: 0 }, // No offset
+                { row: 0, col: -1 }, // Left kick
+                { row: 0, col: 1 }, // Right kick
+                { row: -1, col: 0 }, // Upward kick
+                { row: 1, col: 0 } // Downward kick
+            ];
+        
+            for (let offset of rotationOffsets) {
+                const newRow = rowOffset + offset.row;
+                const newCol = colOffset + offset.col;
+        
+                
+                if (!checkCollision(pile, newRow, newCol, rotatedPiece)) {
+                    if (currentPiece.type === 'I' && (newCol < 0 || newCol >= numCols)) {
+                        if (newCol < 0) {
+                            setCurrentPosition({ row: newRow, col: colOffset + 1 });
+                        } else if (newCol >= numCols) {
+                            setCurrentPosition({ row: newRow, col: colOffset - 1 });
+                        }
+                    } else {
+                        setCurrentPiece(rotatedPiece);
+                        setCurrentPosition({ row: newRow, col: newCol });
+                        return;
+                    }
+                }
             }
         };
+        
+        
 
         const fastDrop = (pile) => {
             if (isGameLost || isGameOver) return; // Do nothing if the game is over

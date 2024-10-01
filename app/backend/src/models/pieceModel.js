@@ -29,8 +29,8 @@ const tetrominos = {
         [null, null, null],
     ],
     I: [
-        ['I', 'I', 'I', 'I'],
         [null, null, null, null],
+        ['I', 'I', 'I', 'I'],
         [null, null, null, null],
         [null, null, null, null],
     ],
