@@ -49,6 +49,7 @@ const Game = () => {
     const [isGameFull, setIsGameFull] = useState(false);
     const [isSoloGame, setIsSoloGame] = useState(false);
     const [isGameOver, setIsGameOver] = useState(false);
+    const [isSprintMode, setIsSprintMode] = useState(false);
 
     const startCountdown = useCallback(() => {
         let count = 3;
@@ -94,7 +95,12 @@ const Game = () => {
             setIsGameFull(bool);
         });
 
-        socket.on('gameStarted', () => {
+        socket.on('gameStarted', (sprint) => {
+            if (sprint.sprint === 1) {
+                setIsSprintMode(true);
+            } else {
+                setIsSprintMode(false);
+            }
             startCountdown();
         });
 
@@ -183,7 +189,7 @@ const Game = () => {
             setErrors((prevErrors) => [...prevErrors, error.message]);
         }
     };
-
+    
     return (
         <div>
             <NavBar />
@@ -288,7 +294,7 @@ const Game = () => {
                                 <div className='w-100 h-100 game-grids'>
                                     <div className='game-player-container'>
                                         <div className='game-player'>
-                                            <Grid socket={socket} isGameOver={isGameOver} isInteractable={true} room={room} playerName={session.username} playerScore={playerScores[session.username] || 0}/>
+                                            <Grid socket={socket} isSprintMode={isSprintMode} isGameOver={isGameOver} isInteractable={true} room={room} playerName={session.username} playerScore={playerScores[session.username] || 0}/>
                                         </div>
                                     </div>
                                     
@@ -298,6 +304,7 @@ const Game = () => {
                                                 <div className="game-other mb-2" key={index}>
                                                     <Grid 
                                                         socket={socket} 
+                                                        isSprintMode={isSprintMode}
                                                         isGameOver={isGameOver}
                                                         isInteractable={false} 
                                                         room={room}
@@ -318,7 +325,7 @@ const Game = () => {
                                 <div className='w-100 h-100 game-grids'> 
                                     <div className='game-solo-container'>
                                         <div className='game-player'>
-                                            <Grid socket={socket} isGameOver={isGameOver} isInteractable={true} room={room} playerName={session.username} playerScore={playerScores[session.username] || 0}/>
+                                            <Grid socket={socket} isSprintMode={isSprintMode} isGameOver={isGameOver} isInteractable={true} room={room} playerName={session.username} playerScore={playerScores[session.username] || 0}/>
                                         </div>
                                     </div>
                                 </div>

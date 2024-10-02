@@ -24,7 +24,7 @@ const isValidRoomName = (roomName) => /^[a-zA-Z0-9]+$/.test(roomName);
 
 router.post('/create', async (req, res) => {
     try {
-        const { roomName, playerName } = req.body;
+        const { roomName, playerName, sprintMode } = req.body;
 
         if (!roomName || !playerName) {
             return res.status(400).json({ message: 'Invalid input' });
@@ -42,7 +42,7 @@ router.post('/create', async (req, res) => {
         } else if (await Game.getByName(roomName)) {
             return res.status(409).json({ message: 'Game already exists' });
         }
-        await Game.create(roomName, 'multiplayer', player);
+        await Game.create(roomName, 'multiplayer', player, sprintMode);
 
         console.log(`[GAME] Game ${roomName} created by ${playerName}`);
         res.status(201).json({ roomName, playerName }); 

@@ -40,8 +40,8 @@ function setupSocket(io) {
             gameService.updateGame(io, socket, { roomName, playerName, grid });
         });
 
-        socket.on('scoreGame', async ({ roomName, playerName, lines }) => {
-            gameService.scoreGame(io, socket, { roomName, playerName, lines });
+        socket.on('scoreGame', async ({ roomName, playerName, lines, level }) => {
+            gameService.scoreGame(io, socket, { roomName, playerName, lines, level });
         });
 
         socket.on('lostGame', async ({ roomName, playerName }) => {

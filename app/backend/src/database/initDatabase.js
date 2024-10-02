@@ -53,6 +53,7 @@ async function initGame() {
             size INTEGER NOT NULL CHECK(size >= 1 AND size <= 4),
             winner INTEGER DEFAULT NULL,
             losers INTEGER DEFAULT 0,
+            sprint BOOLEAN DEFAULT FALSE,
             FOREIGN KEY (creator_id) REFERENCES players(id)
         )`);
 

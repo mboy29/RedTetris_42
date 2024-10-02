@@ -35,14 +35,14 @@ class Game {
     static TETRIS_SCORES = {
         1: 40,
         2: 100,
-        2: 300,
-        3: 1200
+        3: 300,
+        4: 1200
     };
 
     static SURRENDER_PENALTY = -1200; 
     static LOSER_BONUS_MULTIPLIER = 1.5;
 
-    constructor(id, name, mode, creator, status = "pending", winner = null) {
+    constructor(id, name, mode, creator, sprint = false, status = "pending", winner = null) {
         this.setId(id);
         this.setName(name);
         this.setMode(mode);
@@ -50,6 +50,7 @@ class Game {
         this.setStatus(status);
         this.setSize(4);
         this.setWinner(winner);
+        this.setSprint(sprint);
        
         this.losers = [];
         this.scores = {};
@@ -88,6 +89,8 @@ class Game {
 
     setSize(size) { this.size = size; }
 
+    setSprint(sprint) { this.sprint = sprint; } 
+
     setWinner(winner) { this.winner = winner; }
 
     getId() {
@@ -118,6 +121,10 @@ class Game {
         return this.size;
     }
 
+    getSprint() {
+        return this.sprint;
+    }
+
     getPieces() {
         return this.pieces;
     }
@@ -141,7 +148,7 @@ class Game {
         }
         const creator = await Player.getById(game.creator_id);
         const winner = game.winner_id ? await Player.getById(game.winner_id) : null;
-        const newGame = new Game(game.id, game.name, game.mode, creator, game.status, winner);
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.sprint, game.status, winner);
         const players = await queries.getGamePlayers(game.id);
         for (const player of players) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName, player.score));
@@ -166,7 +173,7 @@ class Game {
         }
         const creator = await Player.getById(game.creator_id);
         const winner = game.winner_id ? await Player.getById(game.winner_id) : null;
-        const newGame = new Game(game.id, game.name, game.mode, creator, game.status, winner);
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.sprint, game.status, winner);
         for (const player of await queries.getGamePlayers(id)) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName, player.score));
         }
@@ -270,12 +277,18 @@ class Game {
         }
     }
 
-    async updateScore(player, score, lines = -1) {
+    async updateScore(player, score, lines = -1, level = 1) {
         if (lines !== -1) {
             score += Game.TETRIS_SCORES[lines] || 0;
+            score *= level;
         }
         await queries.updateGameScore(this.id, player.id, score);
         this.scores[player.id] += score;
+    }
+
+    async updateSprint(sprint) {
+        this.setSprint(sprint);
+        await queries.updateGameSprint(this.id, sprint);
     }
 
     async addPlayers(socket, ...players) {
@@ -313,9 +326,9 @@ class Game {
     }
     
     
-    static async create(name, mode, creator) {
-        const id = await queries.createGame(name, mode, creator.id, 'pending');
-        const new_game = new Game(id, name, mode, creator);
+    static async create(name, mode, creator, sprint = false) {
+        const id = await queries.createGame(name, mode, creator.id, 'pending', sprint);
+        const new_game = new Game(id, name, mode, creator, sprint);
         return new_game
     }
 

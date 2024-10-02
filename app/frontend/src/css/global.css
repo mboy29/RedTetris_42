@@ -101,6 +101,27 @@ p {
     color: var(--primary-cyan);
 }
 
+/* Default state */
+.global-toggle-btn {
+    background-color: var(--secondary-dark-grey);
+    border: 2px solid var(--secondary-grey);
+    color: var(--secondary-light-grey);
+}
+
+/* Hover state */
+.global-toggle-btn:hover {
+    background-color: var(--primary-blue) !important; /* Ensures primary-blue is applied */
+    color: var(--secondary-white) !important; /* Corrected the CSS variable */
+    border-color: var(--primary-blue) !important;
+}
+
+/* Active state (when checked/enabled) */
+.global-toggle-btn.active {
+    background-color: var(--primary-green) !important; /* Ensures primary-blue is applied */
+    color: var(--secondary-white) !important; /* Corrected the CSS variable */
+    border-color: var(--primary-green) !important;
+}
+
 .global-link {
     color: var(--primary-red);
     text-decoration: none;

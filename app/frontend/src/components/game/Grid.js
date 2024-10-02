@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
 import './../../css/grid.css';
 import Queue from './Queue';
 
-const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScore, otherPlayer = null, otherGrid = null, otherScore = null, otherLost = null}) => {
+const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerName, playerScore, otherPlayer = null, otherGrid = null, otherScore = null, otherLost = null}) => {
     const numRows = 20;
     const numCols = 10;
-    const dropInterval = 1000; // 1 second drop interval
+    const initialDropInterval = 1000;
+    const minDropInterval = 100;
+    const dropAcceleration = 100;
+    const sprintInterval = 20000;
 
     const [queue, setQueue] = useState([]);
     const [currentPiece, setCurrentPiece] = useState(null);
@@ -13,6 +17,18 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
     const [currentPosition, setCurrentPosition] = useState({ row: 0, col: 0 }); // Initial spawn position
     const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
     const [isGameLost, setIsGameLost] = useState(false);
+    const [dropInterval, setDropInterval] = useState(initialDropInterval); 
+    
+
+    const calculateLevel = (interval) => {
+        if (!isSprintMode) {
+            return 1;
+        }
+        const level = Math.max(1, Math.floor((initialDropInterval - interval) / dropAcceleration) + 1);
+        return level;
+    };
+
+    const [level, setLevel] = useState(calculateLevel(dropInterval));
 
     // Check for collision with the pile or grid bottom
     const checkCollision = useCallback((newPile, newRow, newCol, piece) => {
@@ -112,7 +128,7 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
     
         const linesCleared = fullRows.length;
         if (linesCleared > 0) {
-            socket.emit('scoreGame', { roomName: room, playerName, lines: linesCleared });
+            socket.emit('scoreGame', { roomName: room, playerName, lines: linesCleared, level: level });
         }
     
         let ret = true;
@@ -142,24 +158,24 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
         }
     }, [socket, isInteractable, spawnNewPiece, isGameOver, isGameLost, pile, queue]); // Added isGameLost to dependencies
 
-    // Move the piece down every 'dropInterval'
+    // Move the piece down every 'initialDropInterval'
     useEffect(() => {
         const dropPiece = () => {
-            if (!currentPiece || isGameLost || isGameOver) return; // No piece to move or game over
+            if (!currentPiece || isGameLost || isGameOver) return;
 
             const newRow = currentPosition.row + 1;
             const newCol = currentPosition.col;
 
             if (checkCollision(pile, newRow, newCol, currentPiece)) {
-                mergePieceToPile(currentPosition); // If there's a collision, merge the piece to the pile
+                mergePieceToPile(currentPosition);
             } else {
                 setCurrentPosition({ row: newRow, col: newCol });
             }
         };
 
         const interval = setInterval(dropPiece, dropInterval);
-        return () => clearInterval(interval); // Clean up interval on unmount
-    }, [currentPosition, currentPiece, isGameOver, isGameLost, dropInterval, checkCollision, mergePieceToPile, pile]); // Dropping logic depends on position and piece
+        return () => clearInterval(interval);
+    }, [currentPosition, currentPiece, isGameOver, isGameLost, dropInterval, checkCollision, mergePieceToPile, pile]);
 
     // Update shadow position of the piece
     useEffect(() => {
@@ -325,6 +341,24 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
         }
     }, [isGameOver, queue, socket, room, playerName]);
 
+    // Sprint mode logic: Speed up the drop interval every X seconds
+    useEffect(() => {
+        if (isSprintMode) {
+            const sprintTimer = setInterval(() => {
+                setDropInterval((prevInterval) => Math.max(minDropInterval, prevInterval - dropAcceleration));
+            }, sprintInterval);
+
+            return () => clearInterval(sprintTimer); // Clean up the sprint timer on unmount
+        }
+    }, [isSprintMode, dropInterval]);
+
+    // Update level whenever the drop interval changes
+    useEffect(() => {
+        if (isSprintMode) {
+            setLevel(calculateLevel(dropInterval));
+        }
+    }, [dropInterval]);
+
     const isShadowCell = (row, col) => {
         if (!currentPiece) return false; // No current piece, no shadow
     
@@ -419,7 +453,20 @@ const Grid = ({ socket, isGameOver, isInteractable, room, playerName, playerScor
             {isInteractable && (
                 <div className="queue-and-score d-flex flex-column align-items-center">
                     <Queue pieceQueue={queue} getCellClassName={getCellClassName} isGameLost={isGameLost} isGameOver={isGameOver}s/>
-                    <h3 className="mt-3">Score {playerScore}</h3>
+                    {isSprintMode ? (
+                        <Container className="mt-3">
+                            <Row className="justify-content-center text-center">
+                                <Col xs="auto">
+                                    <div className="p-3"> {/* Padding around the div */}
+                                        <h3 className="mb-0">Level {level}</h3> {/* Remove bottom margin */}
+                                        <p className="mb-0">Score {playerScore}</p> {/* Remove bottom margin */}
+                                    </div>
+                                </Col>
+                            </Row>
+                        </Container>
+                    ) : (
+                        <h3 className="mt-3">Score {playerScore}</h3>
+                    )}
                 </div>
             )}
         </div>

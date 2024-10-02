@@ -14,6 +14,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, Button, Form, Alert } from 'react-bootstrap';
 import React, { useState, useContext } from 'react';
+import { ButtonGroup, ToggleButton } from 'react-bootstrap';
 
 import './../../css/game.css'; 
 import NavBar from './../global/NavBar';
@@ -25,6 +26,7 @@ import config from './../../configs/config';
 const CreateGame = () => {
     const { session } = useContext(SessionContext);
     const [roomName, setRoomName] = useState('');
+    const [sprintMode, setSprintMode] = useState(false);  // Add state for sprint mode
     const [errors, setErrors] = useState([]);
     const navigate = useNavigate();
 
@@ -38,6 +40,7 @@ const CreateGame = () => {
                     },
                     body: JSON.stringify({
                         roomName,
+                        sprintMode, 
                         playerName: session.username,
                     }),
                 });
@@ -54,6 +57,11 @@ const CreateGame = () => {
             }
         }
     };
+
+    const toggleSprintMode = () => {
+        setSprintMode(!sprintMode);  // Toggle sprint mode
+    };
+
 
     return (
         <div>
@@ -84,6 +92,21 @@ const CreateGame = () => {
                                 required
                             />
                         </Form.Group>
+                        <Form.Group controlId="formSprintMode" className="mb-3">
+                            <ButtonGroup className="w-100">
+                                <ToggleButton
+                                    id="toggle-sprint-mode"
+                                    type="checkbox"
+                                    checked={sprintMode}
+                                    value="1"
+                                    onChange={toggleSprintMode}  // Toggle sprintMode on click
+                                    className={`w-100 global-toggle-btn ${sprintMode ? 'active' : ''}`}  // Add 'active' class manually based on state
+                                >
+                                    {sprintMode ? 'Sprint Mode Enabled' : 'Sprint Mode Disabled'}
+                                </ToggleButton>
+                            </ButtonGroup>
+                        </Form.Group>
+
                         <Button
                             variant="primary"
                             type="submit"

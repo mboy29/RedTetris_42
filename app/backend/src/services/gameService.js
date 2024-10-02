@@ -78,7 +78,8 @@ const startGame = async (io, socket, { roomName }) => {
         }
         await game.startGame();
         console.log(`[GAME] Game ${roomName} started`);
-        io.to(roomName).emit('gameStarted', { roomName });
+        const sprint = game.getSprint();
+        io.to(roomName).emit('gameStarted', { sprint });
 
     } catch (error) {
         console.log('[GAME] Error starting game:', error.message);
@@ -174,7 +175,7 @@ const updateGame = async (io, socket, { roomName, playerName, grid }) => {
     }
 }
 
-const scoreGame = async (io, socket, { roomName, playerName, lines }) => {
+const scoreGame = async (io, socket, { roomName, playerName, lines, level }) => {
     try {
         if (!roomName || !playerName || !lines) {
             throw new Error('Invalid input');
@@ -191,8 +192,7 @@ const scoreGame = async (io, socket, { roomName, playerName, lines }) => {
         } else if (!await game.isGamePlayer(player)) {
             throw new Error('Player not in game');
         }
-      
-        await game.updateScore(player, 0, lines);
+        await game.updateScore(player, 0, lines, level);
         io.to(roomName).emit('gameScored', { scoredPlayerGame: playerName, lines: lines });
     } catch (error) {
         console.log('[GAME] Error scoring game:', error.message);

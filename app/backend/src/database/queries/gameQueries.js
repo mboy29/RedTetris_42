@@ -37,17 +37,17 @@ function validateMode(mode) {
     }
 }
 
-async function createGame(name, mode, creatorId, status, size = 2) {
+async function createGame(name, mode, creatorId, status, sprint, size = 2) {
     try {
         validateMode(mode);
         validateStatus(status);
 
         const db = await dbModule.connect();
         const query = `
-            INSERT INTO games (name, mode, creator_id, status, size)
-            VALUES (?, ?, ?, ?, ?);
+            INSERT INTO games (name, mode, creator_id, status, size, sprint)
+            VALUES (?, ?, ?, ?, ?, ?);
         `;
-        const result = await dbModule.run(query, [name, mode, creatorId, status, size]);
+        const result = await dbModule.run(query, [name, mode, creatorId, status, size, sprint]);
 
         return result.lastID;
     } catch (err) {
@@ -225,6 +225,24 @@ async function updateGameScore(gameId, playerId, score) {
     }
 }
 
+async function updateSprintScore(gameId, playerId, sprint) {
+    try {
+        const db = await dbModule.connect();
+        const query = `
+            UPDATE games
+            SET sprint = ?
+            WHERE id = ? AND creator_id = ?;
+        `;
+        const result = await dbModule.run(query, [sprint, gameId, playerId]);
+        if (result.changes === 0) {
+            throw new Error('Game not found or player is not the creator.');
+        }
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error updating game sprint mode: ${err.message}`);
+    }
+}
+
 async function getGameById(id) {
     try {
         const db = await dbModule.connect();
@@ -389,6 +407,7 @@ module.exports = {
     updateGameWinner,
     updateGameLosers,
     updateGameScore,
+    updateSprintScore,
     getGameById,
     getGameByName,
     getGamePlayers,
