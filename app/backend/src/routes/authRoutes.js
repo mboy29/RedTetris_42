@@ -21,7 +21,6 @@ const Player = require('./../models/playerModel');
 router.post('/register', async (req, res) => {
     const { username, password, passwordConfirm } = req.body;
     try {
-        console.log()
         const player = await Player.create(username, password, passwordConfirm);
         await player.authenticate(password);
         req.session.user = player;

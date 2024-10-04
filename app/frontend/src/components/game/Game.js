@@ -32,7 +32,8 @@ const Game = () => {
     const [errors, setErrors] = useState([]); 
     const navigate = useNavigate(); 
 
-    const { room } = useParams(); 
+    const { room } = useParams();
+    const [rematchRoom, setRematchRoom] = useState(null);
 
     const [players, setPlayers] = useState([]); 
     const [playerGrids, setPlayerGrids] = useState({});
@@ -50,6 +51,7 @@ const Game = () => {
     const [isSoloGame, setIsSoloGame] = useState(false);
     const [isGameOver, setIsGameOver] = useState(false);
     const [isSprintMode, setIsSprintMode] = useState(false);
+    const [isRematcher, setIsRematcher] = useState(false);
 
     const startCountdown = useCallback(() => {
         let count = 3;
@@ -70,6 +72,25 @@ const Game = () => {
         }, 1000);
     }, []);
 
+    const resetGameState = () => {
+        setErrors([]);
+        setRematchRoom(null);
+        setPlayers([]);
+        setPlayerGrids({});
+        setPlayerScores({});
+        setPlayerLost([]);
+        setWinner(null);
+        setCountdown(null);
+        setShowOverlay(true);
+        setShowSoloModal(false);
+        setIsCreator(false);
+        setIsGameFull(false);
+        setIsSoloGame(false);
+        setIsGameOver(false);
+        setIsSprintMode(false);
+        setIsRematcher(false);
+    };
+
     useEffect(() => {
         if (room && session.username) {
             socket.emit('joinGame', { roomName: room, playerName: session.username });
@@ -87,8 +108,12 @@ const Game = () => {
             }
         });
 
-        socket.on('gameCreator', () => {
-            setIsCreator(true);
+        socket.on('gameCreator', ({creator}) => {
+            if (creator.username === session.username) {
+                setIsCreator(true);
+            } else {
+                setIsCreator(false);
+            }
         });
 
         socket.on('gameFull', (bool) => {
@@ -132,10 +157,33 @@ const Game = () => {
             setPlayerScores(scores);
         });
 
-        socket.on('gameEnded', ({ winner, scores }) => {
+        socket.on('gameEnded', ({ winner, scores, rematcher }) => {
             setIsGameOver(true);
             setWinner(winner);
             setPlayerScores(scores);
+            if (rematcher.username === session.username) {
+                setIsRematcher(true);
+            }
+        });
+
+        socket.on('gameRematched', ({ creator, roomName }) => {
+            if (roomName === null) {
+                setRematchRoom(null);
+            } else {
+                setRematchRoom(roomName);
+                if (creator.username === session.username) {
+                    resetGameState();
+                    navigate(`/${roomName}/${session.username}`);
+                }
+            }
+        });
+
+        socket.on('gameRematcher', ({ rematcher }) => {
+            if (rematcher.username === session.username) {
+                setIsRematcher(true);
+            } else {
+                setIsRematcher(false);
+            }
         });
 
 
@@ -148,6 +196,8 @@ const Game = () => {
             socket.off('gameUpdated');
             socket.off('gameLost');
             socket.off('gameEnded');
+            socket.off('gameRematched');
+            socket.off('gameRematcher');
             socket.off('gameSurrendered');
         };
     }, [room, session, navigate, isGameFull, startCountdown]);
@@ -160,6 +210,19 @@ const Game = () => {
         }
     };
 
+    const handleRematch = (e) => {
+        e.preventDefault();
+        if (isRematcher) {
+            socket.emit('rematchGame', { roomName: room, playerName: session.username });
+        }
+    };
+
+    const handleJoinRematch = (e) => {
+        e.preventDefault();
+        resetGameState();
+        navigate(`/${rematchRoom}/${session.username}`);
+    };
+
     const handleStartGame = () => {
         if (players.length === 1) {
             setShowSoloModal(true);
@@ -167,6 +230,7 @@ const Game = () => {
             socket.emit('startGame', { roomName: room });
         }
     };
+
 
     const confirmStartGame = async () => {
         setShowSoloModal(false);
@@ -199,7 +263,12 @@ const Game = () => {
                         <div className="overlay-card">
                             <h2 className="game-overlay-message">{room}</h2>
                             {isSoloGame ? (
-                                <h5>Game Over! Your score: {playerScores[session.username] || 0}</h5>
+                                <div>
+                                    <h5>Game Over! Your score: {playerScores[session.username] || 0}</h5>
+                                    <Button variant="primary" onClick={handleRematch} className="w-100 global-btn mb-3">
+                                        Play again
+                                    </Button>
+                                </div>
                             ) : (
                                 <>
                                     {winner && winner.username && (
@@ -212,6 +281,16 @@ const Game = () => {
                                             </ListGroup.Item>
                                         ))}
                                     </ListGroup>
+                                    {isRematcher && (
+                                        <Button variant="primary" onClick={handleRematch} className="w-100 global-btn mb-3">
+                                            Launch a rematch 
+                                        </Button>
+                                    )}
+                                    { rematchRoom && (
+                                        <Button variant="primary" onClick={handleJoinRematch} className="w-100 global-btn mb-3">
+                                            Join the rematch
+                                        </Button>
+                                    )}
                                 </>
                             )}
                             <Form onSubmit={handleLeaveGame} className="game-leave">

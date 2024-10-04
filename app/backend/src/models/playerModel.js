@@ -187,6 +187,12 @@ class Player {
         return new Player(Number(id), username, false, null);
     }
 
+    static async getTopPlayers() {
+        const players = await Player.getAll();
+        players.sort((a, b) => b.getScore() - a.getScore());
+        return players.slice(0, 3);
+    }
+
     async remove() {
         try {
             await queries.deletePlayer(this.getUsername());

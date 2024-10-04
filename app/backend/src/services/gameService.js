@@ -54,7 +54,8 @@ const joinGame = async (io, socket, { roomName, playerName }) => {
             io.to(roomName).emit('gamePlayers', ( players ));
             io.to(roomName).emit('gameFull', ( game.isGameFull() ));
             if (game.isGameCreator(player)) {
-                socket.emit('gameCreator', {});
+                console.log(`[GAME] Player ${player.username} is game creator`);
+                io.to(roomName).emit('gameCreator', { creator: player });
             }
         } else {
             io.to(roomName).emit('gameReconnected', { players: players });
@@ -113,18 +114,42 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
         } else if (game.getStatus() === 'pending') {
             await game.removePlayers(socket, 0, player);
             if (game.isGameCreator(player)) {
-                await game.remove(roomName);
-                console.log(`[GAME] Game ${roomName} deleted as creator left`);
-                io.to(roomName).emit('gameDeleted', {});
+                const players = await game.getPlayers();
+                const otherPlayers = players.filter(p => p.username !== player.getUsername());
+                if (otherPlayers.length === 0) {
+                    await game.remove(roomName);
+                    console.log(`[GAME] Game ${roomName} deleted as creator left`);
+                    io.to(roomName).emit('gameDeleted', {});
+                    const parentGame = game.getParent();
+                    if (parentGame) {
+                        const parentPlayers = await parentGame.getPlayers();
+                        const otherParentPlayers = parentPlayers.filter(p => p.username !== player.getUsername());
+                        const randomParentPlayer = otherParentPlayers[Math.floor(Math.random() * otherParentPlayers.length)];
+                        await parentGame.updateRematcher(randomParentPlayer);
+                        io.to(parentGame.getName()).emit('gameRematcher', { rematcher: randomParentPlayer });
+                        io.to(parentGame.getName()).emit('gameRematched', { creator: randomParentPlayer, roomName: null });
+                    }
+                } else {
+                    const randomPlayer = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+                    await game.updateCreator(randomPlayer);
+                    io.to(roomName).emit('gameCreator', { creator: randomPlayer });
+                    io.to(roomName).emit('gamePlayers', ( players ));
+                    console.log("[GAME] Creator left, new creator is", randomPlayer.username);
+                }
             } else {
                 const players = await game.getPlayers();
                 io.to(roomName).emit('gamePlayers', ( players ));
                 io.to(roomName).emit('gameFull', ( game.isGameFull() ));
             }
         } else {
-            await game.removePlayers(socket, 0, player);
             const players = await game.getPlayers();
-            io.to(roomName).emit('gamePlayers', ( players ));
+            const otherPlayers = players.filter(p => p.username !== player.getUsername());
+            if (game.isGameRematcher(player)) {
+                const randomPlayer = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+                await game.updateRematcher(randomPlayer);
+                io.to(roomName).emit('gameRematcher', { rematcher: randomPlayer });
+                console.log("[GAME] Rematcher left, new rematcher is", randomPlayer.username);
+            }
         }
     } catch (error) {
         console.log('[GAME] Error handling player leaving game:', error.message);
@@ -236,11 +261,52 @@ const lostGame = async (io, socket, { roomName, playerName, surrendered = false 
         if (game.isEndGame()) {
             await game.endGame();
             const winner = game.getWinner()
+            const rematcher = game.getRematcher();
             console.log('[GAME] Game ended with player', winner.username, 'as winner');
-            io.to(roomName).emit('gameEnded', { winner, scores });
+            io.to(roomName).emit('gameEnded', { winner, scores, rematcher });
         }
     } catch (error) {
         console.log('[GAME] Error ending game:', error.message);
+    }
+}
+
+const rematchGame = async (io, socket, { roomName, playerName }) => {
+
+    const generateRematchGameName = (gameName) => {
+        const match = gameName.match(/\.(\d+)$/);
+        
+        let newSuffix;
+        if (match) {
+            const currentSuffix = parseInt(match[1], 10);
+            newSuffix = `.${currentSuffix + 1}`;
+        } else {
+            newSuffix = '.2';
+        }
+        return gameName.replace(/\.\d*$/, '') + newSuffix;
+    };
+    try {
+        console.log(`[GAME] Player ${playerName} requested rematch for game ${roomName}`);
+        const game = await Game.getByName(roomName);
+        if (!game) {
+            throw new Error('Game not found');
+        } else if (game.getStatus() !== 'finished') {
+            throw new Error('Game is not ended');
+        }
+        const player = await Player.getByUsername(playerName); 
+        if (!player) {
+            throw new Error('Player not found');
+        } else if (!await game.isGamePlayer(player)) {
+            throw new Error('Player not in game');
+        } else if (!game.isGameRematcher(player)) {
+            throw new Error('Player not allowed to rematch');
+        }
+        const rematchGame = await Game.create(generateRematchGameName(game.getName()), game.getMode(), player, game.getSprint(), game);
+        
+        console.log(`[GAME] Rematch game ${rematchGame.getName()} created by ${rematchGame.getCreator().username}`);   
+        io.to(roomName).emit('gameRematched', { creator: player, roomName: rematchGame.getName() });
+
+    } catch (error) {
+        console.log('[GAME] Error rematching game:', error.message);
     }
 }
 
@@ -270,5 +336,6 @@ module.exports = {
     updateGame,
     scoreGame,
     lostGame,
+    rematchGame,
     disconnect
 };

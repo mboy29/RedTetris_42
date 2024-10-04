@@ -42,7 +42,7 @@ class Game {
     static SURRENDER_PENALTY = -1200; 
     static LOSER_BONUS_MULTIPLIER = 1.5;
 
-    constructor(id, name, mode, creator, sprint = false, status = "pending", winner = null) {
+    constructor(id, name, mode, creator, sprint = false, status = "pending", parent = null, winner = null, rematcher = null) {
         this.setId(id);
         this.setName(name);
         this.setMode(mode);
@@ -50,7 +50,9 @@ class Game {
         this.setStatus(status);
         this.setSize(4);
         this.setWinner(winner);
+        this.setRematcher(rematcher);
         this.setSprint(sprint);
+        this.setParent(parent);
        
         this.losers = [];
         this.scores = {};
@@ -92,6 +94,10 @@ class Game {
     setSprint(sprint) { this.sprint = sprint; } 
 
     setWinner(winner) { this.winner = winner; }
+
+    setParent(parent) { this.parent = parent; }
+
+    setRematcher(rematcher) { this.rematcher = rematcher; }
 
     getId() {
         return this.id;
@@ -141,14 +147,24 @@ class Game {
         return this.scores;
     }
 
+    getParent() {
+        return this.parent;
+    }
+
+    getRematcher() {
+        return this.rematcher;
+    }
+
     static async getByName(name) {
         const game = await queries.getGameByName(name);
         if (!game) {
             return null;
         }
         const creator = await Player.getById(game.creator_id);
+        const parent = game.parent_id ? await Game.getById(game.parent_id) : null;
         const winner = game.winner_id ? await Player.getById(game.winner_id) : null;
-        const newGame = new Game(game.id, game.name, game.mode, creator, game.sprint, game.status, winner);
+        const rematcher = game.rematcher_id ? await Player.getById(game.rematcher_id) : null;
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.sprint, game.status, parent, winner, rematcher);
         const players = await queries.getGamePlayers(game.id);
         for (const player of players) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName, player.score));
@@ -172,8 +188,10 @@ class Game {
             return null;
         }
         const creator = await Player.getById(game.creator_id);
+        const parent = game.parent_id ? await Game.getById(game.parent_id) : null;
         const winner = game.winner_id ? await Player.getById(game.winner_id) : null;
-        const newGame = new Game(game.id, game.name, game.mode, creator, game.sprint, game.status, winner);
+        const rematcher = game.rematcher_id ? await Player.getById(game.rematcher_id) : null;
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.sprint, game.status, parent, winner, rematcher);
         for (const player of await queries.getGamePlayers(id)) {
             newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName, player.score));
         }
@@ -230,8 +248,20 @@ class Game {
         return false;
     }
 
-    
+    isGameWinner(player) {
+        if (this.getWinner() && this.getWinner().id === player.id) {
+            return true;
+        }
+        return false;
+    }
 
+    isGameRematcher(player) {
+        if (this.getRematcher() && this.getRematcher().id === player.id) {
+            return true;
+        }
+        return false;
+    }
+    
     async updateName(name) {
         try {
             this.setName(name);
@@ -291,6 +321,21 @@ class Game {
         await queries.updateGameSprint(this.id, sprint);
     }
 
+    async updateParent(parent) {
+        this.setParent(parent);
+        await queries.updateGameParent(this.id, parent.id);
+    }
+
+    async updateRematcher(rematcher) {
+        this.setRematcher(rematcher);
+        await queries.updateGameRematcher(this.id, rematcher.id);
+    }
+
+    async updateCreator(creator) {
+        this.setCreator(creator);
+        await queries.updateGameCreator(this.id, creator.id);
+    }
+
     async addPlayers(socket, ...players) {
         for (const player of players) {
             if (this.isGamePlayer(player) === false) {
@@ -326,9 +371,9 @@ class Game {
     }
     
     
-    static async create(name, mode, creator, sprint = false) {
-        const id = await queries.createGame(name, mode, creator.id, 'pending', sprint);
-        const new_game = new Game(id, name, mode, creator, sprint);
+    static async create(name, mode, creator, sprint = false, parent = null) {
+        const id = await queries.createGame(name, mode, creator.id, 'pending', sprint, parent ? parent.id : null);
+        const new_game = new Game(id, name, mode, creator, sprint, 'pending', parent);
         return new_game
     }
 
@@ -365,10 +410,12 @@ class Game {
         const players = this.getPlayers();
         if (this.getMode() == 'solo') {
             await this.updateWinner(players[0]);
+            await this.updateRematcher(players[0]);
         } else {
             for (const player of players) {
                 if (!this.losers.includes(player.id)) {
                     await this.updateWinner(player);
+                    await this.updateRematcher(player);
                     break;
                 }
             }

@@ -20,13 +20,13 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
     const [dropInterval, setDropInterval] = useState(initialDropInterval); 
     
 
-    const calculateLevel = (interval) => {
+    const calculateLevel = useCallback((interval) => {
         if (!isSprintMode) {
             return 1;
         }
         const level = Math.max(1, Math.floor((initialDropInterval - interval) / dropAcceleration) + 1);
         return level;
-    };
+    }, [isSprintMode, initialDropInterval, dropAcceleration]);
 
     const [level, setLevel] = useState(calculateLevel(dropInterval));
 
@@ -140,17 +140,19 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
         if (ret) {
             socket.emit('updatedGame', { roomName: room, playerName, grid: pileAfterClear });
         }
-    }, [queue, spawnNewPiece, isGameOver, isGameLost, updatePile, pile, playerName, room, socket]);
+    }, [queue, level, spawnNewPiece, isGameOver, isGameLost, updatePile, pile, playerName, room, socket]);
     
 
     // Fetch pieces from the server on mount
     useEffect(() => {
         if (socket && isInteractable) {
             socket.on('gamePieces', (pieces) => {
+                // console.log("Updating queue with pieces", pieces);
                 setQueue([...queue, ...pieces]);
                 if (!isGameLost && !isGameOver) {
                     spawnNewPiece(pile, pieces[0]);
                 }
+                // console.log("Queue is now", queue);
             });
             return () => {
                 socket.off('gamePieces');
@@ -357,7 +359,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
         if (isSprintMode) {
             setLevel(calculateLevel(dropInterval));
         }
-    }, [dropInterval]);
+    }, [dropInterval, calculateLevel, isSprintMode]);
 
     const isShadowCell = (row, col) => {
         if (!currentPiece) return false; // No current piece, no shadow

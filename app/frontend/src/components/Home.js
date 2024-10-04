@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 import { Container, Row, Col, Button, Alert } from 'react-bootstrap';
 
 import NavBar from './global/NavBar';
+// import Leaderboard from './game/LeaderBoard';
 
 // +------------------- COMPONENT -------------------+
 
@@ -25,6 +26,7 @@ const Home = ({ globalError }) => {
         <div>
             <NavBar />
             <Container className="d-flex justify-content-center align-items-center vh-100">
+                {/* <Leaderboard scores={scores} /> */}
                 <Row>
                     <Col className="text-center">
                         {globalError && 

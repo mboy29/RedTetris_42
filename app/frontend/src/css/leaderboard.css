@@ -1,0 +1,38 @@
+.podium {
+    background-color: #f8f9fa; /* Light background for the podium */
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.podium-label {
+    font-size: 1.5rem;
+    font-weight: bold;
+    position: absolute;
+    top: -20px; /* Position above the podium */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white; /* White background for the label */
+    padding: 5px 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.podium-player {
+    margin-top: 50px; /* Space for label */
+}
+
+.position-1 {
+    z-index: 3; /* Bring 1st place to front */
+}
+
+.position-2 {
+    z-index: 2; /* Middle position */
+}
+
+.position-3 {
+    z-index: 1; /* Back position */
+}

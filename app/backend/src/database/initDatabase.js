@@ -51,9 +51,10 @@ async function initGame() {
             mode TEXT NOT NULL CHECK(mode IN ('solo', 'multiplayer')),
             creator_id INTEGER NOT NULL,
             size INTEGER NOT NULL CHECK(size >= 1 AND size <= 4),
-            winner INTEGER DEFAULT NULL,
-            losers INTEGER DEFAULT 0,
+            winner_id INTEGER DEFAULT NULL,
+            rematcher_id INTEGER DEFAULT NULL,
             sprint BOOLEAN DEFAULT FALSE,
+            parent_id INTEGER DEFAULT NULL,
             FOREIGN KEY (creator_id) REFERENCES players(id)
         )`);
 

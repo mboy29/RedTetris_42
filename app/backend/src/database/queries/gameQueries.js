@@ -37,17 +37,17 @@ function validateMode(mode) {
     }
 }
 
-async function createGame(name, mode, creatorId, status, sprint, size = 2) {
+async function createGame(name, mode, creatorId, status, sprint, parent = null, size = 4) {
     try {
         validateMode(mode);
         validateStatus(status);
 
         const db = await dbModule.connect();
         const query = `
-            INSERT INTO games (name, mode, creator_id, status, size, sprint)
-            VALUES (?, ?, ?, ?, ?, ?);
+            INSERT INTO games (name, mode, creator_id, status, size, sprint, parent_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
         `;
-        const result = await dbModule.run(query, [name, mode, creatorId, status, size, sprint]);
+        const result = await dbModule.run(query, [name, mode, creatorId, status, size, sprint, parent]);
 
         return result.lastID;
     } catch (err) {
@@ -181,7 +181,7 @@ async function updateGameStatus(id, status) {
 async function updateGameWinner(id, winnerId) {
     try {
         const db = await dbModule.connect();
-        const query = 'UPDATE games SET winner = ? WHERE id = ?';
+        const query = 'UPDATE games SET winner_id = ? WHERE id = ?';
         const result = await dbModule.run(query, [winnerId, id]);
         if (result.changes === 0) {
             throw new Error('Game not found');
@@ -225,7 +225,7 @@ async function updateGameScore(gameId, playerId, score) {
     }
 }
 
-async function updateSprintScore(gameId, playerId, sprint) {
+async function updateGameSprint(gameId, playerId, sprint) {
     try {
         const db = await dbModule.connect();
         const query = `
@@ -240,6 +240,48 @@ async function updateSprintScore(gameId, playerId, sprint) {
         return result.changes;
     } catch (err) {
         throw new Error(`Error updating game sprint mode: ${err.message}`);
+    }
+}
+
+async function updateGameParent(gameId, parentId) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'UPDATE games SET parent_id = ? WHERE id = ?';
+        const result = await dbModule.run(query, [parentId, gameId]);
+        if (result.changes === 0) {
+            throw new Error('Game not found');
+        }
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error updating game parent: ${err.message}`);
+    }
+}
+
+async function updateGameRematcher(gameId, rematcherId) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'UPDATE games SET rematcher_id = ? WHERE id = ?';
+        const result = await dbModule.run(query, [rematcherId, gameId]);
+        if (result.changes === 0) {
+            throw new Error('Game not found');
+        }
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error updating game rematcher: ${err.message}`);
+    }
+}
+
+async function updateGameCreator(gameId, creatorId) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'UPDATE games SET creator_id = ? WHERE id = ?';
+        const result = await dbModule.run(query, [creatorId, gameId]);
+        if (result.changes === 0) {
+            throw new Error('Game not found');
+        }
+        return result.changes;
+    } catch (err) {
+        throw new Error(`Error updating game creator: ${err.message}`);
     }
 }
 
@@ -347,6 +389,50 @@ async function getGameLosersByGame(gameId) {
     }
 }
 
+async function getGameSprint(gameId) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'SELECT sprint FROM games WHERE id = ?';
+        const row = await dbModule.get(query, [gameId]);
+        return row ? row.sprint : null;
+    } catch (err) {
+        throw new Error(`Error getting game sprint mode: ${err.message}`);
+    }
+}
+
+async function getGameParent(gameId) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'SELECT parent_id FROM games WHERE id = ?';
+        const row = await dbModule.get(query, [gameId]);
+        return row ? getGameById(row.parent_id) : null;
+    } catch (err) {
+        throw new Error(`Error getting game parent: ${err.message}`);
+    }
+}
+
+async function getWinner(gameId) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'SELECT winner_id FROM games WHERE id = ?';
+        const row = await dbModule.get(query, [gameId]);
+        return row ? row.winner_id : null;
+    } catch (err) {
+        throw new Error(`Error getting game winner: ${err.message}`);
+    }
+}
+
+async function getRematcher(gameId) {
+    try {
+        const db = await dbModule.connect();
+        const query = 'SELECT rematcher_id FROM games WHERE id = ?';
+        const row = await dbModule.get(query, [gameId]);
+        return row ? row.rematcher_id : null;
+    } catch (err) {
+        throw new Error(`Error getting game rematcher: ${err.message}`);
+    }
+}
+
 async function isGamePlayer(gameId, playerId) {
     try {
         const db = await dbModule.connect();
@@ -407,7 +493,10 @@ module.exports = {
     updateGameWinner,
     updateGameLosers,
     updateGameScore,
-    updateSprintScore,
+    updateGameSprint,
+    updateGameParent,
+    updateGameRematcher,
+    updateGameCreator,
     getGameById,
     getGameByName,
     getGamePlayers,
@@ -417,6 +506,10 @@ module.exports = {
     getGameScoreByGamePlayer,
     getGameLosers,
     getGameLosersByGame,
+    getGameSprint,
+    getGameParent,
+    getWinner,
+    getRematcher,
     isGamePlayer,
     addPlayerToGame,
     removePlayerFromGame,
