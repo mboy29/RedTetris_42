@@ -265,6 +265,7 @@ const Game = () => {
                             {isSoloGame ? (
                                 <div>
                                     <h5>Game Over! Your score: {playerScores[session.username] || 0}</h5>
+                                    <br />
                                     <Button variant="primary" onClick={handleRematch} className="w-100 global-btn mb-3">
                                         Play again
                                     </Button>

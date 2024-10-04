@@ -261,6 +261,13 @@ class Game {
         }
         return false;
     }
+
+    isGameLoser(player) {
+        if (this.getLosers().includes(player.id)) {
+            return true;
+        }
+        return false;
+    }
     
     async updateName(name) {
         try {

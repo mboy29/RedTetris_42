@@ -110,7 +110,25 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
        
         console.log(`[GAME] Player ${playerName} left game ${roomName}`);
         if (game.getStatus() === 'in progress') {
-            await lostGame(io, socket, { roomName, playerName, surrendered: true });
+            if (game.isGameLoser(player)) {
+                if (game.isGameCreator(player)) {
+                    const players = await game.getPlayers();
+                    const otherPlayers = players.filter(p => p.username !== player.getUsername());
+                    if (otherPlayers.length === 0) {
+                        await game.remove(roomName);
+                        console.log(`[GAME] Game ${roomName} deleted as creator left`);
+                        io.to(roomName).emit('gameDeleted', {});
+                    } else {
+                        const randomPlayer = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+                        await game.updateCreator(randomPlayer);
+                        io.to(roomName).emit('gameCreator', { creator: randomPlayer });
+                        io.to(roomName).emit('gamePlayers', ( players ));
+                        console.log("[GAME] Creator left, new creator is", randomPlayer.username);
+                    }
+                }
+            } else {
+                await lostGame(io, socket, { roomName, playerName, surrendered: true });
+            }
         } else if (game.getStatus() === 'pending') {
             await game.removePlayers(socket, 0, player);
             if (game.isGameCreator(player)) {
@@ -142,13 +160,15 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
                 io.to(roomName).emit('gameFull', ( game.isGameFull() ));
             }
         } else {
-            const players = await game.getPlayers();
-            const otherPlayers = players.filter(p => p.username !== player.getUsername());
-            if (game.isGameRematcher(player)) {
-                const randomPlayer = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
-                await game.updateRematcher(randomPlayer);
-                io.to(roomName).emit('gameRematcher', { rematcher: randomPlayer });
-                console.log("[GAME] Rematcher left, new rematcher is", randomPlayer.username);
+            if (game.getMode() === 'multiplayer') {
+                const players = await game.getPlayers();
+                const otherPlayers = players.filter(p => p.username !== player.getUsername());
+                if (game.isGameRematcher(player)) {
+                    const randomPlayer = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+                    await game.updateRematcher(randomPlayer);
+                    io.to(roomName).emit('gameRematcher', { rematcher: randomPlayer });
+                    console.log("[GAME] Rematcher left, new rematcher is", randomPlayer.username);
+                }
             }
         }
     } catch (error) {
@@ -257,6 +277,7 @@ const lostGame = async (io, socket, { roomName, playerName, surrendered = false 
         }
         await game.updateLosers(player, surrendered);
         const scores = await formatScores(game);
+        console.log(`[GAME] Player ${playerName} lost game ${roomName}`);
         io.to(roomName).emit('gameLost', { playerName, scores });
         if (game.isEndGame()) {
             await game.endGame();
