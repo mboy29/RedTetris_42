@@ -75,6 +75,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
             initialPosition.row = -1;
         }
         setCurrentPosition(initialPosition);
+        console.log("Spawning new piece", piece);
     
         if (checkCollision(newPile, 0, Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2), piece)) {
             let lastLine = 0;
@@ -149,7 +150,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
             socket.on('gamePieces', (pieces) => {
                 // console.log("Updating queue with pieces", pieces);
                 setQueue([...queue, ...pieces]);
-                if (!isGameLost && !isGameOver) {
+                if (!currentPiece && !isGameLost && !isGameOver) {
                     spawnNewPiece(pile, pieces[0]);
                 }
                 // console.log("Queue is now", queue);
@@ -327,13 +328,16 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                     newPile.shift(); // Remove the top row
                 }
                 setPile(newPile);
+                if (newPile[currentPosition.row + 1].some(cell => cell === 'M')) {
+                    setCurrentPosition({ row: currentPosition.row - lines, col: currentPosition.col });
+                }
                 socket.emit('updatedGame', { roomName: room, playerName, grid: newPile }); // Emit the updated grid
             }
         });
         return () => {
             socket.off('gameScored');
         };
-    }, [socket, playerName, room, pile, numCols]);    
+    }, [socket, playerName, room, pile, numCols, currentPiece, currentPosition]);    
 
     useEffect(() => {
         if (!isGameOver) {

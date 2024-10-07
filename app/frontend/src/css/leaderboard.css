@@ -43,19 +43,22 @@
 
 /* Z-index for proper leaderboard-podium stacking */
 .position-1 {
-    height: 240px; /* Height of the 1st place leaderboard-podium */
+    height: 280px; /* Height of the 1st place leaderboard-podium */
+    max-height: 280px; /* Limit the height */
     z-index: 3; /* Bring 1st place to front */
     background-color: var(--primary-red); /* Red color for 1st place */
 }
 
 .position-2 {
-    height: 220px; /* Height of the 2nd place leaderboard-podium */
+    height: 260px; /* Height of the 2nd place leaderboard-podium */
+    max-width: 260px; /* Limit the width */
     z-index: 2; /* Second place */
     background-color: var(--primary-blue);
 }
 
 .position-3 {
-    height: 200px; /* Height of the 3rd place leaderboard-podium */
+    height: 240px; /* Height of the 3rd place leaderboard-podium */
+    max-height: 240px; /* Limit the height */
     z-index: 1; /* Third place */
     background-color: var(--primary-green);
 }
@@ -89,6 +92,7 @@
 
 .leaderboard-podium-player-ribbon {
     padding: 10px;
+    width: 80%;
 }
 
 /* Container for the leaderboard, with padding and a max-width */
