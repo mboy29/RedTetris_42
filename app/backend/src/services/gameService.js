@@ -56,7 +56,9 @@ const joinGame = async (io, socket, { roomName, playerName }) => {
             if (game.isGameCreator(player)) {
                 console.log(`[GAME] Player ${player.username} is game creator`);
                 io.to(roomName).emit('gameCreator', { creator: player });
+                io.to(roomName).emit('gameTraining', { training: game.isGameTraining() });
             }
+            io.to(roomName).emit('gameSprint', { sprint: game.isGameSprint() });
             if (players.length > 1 && game.getMode() === "solo") {
                 await game.updateMode('multiplayer');
             }
@@ -83,7 +85,7 @@ const startGame = async (io, socket, { roomName }) => {
         await game.startGame();
         console.log(`[GAME] Game ${roomName} started`);
         const sprint = game.getSprint();
-        io.to(roomName).emit('gameStarted', { sprint });
+        io.to(roomName).emit('gameStarted');
 
     } catch (error) {
         console.log('[GAME] Error starting game:', error.message);
@@ -307,17 +309,29 @@ const lostGame = async (io, socket, { roomName, playerName, surrendered = false 
 const rematchGame = async (io, socket, { roomName, playerName }) => {
 
     const generateRematchGameName = (gameName) => {
-        const match = gameName.match(/\.(\d+)$/);
-        
+        const maxNameLength = 12; // maximum allowed length
+        const suffixMatch = gameName.match(/\.(\d+)$/);
+    
+        let baseName = gameName.replace(/\.\d*$/, ''); // remove any existing suffix
         let newSuffix;
-        if (match) {
-            const currentSuffix = parseInt(match[1], 10);
+    
+        if (suffixMatch) {
+            const currentSuffix = parseInt(suffixMatch[1], 10);
             newSuffix = `.${currentSuffix + 1}`;
         } else {
             newSuffix = '.2';
         }
-        return gameName.replace(/\.\d*$/, '') + newSuffix;
+    
+        const maxBaseNameLength = maxNameLength - newSuffix.length;
+    
+        // Truncate baseName to fit the new suffix if necessary
+        if (baseName.length > maxBaseNameLength) {
+            baseName = baseName.slice(0, maxBaseNameLength);
+        }
+    
+        return baseName + newSuffix;
     };
+    
     try {
         console.log(`[GAME] Player ${playerName} requested rematch for game ${roomName}`);
         const game = await Game.getByName(roomName);

@@ -80,7 +80,7 @@ class Game {
     }
 
     setMode(mode) {
-        const validModes = ["solo", "multiplayer"];
+        const validModes = ["solo", "multiplayer", "training"];
         if (!validModes.includes(mode)) {
             throw new Error('Invalid mode.');
         }
@@ -241,8 +241,24 @@ class Game {
         return false;
     }
 
-    isGameJoinable() {
-        if (this.getStatus() == 'pending') {
+    isGameJoinable(player = null) {
+        if (this.getMode() === "training" && this.getCreator().id !== player.id) {
+            return false;
+        } else if (this.getStatus() == 'pending') {
+            return true;
+        }
+        return false;
+    }
+
+    isGameTraining() {
+        if (this.getMode() === 'training') {
+            return true;
+        }
+        return false;
+    }
+
+    isGameSprint() {
+        if (this.getSprint()) {
             return true;
         }
         return false;
@@ -297,7 +313,7 @@ class Game {
         this.losers.push(loser.id);
         await queries.updateGameLosers(this.id, loser.id);
         if (surrendered) {
-            if (this.getMode() !== 'solo') {
+            if (this.getMode() !== 'solo' && this.getMode() !== 'training') {
                 await this.updateScore(loser,Game.SURRENDER_PENALTY);
             }
         } 
@@ -403,7 +419,7 @@ class Game {
     isEndGame() {
         const losers = this.getLosers();
         const players = this.getPlayers();
-        if (this.getMode() === 'solo' && losers.length > 0) {
+        if ((this.getMode() === 'solo' || this.getMode() === "training") && losers.length > 0) {
             return true;
         }
         if (losers.length === players.length - 1) {
@@ -415,7 +431,7 @@ class Game {
 
     async endGame() {
         const players = this.getPlayers();
-        if (this.getMode() == 'solo') {
+        if (this.getMode() == 'solo' || this.getMode() == 'training') {
             await this.updateWinner(players[0]);
             await this.updateRematcher(players[0]);
         } else {
@@ -426,6 +442,8 @@ class Game {
                     break;
                 }
             }
+        }
+        if (this.getMode() !== 'training') {
             for (const player of players) {
                 const score = this.scores[player.id];
                 const playerScore = await player.getScore();

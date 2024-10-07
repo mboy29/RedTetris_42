@@ -50,6 +50,7 @@ const Game = () => {
     const [isGameFull, setIsGameFull] = useState(false);
     const [isSoloGame, setIsSoloGame] = useState(false);
     const [isGameOver, setIsGameOver] = useState(false);
+    const [isTrainingMode, setIsTrainingMode] = useState(false);
     const [isSprintMode, setIsSprintMode] = useState(false);
     const [isRematcher, setIsRematcher] = useState(false);
 
@@ -120,12 +121,7 @@ const Game = () => {
             setIsGameFull(bool);
         });
 
-        socket.on('gameStarted', (sprint) => {
-            if (sprint.sprint === 1) {
-                setIsSprintMode(true);
-            } else {
-                setIsSprintMode(false);
-            }
+        socket.on('gameStarted', () => {
             startCountdown();
         });
 
@@ -186,11 +182,22 @@ const Game = () => {
             }
         });
 
+        socket.on('gameTraining', ({ training }) => {
+            setIsTrainingMode(training);
+            console.log('Training mode:', training);
+        });
+
+        socket.on('gameSprint', ({ sprint }) => {
+            setIsSprintMode(sprint);
+            console.log('Sprint mode:', sprint);
+        });
 
         return () => {
             socket.off('error');
             socket.off('gamePlayers');
             socket.off('gameCreator');
+            socket.off('gameTraining');
+            socket.off('gameSprint');
             socket.off('gameStarted');
             socket.off('gameDeleted');
             socket.off('gameUpdated');
@@ -224,7 +231,9 @@ const Game = () => {
     };
 
     const handleStartGame = () => {
-        if (players.length === 1) {
+        if (isTrainingMode) {
+            socket.emit('startGame', { roomName: room });
+        } else if (players.length === 1) {
             setShowSoloModal(true);
         } else {
             socket.emit('startGame', { roomName: room });
@@ -262,12 +271,12 @@ const Game = () => {
                     <div className="game-overlay-content">
                         <div className="overlay-card">
                             <h2 className="game-overlay-message">{room}</h2>
-                            {isSoloGame ? (
+                            {isSoloGame || isTrainingMode ? (
                                 <div>
                                     <h5>Game Over! Your score: {playerScores[session.username] || 0}</h5>
                                     <br />
                                     <Button variant="primary" onClick={handleRematch} className="w-100 global-btn mb-3">
-                                        Play again
+                                        {isTrainingMode ? 'Train again' : 'Play again'}
                                     </Button>
                                 </div>
                             ) : (
@@ -328,20 +337,47 @@ const Game = () => {
                                             </Alert>
                                         )
                                     ) : (
-                                        <h5>Waiting for players to join...</h5>
+                                        <>
+                                        {isTrainingMode ? (
+                                            !isSprintMode ? (
+                                                <>
+                                                    <h5>Enhance Your Skills with Training Mode!</h5>
+                                                    <p>Practice without the pressure! In Training Mode, you can sharpen your strategies, try out new moves, and build up your speed. Play freely—any points scored here won’t affect your overall game stats. Perfect for getting ready to take on tougher challenges!</p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <h5>Level Up with Training and Sprint Modes!</h5>
+                                                    <p>In Training Mode, practice without the pressure—sharpen your strategies and refine your moves. Points here won’t count toward your overall stats, so experiment freely!</p>
+                                                    <p>When you're ready for a challenge, train even harder in Sprint Mode! With each level, the speed increases, pushing you to think and react faster. It’s perfect for building quick-thinking skills under pressure!</p>
+                                                </>
+                                            )
+                                        ) : (isSprintMode ? (
+                                            <>
+                                                <h5>Take on the Challenge with Sprint Mode!</h5>
+                                                <p>Test your speed and endurance in Sprint Mode! Here, the pieces fall faster as you progress through each level, increasing the challenge over time. With every passing interval, the pace ramps up, pushing you to react quicker and think faster. It’s the ultimate way to enhance your skills and prepare for high-stakes matches!</p>
+                                                <h5>Ready for a Sprint?</h5>
+                                            </>
+                                            ) : (
+                                                <h5>Waiting for players to join...</h5>
+                                            )
+                                        )}
+                                        </>
+                                        
                                     )}
-                                    <ListGroup className="my-4 game-overlay-players-container ">
-                                        {Array.isArray(players) && players.map((player, index) => (
-                                            <div key={index}>
-                                                <ListGroup.Item className="game-overlay-players">
-                                                    {player.username}
-                                                </ListGroup.Item>
-                                            </div>
-                                        ))}
-                                    </ListGroup>
+                                    {!isTrainingMode && (
+                                        <ListGroup className="my-4 game-overlay-players-container ">
+                                            {Array.isArray(players) && players.map((player, index) => (
+                                                <div key={index}>
+                                                    <ListGroup.Item className="game-overlay-players">
+                                                        {player.username}
+                                                    </ListGroup.Item>
+                                                </div>
+                                            ))}
+                                        </ListGroup>
+                                    )}
                                     {isCreator && (
                                         <Button variant="primary" onClick={handleStartGame} className="w-100 global-btn mb-3">
-                                            Start Game
+                                            {isTrainingMode ? 'Start Training' : 'Start Game'}
                                         </Button>
                                     )}
                                     <Form onSubmit={handleLeaveGame} className="game-leave">
@@ -370,7 +406,7 @@ const Game = () => {
                     ) : (
                         <div>
                             <h2 className="room-name text-center">{room}</h2>
-                            {!isSoloGame ? (
+                            {!isSoloGame && !isTrainingMode ? (
                                 <div className='w-100 h-100 game-grids'>
                                     <div className='game-player-container'>
                                         <div className='game-player'>

@@ -31,7 +31,7 @@ function validateStatus(status) {
 }
 
 function validateMode(mode) {
-    const validModes = ['solo', 'multiplayer'];
+    const validModes = ['solo', 'multiplayer', 'training'];
     if (!validModes.includes(mode)) {
         throw new Error(`Invalid mode. Must be one of: ${validModes.join(', ')}`);
     }

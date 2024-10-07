@@ -48,7 +48,7 @@ async function initGame() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL CHECK(length(name) >= 4 AND length(name) <= 12) UNIQUE,
             status TEXT NOT NULL CHECK(status IN ('pending', 'in progress', 'finished')),
-            mode TEXT NOT NULL CHECK(mode IN ('solo', 'multiplayer')),
+            mode TEXT NOT NULL CHECK(mode IN ('solo', 'multiplayer', 'training')),
             creator_id INTEGER NOT NULL,
             size INTEGER NOT NULL CHECK(size >= 1 AND size <= 4),
             winner_id INTEGER DEFAULT NULL,

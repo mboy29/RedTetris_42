@@ -6,15 +6,15 @@
 /*
     This module defines the `CreateGame` component for
     the RedTetris frontend. The component provides a
-    form to create a new game room and handles errors.
+    form to create a new game room and handles errors,
+    with options for Sprint Mode and Training Mode.
 */
 
 // +----------------- REQUIREMENTS -----------------+
 
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, Button, Form, Alert } from 'react-bootstrap';
+import { Container, Button, Form, Alert, ButtonGroup, ToggleButton, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import React, { useState, useContext } from 'react';
-import { ButtonGroup, ToggleButton } from 'react-bootstrap';
 
 import './../../css/game.css'; 
 import NavBar from './../global/NavBar';
@@ -26,7 +26,8 @@ import config from './../../configs/config';
 const CreateGame = () => {
     const { session } = useContext(SessionContext);
     const [roomName, setRoomName] = useState('');
-    const [sprintMode, setSprintMode] = useState(false);  // Add state for sprint mode
+    const [sprintMode, setSprintMode] = useState(false); // State for sprint mode
+    const [trainingMode, setTrainingMode] = useState(false); // State for training mode
     const [errors, setErrors] = useState([]);
     const navigate = useNavigate();
 
@@ -41,6 +42,7 @@ const CreateGame = () => {
                     body: JSON.stringify({
                         roomName,
                         sprintMode, 
+                        trainingMode,  // Add trainingMode in the request body
                         playerName: session.username,
                     }),
                 });
@@ -59,9 +61,12 @@ const CreateGame = () => {
     };
 
     const toggleSprintMode = () => {
-        setSprintMode(!sprintMode);  // Toggle sprint mode
+        setSprintMode(!sprintMode); // Toggle sprint mode
     };
 
+    const toggleTrainingMode = () => {
+        setTrainingMode(!trainingMode); // Toggle training mode
+    };
 
     return (
         <div>
@@ -92,18 +97,54 @@ const CreateGame = () => {
                                 required
                             />
                         </Form.Group>
+
+                        {/* Sprint Mode Toggle */}
                         <Form.Group controlId="formSprintMode" className="mb-3">
                             <ButtonGroup className="w-100">
-                                <ToggleButton
-                                    id="toggle-sprint-mode"
-                                    type="checkbox"
-                                    checked={sprintMode}
-                                    value="1"
-                                    onChange={toggleSprintMode}  // Toggle sprintMode on click
-                                    className={`w-100 global-toggle-btn ${sprintMode ? 'active' : ''}`}  // Add 'active' class manually based on state
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={
+                                        <Tooltip id="tooltip-sprint">
+                                            Speed increases with each level. React quickly and stay sharp!
+                                        </Tooltip>
+                                    }
                                 >
-                                    {sprintMode ? 'Sprint Mode Enabled' : 'Sprint Mode Disabled'}
-                                </ToggleButton>
+                                    <ToggleButton
+                                        id="toggle-sprint-mode"
+                                        type="checkbox"
+                                        checked={sprintMode}
+                                        value="1"
+                                        onChange={toggleSprintMode}
+                                        className={`w-100 global-toggle-btn ${sprintMode ? 'active' : ''}`}
+                                    >
+                                        {sprintMode ? 'Sprint Mode Enabled' : 'Sprint Mode Disabled'}
+                                    </ToggleButton>
+                                </OverlayTrigger>
+                            </ButtonGroup>
+                        </Form.Group>
+
+                        {/* Training Mode Toggle */}
+                        <Form.Group controlId="formTrainingMode" className="mb-3">
+                            <ButtonGroup className="w-100">
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={
+                                        <Tooltip id="tooltip-training">
+                                            Practice freely without impacting your stats. Perfect for honing skills!
+                                        </Tooltip>
+                                    }
+                                >
+                                    <ToggleButton
+                                        id="toggle-training-mode"
+                                        type="checkbox"
+                                        checked={trainingMode}
+                                        value="1"
+                                        onChange={toggleTrainingMode}
+                                        className={`w-100 global-toggle-btn ${trainingMode ? 'active' : ''}`}
+                                    >
+                                        {trainingMode ? 'Training Mode Enabled' : 'Training Mode Disabled'}
+                                    </ToggleButton>
+                                </OverlayTrigger>
                             </ButtonGroup>
                         </Form.Group>
 

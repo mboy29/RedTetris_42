@@ -24,12 +24,11 @@ const isValidRoomName = (roomName) => /^[a-zA-Z0-9]+$/.test(roomName);
 
 router.post('/create', async (req, res) => {
     try {
-        const { roomName, playerName, sprintMode } = req.body;
+        const { roomName, playerName, sprintMode, trainingMode } = req.body;
 
         if (!roomName || !playerName) {
             return res.status(400).json({ message: 'Invalid input' });
         }
-
         if (roomName.length < 4 || roomName.length > 12) {
             return res.status(400).json({ message: 'Room name must be between 3 and 20 characters' });
         } else if (!isValidRoomName(roomName)) {
@@ -42,7 +41,8 @@ router.post('/create', async (req, res) => {
         } else if (await Game.getByName(roomName)) {
             return res.status(409).json({ message: 'Game already exists' });
         }
-        await Game.create(roomName, 'multiplayer', player, sprintMode);
+        const mode = trainingMode ? 'training' : 'multiplayer';
+        await Game.create(roomName, mode, player, sprintMode);
 
         console.log(`[GAME] Game ${roomName} created by ${playerName}`);
         res.status(201).json({ roomName, playerName }); 
@@ -70,7 +70,10 @@ router.post('/join', async (req, res) => {
             return res.status(404).json({ message: 'Game not found' });
         }
 
-        if (!game.isGameJoinable()) {
+        if (game.isGameTraining()) {
+            return res.status(409).json({ message: 'Cannot join training game' });
+        }
+        if (!game.isGameJoinable(player)) {
             return res.status(409).json({ message: 'Game is no longer joinable' });
         }
 
@@ -126,7 +129,7 @@ router.get('/check', async (req, res) => {
         } else if (!game) {
             console.log(`[GAME] Game ${room} not found`);
             return res.status(404).json({ success: false, message: 'Game not found' });
-        } else if (!game.isGameJoinable()) {
+        } else if (!game.isGameJoinable(player)) {
             console.log(`[GAME] Game ${room} is not joinable`);
             return res.status(403).json({ success: false, message: 'Game is no longer joinable' });
         } else if (!game.isGameJoinable(player)) {
