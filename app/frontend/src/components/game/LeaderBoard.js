@@ -1,59 +1,56 @@
+// +------------------------------------------------+
+// |        REDTETRIS LEADERBOARDS COMPONENT        |
+// +------------------------------------------------+
+
+// +------------------- SUMMARY --------------------+
+
+/*
+    This module defines the `Leaderboard` component 
+    for the RedTetris frontend. The component displays
+    the top 3 players on a podium and the remaining
+    players in a list.
+*/
+
+// +----------------- REQUIREMENTS -----------------+
+
 import React from 'react';
-import { Container, Row, Col } from 'react-bootstrap';
+import { Container } from 'react-bootstrap';
+
 import './../../css/leaderboard.css';
+import Podium from './Podium';
+
+// +------------------- COMPONENT -------------------+
 
 const Leaderboard = ({ scores = [] }) => {
+    const remainingPlayers = scores.slice(3);
+    const podiumPlayers = scores.slice(0, 3);
+
     return (
-        <Container className="mt-4">
+        <Container className="w-100 leaderboard-container">
             <h2 className="text-center mb-4">Leaderboard</h2>
-            <Row className="justify-content-center">
-                {/* Podium for 1st place */}
-                <Col xs={12} md={4} className="podium position-1">
-                    <div className="podium-label">1st</div>
-                    <div className="podium-player">
-                        {scores[0] ? (
-                            <div>
-                                <h5>{scores[0].name}</h5>
-                                <p>Score: {scores[0].score}</p>
-                            </div>
-                        ) : (
-                            <p>No Player</p>
-                        )}
-                    </div>
-                </Col>
+            <Podium scores={podiumPlayers} />
 
-                {/* Podium for 2nd place */}
-                <Col xs={12} md={4} className="podium position-2">
-                    <div className="podium-label">2nd</div>
-                    <div className="podium-player">
-                        {scores[1] ? (
-                            <div>
-                                <h5>{scores[1].name}</h5>
-                                <p>Score: {scores[1].score}</p>
+            {remainingPlayers.length > 0 ? (
+                <div className="w-100 leaderboard-list">
+                    {remainingPlayers.map((player, index) => (
+                        <div key={index} className="leaderboard-list-item">
+                            <div className="leaderboard-list-item-info">
+                                <span className="leaderboard-list-item-index">{index + 4}</span>
+                                <span className="leaderboard-list-item-username">{player.username}</span>
                             </div>
-                        ) : (
-                            <p>No Player</p>
-                        )}
-                    </div>
-                </Col>
-
-                {/* Podium for 3rd place */}
-                <Col xs={12} md={4} className="podium position-3">
-                    <div className="podium-label">3rd</div>
-                    <div className="podium-player">
-                        {scores[2] ? (
-                            <div>
-                                <h5>{scores[2].name}</h5>
-                                <p>Score: {scores[2].score}</p>
-                            </div>
-                        ) : (
-                            <p>No Player</p>
-                        )}
-                    </div>
-                </Col>
-            </Row>
+                            <span className="leaderboard-list-item-score">{player.score} points</span>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="w-100 leaderboard-list">
+                   <span className="leaderboard-list-item-error">No other players</span>
+                </div>
+            )}
         </Container>
     );
 };
+
+// +------------------- EXPORTS --------------------+
 
 export default Leaderboard;

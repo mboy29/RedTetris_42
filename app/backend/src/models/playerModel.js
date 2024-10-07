@@ -130,6 +130,13 @@ class Player {
         return playersData.map(playerData => new Player(Number(Number), playerData.username, playerData.connect, playerData.roomName, playerData.score));
     }
 
+    static async getAllScores() {
+        const playersData = await queries.getPlayersScore();
+        if (!playersData) {
+            return null;
+        }
+        return playersData.map(playerData => new Player(Number(playerData.id), playerData.username, playerData.connect, playerData.roomName, playerData.score));
+    }
 
     async updateUsername(username) {
         try {
@@ -185,12 +192,6 @@ class Player {
         const hashedPassword = bcrypt.hashSync(password, 10);
         const id = await queries.createPlayer(username, false, hashedPassword);
         return new Player(Number(id), username, false, null);
-    }
-
-    static async getTopPlayers() {
-        const players = await Player.getAll();
-        players.sort((a, b) => b.getScore() - a.getScore());
-        return players.slice(0, 3);
     }
 
     async remove() {

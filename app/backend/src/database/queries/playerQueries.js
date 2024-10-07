@@ -80,6 +80,17 @@ async function getAllPlayers() {
     }
 }
 
+async function getPlayersScore() {
+    try {
+        const db = await dbModule.connect();
+        const query = 'SELECT * FROM players ORDER BY score DESC';
+        const rows = await dbModule.all(query);
+        return rows || [];
+    } catch (err) {
+        throw new Error(`Error getting all players: ${err.message}`);
+    }
+}
+
 async function updatePlayerUsername(id, username) {
     try {
         const db = await dbModule.connect();
@@ -163,6 +174,7 @@ module.exports = {
     getPlayerByUsername,
     getPlayerById,
     getAllPlayers,
+    getPlayersScore,
     updatePlayerUsername,
     updatePlayerConnect,
     updatePlayerRoomName,

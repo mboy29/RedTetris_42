@@ -23,6 +23,7 @@ const config = require('./config');
 const authRoutes = require('./routes/authRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
 const gameRoutes = require('./routes/gameRoutes');
+const playerRoutes = require('./routes/playerRoutes');
 const { setupSocket } = require('./services/socketService');
 
 require('./database/initDatabase').init();
@@ -74,6 +75,7 @@ setupSocket(io);
 app.use('/auth', authRoutes);
 app.use('/session', sessionRoutes);
 app.use('/game', gameRoutes);
+app.use('/player', playerRoutes);
 
 // +------------------- SERVER ---------------------+
 

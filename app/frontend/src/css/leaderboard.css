@@ -1,18 +1,26 @@
-.podium {
-    background-color: #f8f9fa; /* Light background for the podium */
-    border-radius: 10px;
+/* +------------------------------------------------+ */
+/* |           REDTETRIS LEADERBOARD CSS            | */
+/* +------------------------------------------------+ */
+
+@import './colors.css';
+@import './global.css';
+
+.leaderboard-podium {
+    background-color: #f8f9fa; /* Light background for the leaderboard-podium */
+    border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     padding: 20px;
     text-align: center;
     position: relative;
     margin-bottom: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.podium-label {
+.leaderboard-podium-label {
     font-size: 1.5rem;
     font-weight: bold;
     position: absolute;
-    top: -20px; /* Position above the podium */
+    top: -20px; /* Position above the leaderboard-podium */
     left: 50%;
     transform: translateX(-50%);
     background-color: white; /* White background for the label */
@@ -21,18 +29,118 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
-.podium-player {
-    margin-top: 50px; /* Space for label */
+.leaderboard-podium-label-1 {
+    color: var(--primary-red); /* Red color for 1st place label */
 }
 
+.leaderboard-podium-label-2 {
+    color: var(--primary-blue); /* Blue color for 2nd place label */
+}
+
+.leaderboard-podium-label-3 {
+    color: var(--primary-green); /* Yellow color for 3rd place label */
+}
+
+/* Z-index for proper leaderboard-podium stacking */
 .position-1 {
+    height: 240px; /* Height of the 1st place leaderboard-podium */
     z-index: 3; /* Bring 1st place to front */
+    background-color: var(--primary-red); /* Red color for 1st place */
 }
 
 .position-2 {
-    z-index: 2; /* Middle position */
+    height: 220px; /* Height of the 2nd place leaderboard-podium */
+    z-index: 2; /* Second place */
+    background-color: var(--primary-blue);
 }
 
 .position-3 {
-    z-index: 1; /* Back position */
+    height: 200px; /* Height of the 3rd place leaderboard-podium */
+    z-index: 1; /* Third place */
+    background-color: var(--primary-green);
+}
+
+.leaderboard-podium-row {
+    gap: 20px; /* Adjusted spacing between leaderboard-podiums */
+    margin-top: 30px; /* Adjusted spacing between leaderboard title and leaderboard-podiums */
+}
+
+.leaderboard-podium-player {
+    display: flex;            /* Enable flexbox */
+    flex-direction: column;  /* Stack elements vertically */
+    justify-content: flex-end; /* Align items to the bottom */
+    padding-top: 10px;    /* Allow margin on top to push it down */
+    text-align: center;      /* Center align text */
+    height: 100%;            /* Make sure it fills the parent */
+}
+
+.leaderboard-podium-player-username {
+    font-size: 1.5rem;       /* Larger font size for username */
+    font-weight: bold;       /* Make the username bold */
+    margin: 0;               /* Reset margin */
+    color: var(--secondary-white); /* Optional: customize username color */
+}
+
+.leaderboard-podium-player-score {
+    font-size: 1rem;         /* Smaller font size for score */
+    margin: 0;               /* Reset margin */
+    color: var(--secondary-white); /* Optional: customize score color */
+}
+
+.leaderboard-podium-player-ribbon {
+    padding: 10px;
+}
+
+/* Container for the leaderboard, with padding and a max-width */
+.leaderboard-container {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+.leaderboard-list {
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: var(--secondary-dark-grey);
+    border: 2px solid var(--secondary-grey);
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.leaderboard-list-item {
+    display: flex;
+    justify-content: space-between; /* Space between index/name and score */
+    align-items: center; /* Center align vertically */
+    border-bottom: 1px solid var(--secondary-grey);
+}
+
+.leaderboard-list-item:last-child {
+    border-bottom: none; /* No border on the last item */
+}
+
+.leaderboard-list-item-info {
+    display: flex; /* Flexbox for index and name */
+    align-items: center; /* Center align */
+}
+
+.leaderboard-list-item-index {
+    margin-left: 20px; /* Space between index and left edge */
+    margin-right: 20px; /* Space between index and name */
+    font-weight: bold; /* Optional: make the index bold */
+    color: var(--primary-red); /* Optional: color for index */
+}
+
+.leaderboard-list-item-username {
+    color: var(--secondary-light-grey);
+}
+
+.leaderboard-list-item-score {
+    color: var(--secondary-light-grey);
+    
+}
+
+.leaderboard-list-item-error {
+    color: var(--secondary-light-grey);
+    text-align: center;
 }

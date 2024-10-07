@@ -37,6 +37,14 @@ p {
     color: var(--secondary-light-grey);
 }
 
+.global-home-container {
+    max-width: 50%;
+}
+
+.global-padding {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
 
 .global-form-container {
     padding: 30px;
@@ -105,6 +113,8 @@ p {
 .global-toggle-btn {
     background-color: var(--secondary-dark-grey);
     border: 2px solid var(--secondary-grey);
+    border-radius: 8px;
+    padding: 10px; 
     color: var(--secondary-light-grey);
 }
 
