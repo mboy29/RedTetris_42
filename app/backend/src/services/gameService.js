@@ -57,6 +57,9 @@ const joinGame = async (io, socket, { roomName, playerName }) => {
                 console.log(`[GAME] Player ${player.username} is game creator`);
                 io.to(roomName).emit('gameCreator', { creator: player });
             }
+            if (players.length > 1 && game.getMode() === "solo") {
+                await game.updateMode('multiplayer');
+            }
         } else {
             io.to(roomName).emit('gameReconnected', { players: players });
         }
@@ -214,6 +217,16 @@ const updateGame = async (io, socket, { roomName, playerName, grid }) => {
         }
         console.log(`[GAME] Player ${playerName} updated game ${roomName}`);
         const score = await game.getPlayerScore(player);
+        let firstNonEmptyRow = -1;
+        for (let i = 0; i < grid.length; i++) {
+            if (grid[i].some(cell => cell !== null)) {
+                firstNonEmptyRow = i;
+                break;
+            }
+        }
+        for (let i = firstNonEmptyRow + 1; i < grid.length; i++) {
+            grid[i] = grid[i].map(() => 'H');
+        }
         io.to(roomName).emit('gameUpdated', { playerName, grid, score });
     } catch (error) {
         console.log('[GAME] Error updating game:', error.message);

@@ -32,6 +32,9 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
 
     // Check for collision with the pile or grid bottom
     const checkCollision = useCallback((newPile, newRow, newCol, piece) => {
+        if (!piece || !piece.piece) {
+            return true;
+        }
         if (newRow >= numRows) return true; // Bottom of grid
         for (let row = 0; row < piece.piece.length; row++) {
             for (let col = 0; col < piece.piece[row].length; col++) {
@@ -75,7 +78,6 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
             initialPosition.row = -1;
         }
         setCurrentPosition(initialPosition);
-        console.log("Spawning new piece", piece);
     
         if (checkCollision(newPile, 0, Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2), piece)) {
             let lastLine = 0;
@@ -94,6 +96,8 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                 const finalPile = updatePile(newPile, initialPosition, lastPiece);
                 setPile(finalPile);
                 socket.emit('updatedGame', { roomName: room, playerName, grid: finalPile });
+            } else {
+                socket.emit('updatedGame', { roomName: room, playerName, grid: newPile });
             }
             setIsGameLost(true);
             setCurrentPiece(null);
@@ -148,18 +152,16 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
     useEffect(() => {
         if (socket && isInteractable) {
             socket.on('gamePieces', (pieces) => {
-                // console.log("Updating queue with pieces", pieces);
                 setQueue([...queue, ...pieces]);
                 if (!currentPiece && !isGameLost && !isGameOver) {
                     spawnNewPiece(pile, pieces[0]);
                 }
-                // console.log("Queue is now", queue);
             });
             return () => {
                 socket.off('gamePieces');
             };
         }
-    }, [socket, isInteractable, spawnNewPiece, isGameOver, isGameLost, pile, queue]); // Added isGameLost to dependencies
+    }, [socket, isInteractable, spawnNewPiece, isGameOver, isGameLost, pile, queue, currentPiece]); // Added isGameLost to dependencies
 
     // Move the piece down every 'initialDropInterval'
     useEffect(() => {
@@ -195,21 +197,24 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
 
     // Handle keyboard input for piece movement
     useEffect(() => {
+        let keyPressed = {}; // Track keys pressed down
+        let animationFrameId;
+    
         const moveLeft = (pile) => {
             if (!isGameLost && !isGameOver && !checkCollision(pile, currentPosition.row, currentPosition.col - 1, currentPiece)) {
                 setCurrentPosition((pos) => ({ ...pos, col: pos.col - 1 }));
             }
         };
-
+    
         const moveRight = (pile) => {
             if (!isGameLost && !isGameOver  && !checkCollision(pile, currentPosition.row, currentPosition.col + 1, currentPiece)) {
                 setCurrentPosition((pos) => ({ ...pos, col: pos.col + 1 }));
             }
         };
-
+    
         const rotatePiece = (pile) => {
             if (!currentPiece) return;
-
+    
             if (currentPiece.type === 'I') {
                 if (currentPosition.row === -1) {
                     currentPosition.row = 0;
@@ -221,17 +226,16 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                     currentPosition.col = numCols - 3;
                 }
                 setCurrentPosition(currentPosition);
-            
             }
-        
+    
             const rotatedPiece = {
                 ...currentPiece,
                 piece: currentPiece.piece[0].map((_, index) => currentPiece.piece.map(row => row[index])).reverse()
             };
-
+    
             const rowOffset = currentPosition.row;
             const colOffset = currentPosition.col;
-        
+    
             const rotationOffsets = [
                 { row: 0, col: 0 }, // No offset
                 { row: 0, col: -1 }, // Left kick
@@ -239,12 +243,11 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                 { row: -1, col: 0 }, // Upward kick
                 { row: 1, col: 0 } // Downward kick
             ];
-        
+    
             for (let offset of rotationOffsets) {
                 const newRow = rowOffset + offset.row;
                 const newCol = colOffset + offset.col;
-        
-                
+    
                 if (!checkCollision(pile, newRow, newCol, rotatedPiece)) {
                     if (currentPiece.type === 'I' && (newCol < 0 || newCol >= numCols)) {
                         if (newCol < 0) {
@@ -260,13 +263,13 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                 }
             }
         };
-        
+    
         const fastDrop = (pile) => {
             if (isGameLost || isGameOver) return; // Do nothing if the game is over
-
+    
             const newRow = currentPosition.row + 1;
             const newCol = currentPosition.col;
-
+    
             // Move the piece down immediately if no collision
             if (!checkCollision(pile, newRow, newCol, currentPiece)) {
                 setCurrentPosition({ row: newRow, col: newCol });
@@ -274,10 +277,10 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                 mergePieceToPile(currentPosition); // Merge if collision occurs
             }
         };
-
+    
         const instantDrop = (pile) => {
             if (isGameLost || isGameOver) return; // Do nothing if the game is over
-            
+    
             let newRow = currentPosition.row;
     
             while (!checkCollision(pile, newRow + 1, currentPosition.col, currentPiece)) {
@@ -286,9 +289,11 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
             setCurrentPosition({ row: newRow, col: currentPosition.col });
             mergePieceToPile({ row: newRow, col: currentPosition.col }); // Pass final position
         };
-
+    
         const handleKeyDown = (event) => {
-            if (!currentPiece) return;
+            if (!currentPiece || keyPressed[event.key]) return;
+            keyPressed[event.key] = true;
+    
             switch (event.key) {
                 case 'ArrowLeft':
                     moveLeft(pile);
@@ -309,13 +314,30 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                     break;
             }
         };
-
+    
+        const handleKeyUp = (event) => {
+            keyPressed[event.key] = false;
+        };
+    
+        const gameLoop = () => {
+            // Add custom logic here if you want to implement additional
+            // animations or behaviors in your game loop
+    
+            animationFrameId = requestAnimationFrame(gameLoop);
+        };
+    
         window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+    
+        animationFrameId = requestAnimationFrame(gameLoop);
+    
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+            cancelAnimationFrame(animationFrameId);
         };
-    }, [currentPosition, currentPiece, isGameOver, isGameLost, checkCollision, mergePieceToPile, pile]); // Dependencies remain the same
-
+    }, [currentPosition, currentPiece, isGameOver, isGameLost, checkCollision, mergePieceToPile, pile]);
+    
     // Handle scoring from other players
     useEffect(() => {
         socket.on('gameScored', ({ scoredPlayerGame, lines }) => {
@@ -329,7 +351,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                 }
                 setPile(newPile);
                 if (newPile[currentPosition.row + 1].some(cell => cell === 'M')) {
-                    setCurrentPosition({ row: currentPosition.row - lines, col: currentPosition.col });
+                    setCurrentPosition({ row: currentPosition.row - lines + 1, col: currentPosition.col });
                 }
                 socket.emit('updatedGame', { roomName: room, playerName, grid: newPile }); // Emit the updated grid
             }
@@ -401,7 +423,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                     if (currentPiece.piece[row][col] !== null) {
                         const targetRow = currentPosition.row + row;
                         const targetCol = currentPosition.col + col;
-                        if (targetRow < numRows && targetCol < numCols) {
+                        if (targetRow >= 0 && targetRow < numRows && targetCol >= 0 && targetCol < numCols) {
                             newGrid[targetRow][targetCol] = currentPiece.type;
                         }
                     }
@@ -428,6 +450,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
             case 'J': return 'cell-J';
             case 'Z': return 'cell-Z';
             case 'M': return 'cell-malus';
+            case 'H': return 'cell-hidden';
             default: return 'cell-default';
         }
     };

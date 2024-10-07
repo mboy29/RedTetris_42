@@ -118,22 +118,22 @@ router.get('/check', async (req, res) => {
         }
         const user = await Player.getByUsername(req.session.user.username);
         if (!player || !user) {
-            console.log('[GAME] Player or user not found');
+            console.log(`[GAME] Player ${playerName} or user ${req.session.user.username} not found`);
             return res.status(403).json({ success: false, message: 'Access denied' });
         } else if (player.getId() != user.getId()) {
-            console.log('[GAME] User and player do not match');
+            console.log(`[GAME] Player ${playerName} does not match user ${req.session.user.username}`);
             return res.status(403).json({ success: false, message: 'Access denied' });
         } else if (!game) {
-            console.log('[GAME] game not found');
+            console.log(`[GAME] Game ${room} not found`);
             return res.status(404).json({ success: false, message: 'Game not found' });
         } else if (!game.isGameJoinable()) {
-            console.log('[GAME] Game is not joinable');
+            console.log(`[GAME] Game ${room} is not joinable`);
             return res.status(403).json({ success: false, message: 'Game is no longer joinable' });
         } else if (!game.isGameJoinable(player)) {
-            console.log('[GAME] Player is not in game');
+            console.log(`[GAME] Player ${playerName} cannot join game ${room}`);
             return res.status(403).json({ success: false, message: 'Access denied' });
         } else if (game.isGameLoser(player)) {
-            console.log('[GAME] Player is loser');
+            console.log(`[GAME] Player ${playerName} is a loser in game ${room}`);
             return res.status(403).json({ success: false, message: 'Access denied' });
         } 
         return res.status(200).json({ success: true });

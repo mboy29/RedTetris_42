@@ -98,7 +98,6 @@
 /* Container for the leaderboard, with padding and a max-width */
 .leaderboard-container {
     padding-top: 20px;
-    padding-bottom: 20px;
 }
 
 .leaderboard-list {
@@ -117,6 +116,7 @@
     justify-content: space-between; /* Space between index/name and score */
     align-items: center; /* Center align vertically */
     border-bottom: 1px solid var(--secondary-grey);
+    padding: 10px 0; /* Padding top and bottom */
 }
 
 .leaderboard-list-item:last-child {

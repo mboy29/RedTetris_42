@@ -426,11 +426,11 @@ class Game {
                     break;
                 }
             }
-        }
-        for (const player of players) {
-            const score = this.scores[player.id];
-            const playerScore = await player.getScore();
-            await player.updateScore(playerScore + score);
+            for (const player of players) {
+                const score = this.scores[player.id];
+                const playerScore = await player.getScore();
+                await player.updateScore(playerScore + score);
+            }
         }
         await this.updateStatus('finished');
     }
