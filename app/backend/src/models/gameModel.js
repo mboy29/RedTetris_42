@@ -24,7 +24,6 @@
 // +----------------- REQUIREMENTS -----------------+ 
 
 const queries = require('./../database/queries/gameQueries');
-const piecesQueries = require('./../database/queries/piecesQueries');
 
 const Piece = require('./pieceModel');
 const Player = require('./playerModel');

@@ -18,7 +18,7 @@
 
 // +----------------- REQUIREMENTS -----------------+
 
-const queries = require('../database/queries/piecesQueries');
+const queries = require('../database/queries/gameQueries');
 
 // +--------------------- CLASS ---------------------+
 

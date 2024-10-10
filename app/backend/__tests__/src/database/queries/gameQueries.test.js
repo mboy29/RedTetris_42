@@ -11,7 +11,8 @@
     and deleting games in the SQLite database.
 
     Test Suites includes: Create, Delete, Getters, 
-    Updators, Game Players, Game Scores & Game Losers.
+    Updators, Game Players, Game Scores, Game Losers
+    & Game Pieces.
 */
 
 // +----------------- REQUIREMENTS -----------------+
@@ -790,8 +791,61 @@ describe('Game Queries', () => {
             });
         });
 
-    });
+        describe('Game Pieces', () => {
+    
+            describe('getGamePieces', () => {
+                it('should retrieve all pieces for a specific game, ordered by position', async () => {
+                    const gameId = await queries.createGame('Game 1', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+                    
+                    await queries.updateGamePieces(gameId, 'I', 1);
+                    await queries.updateGamePieces(gameId, 'T', 2);
+                    await queries.updateGamePieces(gameId, 'L', 3);
+        
+                    const pieces = await queries.getGamePieces(gameId);
+                    expect(pieces).toEqual(expect.arrayContaining([
+                        expect.objectContaining({ game_id: gameId, type: 'I', position: 1 }),
+                        expect.objectContaining({ game_id: gameId, type: 'T', position: 2 }),
+                        expect.objectContaining({ game_id: gameId, type: 'L', position: 3 })
+                    ]));
+                });
+        
+                it('should return an empty array if there are no pieces for the game', async () => {
+                    const gameId = await queries.createGame('Game 2', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+        
+                    const pieces = await queries.getGamePieces(gameId);
+                    expect(pieces).toEqual([]);
+                });
+            });
+        
+            describe('updateGamePieces', () => {
+                it('should add a new piece to the game if position is available', async () => {
+                    const gameId = await queries.createGame('Game 3', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+        
+                    const pieceId = await queries.updateGamePieces(gameId, 'I', 4);
+                    expect(pieceId).toBeGreaterThan(0);
+        
+                    const pieces = await queries.getGamePieces(gameId);
+                    expect(pieces).toEqual(expect.arrayContaining([
+                        expect.objectContaining({ id: pieceId, game_id: gameId, type: 'I', position: 4 })
+                    ]));
+                });
+        
+                it('should throw an error if the game does not exist', async () => {
+                    await expect(queries.updateGamePieces(9999, 'King', 1)).rejects.toThrow('Game with ID 9999 does not exist.');
+                });
+        
+                it('should throw an error if a piece already exists at the specified position', async () => {
+                    const gameId = await queries.createGame('Game 4', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+        
+                    await queries.updateGamePieces(gameId, 'I', 1);
+                    await expect(queries.updateGamePieces(gameId, 'T', 1)).rejects.toThrow('Piece already exists at position 1');
+                });
+            });
+        });
 
-    
-    
+    });
 });
