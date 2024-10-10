@@ -22,7 +22,7 @@ const { init } = require('@database/initDatabase');
 
 // +-------------------- TESTS --------------------+
 
-describe('Player Queries', () => {
+describe('Game Queries', () => {
     let db;
 
     beforeAll(async () => {
@@ -40,7 +40,7 @@ describe('Player Queries', () => {
         await dbModule.close();
     });
 
-    describe('Create', () => {
+    describe('Initiation and Deletion', () => {
         describe('createGame', () => {
             it('should create a new game with default size and no parent', async () => {
                 const gameId = await queries.createGame('Game 1', 'multiplayer', 1, 'pending', 1);
@@ -74,56 +74,8 @@ describe('Player Queries', () => {
                 const childGameId = await queries.createGame('Child Game', 'multiplayer', 1, 'pending', 2, parentGameId);
                 expect(childGameId).toBeGreaterThan(0);
             });
-        });    
-
-        describe('createGameScore', () => {
-            it('should create a new game score entry', async () => {
-                const gameId = 1; // assuming a valid game ID
-                const playerId = 1; // assuming a valid player ID
-                const score = 100;
-                const scoreId = await queries.createGameScore(gameId, playerId, score);
-                expect(scoreId).toBeGreaterThan(0);
-            });
-
-            it('should create a negative score successfully', async () => {
-                const gameId = 1;
-                const playerId = 1;
-                const score = -100;
-                const scoreId = await queries.createGameScore(gameId, playerId, score);
-                expect(scoreId).toBeGreaterThan(0);
-            });
-        
-            it('should create a score of zero successfully', async () => {
-                const gameId = 1;
-                const playerId = 1;
-                const score = 0;
-                const scoreId = await queries.createGameScore(gameId, playerId, score);
-                expect(scoreId).toBeGreaterThan(0);
-            });
-
-            it('should throw an error if gameId is missing', async () => {
-                const playerId = 1;
-                const score = 100;
-        
-                await expect(queries.createGameScore(null, playerId, score)).rejects.toThrow();
-            });
-        
-            it('should throw an error if playerId is missing', async () => {
-                const gameId = 1;
-                const score = 100;
-                await expect(queries.createGameScore(gameId, null, score)).rejects.toThrow();
-            });
-        
-            it('should throw an error if the score is missing', async () => {
-                const gameId = 1;
-                const playerId = 1;
-                await expect(queries.createGameScore(gameId, playerId, null)).rejects.toThrow();
-            });
         });
-    });
-    
-
-    describe('Delete', () => {
+        
         describe('deleteGameById', () => {
             it('should delete a game by ID', async () => {
                 const gameId = await queries.createGame('Game 4', 'multiplayer', 1, 'pending');
@@ -135,298 +87,9 @@ describe('Player Queries', () => {
                 await expect(queries.deleteGameById(999)).rejects.toThrow();
             });
         });
-
-        describe('deleteGameScore', () => {
-            it('should delete a game score by gameId and playerId', async () => {
-                const gameId = 1;
-                const playerId = 1;
-                const score = 100;
-                
-                const scoreId = await queries.createGameScore(gameId, playerId, score);
-                expect(scoreId).toBeGreaterThan(0);
-
-                const result = await queries.deleteGameScore(gameId, playerId);
-                expect(result).toBeGreaterThan(0);
-            });
-        
-            it('should throw an error for a non-existent score', async () => {
-                const nonExistentGameId = 999; // arbitrary game ID that doesn't exist
-                const nonExistentPlayerId = 999; // arbitrary player ID that doesn't exist
-        
-                await expect(queries.deleteGameScore(nonExistentGameId, nonExistentPlayerId)).rejects.toThrow('Score not found for this player in the specified game.');
-            });
-        });
-        
-    });
-
-    describe('Updates', () => {
-        describe('updateGameName', () => {
-            it('should update a game\'s name successfully', async () => {
-                const gameId = await queries.createGame('TestGame', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                const changes = await queries.updateGameName(gameId, 'NewTestGame');
-                expect(changes).toBeGreaterThan(0);
-
-                const updatedGame = await queries.getGameById(gameId);
-                expect(updatedGame).toEqual(expect.objectContaining({ name: 'NewTestGame' }));
-            });
-
-            it('should throw an error if the game ID does not exist', async () => {
-                await expect(queries.updateGameName(999, 'Non-Existent Game'))
-                    .rejects.toThrow('Error updating game name');
-            });
-        });
-
-        describe('updateGameMode', () => {
-            it('should update a game\'s mode successfully', async () => {
-                const gameId = await queries.createGame('Game 5', 'training', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                const changes = await queries.updateGameMode(gameId, 'solo');
-                expect(changes).toBeGreaterThan(0);
-
-                const updatedGame = await queries.getGameById(gameId);
-                expect(updatedGame).toEqual(expect.objectContaining({ mode: 'solo' }));
-            });
-
-            it('should throw an error for an invalid mode', async () => {
-                const gameId = await queries.createGame('Game 6', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                await expect(queries.updateGameMode(gameId, 'invalid'))
-                    .rejects.toThrow('Error updating game mode');
-            });
-
-            it('should throw an error if the game ID does not exist', async () => {
-                await expect(queries.updateGameMode(999, 'multiplayer'))
-                    .rejects.toThrow('Error updating game mode');
-            });
-        });
-
-        describe('updateGameSize', () => {
-            it('should update a game\'s size successfully', async () => {
-                const gameId = await queries.createGame('Game 7', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                const changes = await queries.updateGameSize(gameId, 3);
-                expect(changes).toBeGreaterThan(0);
-            });
-
-            it('should thrown error as size is negative', async () => {
-                const gameId = await queries.createGame('Game 8', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                await expect(queries.updateGameSize(gameId, -3))
-                    .rejects.toThrow('Error updating game size');
-            });
-
-            it('should thrown error as supirior to 4', async () => {
-                const gameId = await queries.createGame('Game 9', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                await expect(queries.updateGameSize(gameId, 5))
-                    .rejects.toThrow('Error updating game size');
-            });
-        });
-
-        describe('updateGameStatus', () => {
-            it('should update a game\'s status successfully', async () => {
-                const gameId = await queries.createGame('Game 7', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                const changes = await queries.updateGameStatus(gameId, 'in progress');
-                expect(changes).toBeGreaterThan(0);
-
-                const updatedGame = await queries.getGameById(gameId);
-                expect(updatedGame).toEqual(expect.objectContaining({ status: 'in progress' }));
-            });
-
-            it('should throw an error for an invalid status', async () => {
-                const gameId = await queries.createGame('Game 8', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                await expect(queries.updateGameStatus(gameId, 'invalid'))
-                    .rejects.toThrow('Error updating game status');
-            });
-
-            it('should throw an error if the game ID does not exist', async () => {
-                await expect(queries.updateGameStatus(999, 'active'))
-                    .rejects.toThrow('Error updating game status');
-            });
-        });
-
-        describe('updateGameWinner', () => {
-            it('should update a game\'s winner successfully', async () => {
-                const gameId = await queries.createGame('Game 9', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-        
-                const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
-                expect(playerId).toBeGreaterThan(0);
-        
-                const changes = await queries.updateGameWinner(gameId, playerId);
-                expect(changes).toBeGreaterThan(0); // Only one row should be updated
-        
-                const updatedGame = await queries.getGameById(gameId);
-                expect(updatedGame).toHaveProperty('winner_id', playerId); // Verify winner_id matches playerId
-            });
-        
-            it('should throw an error if the game ID does not exist', async () => {
-                const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
-                expect(playerId).toBeGreaterThan(0);
-        
-                await expect(queries.updateGameWinner(999, playerId))
-                    .rejects.toThrow('Error updating game winner');
-            });
-        });  
-        
-        describe('updateGameSprint', () => {
-            it('should update a game\'s sprint successfully', async () => {
-                const gameId = await queries.createGame('Game 10', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-        
-                const changes = await queries.updateGameSprint(gameId, true);
-                expect(changes).toBeGreaterThan(0);
-        
-                const updatedGame = await queries.getGameById(gameId);
-                
-                expect(updatedGame).toEqual(expect.objectContaining({ sprint: 1 }));
-            });
-
-            it('should throw an error if the game ID does not exist', async () => {
-                await expect(queries.updateGameSprint(999, true)).rejects.toThrow('Error updating game sprint');
-            });
-        });
-
-        describe('updateGameParent', () => {
-            it('should update a game\'s parent successfully', async () => {
-                const parentGameId = await queries.createGame('Parent Game', 'multiplayer', 1, 'pending');
-                const gameId = await queries.createGame('Child Game', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-                
-                const changes = await queries.updateGameParent(gameId, parentGameId);
-                expect(changes).toBeGreaterThan(0);
-
-                const updatedGame = await queries.getGameById(gameId);
-                expect(updatedGame).toEqual(expect.objectContaining({ parent_id: parentGameId }));
-            });
-
-            it('should throw an error if the game ID does not exist', async () => {
-                const parentGameId = await queries.createGame('Parent Game', 'multiplayer', 1, 'pending');
-                await expect(queries.updateGameParent(999, parentGameId)).rejects.toThrow('Error updating game parent');
-            });
-
-            it('should throw an error if the parent ID does not exist', async () => {
-                const gameId = await queries.createGame('Child Game', 'multiplayer', 1, 'pending');
-                await expect(queries.updateGameParent(gameId, 999)).rejects.toThrow('Error updating game parent');
-            });
-        });
-
-        describe('updateGameRematcher', () => {
-            it('should update a game\'s rematcher successfully', async () => {
-                const gameId = await queries.createGame('Game 10', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
-                expect(playerId).toBeGreaterThan(0);
-
-                const changes = await queries.updateGameRematcher(gameId, playerId);
-                expect(changes).toBeGreaterThan(0);
-
-                const updatedGame = await queries.getGameById(gameId);
-                expect(updatedGame).toEqual(expect.objectContaining({ rematcher_id: playerId }));
-            });
-
-            it('should throw an error if the game ID does not exist', async () => {
-                const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
-                expect(playerId).toBeGreaterThan(0);
-
-                await expect(queries.updateGameRematcher(999, playerId)).rejects.toThrow('Error updating game rematcher');
-            });
-
-            it('should throw an error if the rematcher ID does not exist', async () => {
-                const gameId = await queries.createGame('Game 11', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                await expect(queries.updateGameRematcher(gameId, 999)).rejects.toThrow('Error updating game rematcher');
-            });
-        });
-
-        describe('updateGameCreator', () => {
-            it('should update a game\'s creator successfully', async () => {
-                const gameId = await queries.createGame('Game 10', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
-                expect(playerId).toBeGreaterThan(0);
-
-                const changes = await queries.updateGameCreator(gameId, playerId);
-                expect(changes).toBeGreaterThan(0);
-                
-                const updatedGame = await queries.getGameById(gameId);
-                expect(updatedGame).toEqual(expect.objectContaining({ creator_id: playerId }));
-            });
-
-            it('should throw an error if the game ID does not exist', async () => {
-                const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
-                expect(playerId).toBeGreaterThan(0);
-                
-                await expect(queries.updateGameCreator(999, playerId)).rejects.toThrow('Error updating game creator');
-            });
-
-            it('should throw an error if the creator ID does not exist', async () => {
-                const gameId = await queries.createGame('Game 11', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-
-                await expect(queries.updateGameCreator(gameId, 999)).rejects.toThrow('Error updating game creator');
-            });
-        });
-
-        describe('updateGameLosers', () => {
-            it('should update a game\'s losers successfully', async () => {
-                const gameId = await queries.createGame('Game 10', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-        
-                const playerId1 = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
-                expect(playerId1).toBeGreaterThan(0);
-        
-                const playerId2 = await playerQueries.createPlayer('testuser2', true, 'testuser2password');
-                expect(playerId2).toBeGreaterThan(0);
-        
-                const lastLoserId1 = await queries.updateGameLosers(gameId, playerId1);
-                expect(lastLoserId1).toBeGreaterThan(0);
-        
-                const lastLoserId2 = await queries.updateGameLosers(gameId, playerId2);
-                expect(lastLoserId2).toBeGreaterThan(0);
-            });
-
-            it('should throw an error if the game ID does not exist', async () => {
-                const playerId1 = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
-                expect(playerId1).toBeGreaterThan(0);
-        
-                const playerId2 = await playerQueries.createPlayer('testuser2', true, 'testuser2password');
-                expect(playerId2).toBeGreaterThan(0);
-        
-                await expect(queries.updateGameLosers(999, playerId1)).rejects.toThrow('Error updating game losers');
-            });
-
-            it('should throw an error if the player ID does not exist', async () => {
-                const gameId = await queries.createGame('Game 11', 'multiplayer', 1, 'pending');
-                expect(gameId).toBeGreaterThan(0);
-        
-                const playerId1 = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
-                expect(playerId1).toBeGreaterThan(0);
-        
-                await expect(queries.updateGameLosers(gameId, [playerId1, 999])).rejects.toThrow('Error updating game losers');
-            });
-        });
-        
-        
-        
     });
 
     describe('Getters', () => {
-
         describe('Games', () => {
             describe('getGameById', () => {
                 it('should get a game by ID', async () => {
@@ -514,6 +177,230 @@ describe('Player Queries', () => {
             });
 
         });
+
+        describe('Updator', () => {
+            describe('updateGameName', () => {
+                it('should update a game\'s name successfully', async () => {
+                    const gameId = await queries.createGame('TestGame', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    const changes = await queries.updateGameName(gameId, 'NewTestGame');
+                    expect(changes).toBeGreaterThan(0);
+    
+                    const updatedGame = await queries.getGameById(gameId);
+                    expect(updatedGame).toEqual(expect.objectContaining({ name: 'NewTestGame' }));
+                });
+    
+                it('should throw an error if the game ID does not exist', async () => {
+                    await expect(queries.updateGameName(999, 'Non-Existent Game'))
+                        .rejects.toThrow('Error updating game name');
+                });
+            });
+    
+            describe('updateGameMode', () => {
+                it('should update a game\'s mode successfully', async () => {
+                    const gameId = await queries.createGame('Game 5', 'training', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    const changes = await queries.updateGameMode(gameId, 'solo');
+                    expect(changes).toBeGreaterThan(0);
+    
+                    const updatedGame = await queries.getGameById(gameId);
+                    expect(updatedGame).toEqual(expect.objectContaining({ mode: 'solo' }));
+                });
+    
+                it('should throw an error for an invalid mode', async () => {
+                    const gameId = await queries.createGame('Game 6', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    await expect(queries.updateGameMode(gameId, 'invalid'))
+                        .rejects.toThrow('Error updating game mode');
+                });
+    
+                it('should throw an error if the game ID does not exist', async () => {
+                    await expect(queries.updateGameMode(999, 'multiplayer'))
+                        .rejects.toThrow('Error updating game mode');
+                });
+            });
+    
+            describe('updateGameSize', () => {
+                it('should update a game\'s size successfully', async () => {
+                    const gameId = await queries.createGame('Game 7', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    const changes = await queries.updateGameSize(gameId, 3);
+                    expect(changes).toBeGreaterThan(0);
+                });
+    
+                it('should thrown error as size is negative', async () => {
+                    const gameId = await queries.createGame('Game 8', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    await expect(queries.updateGameSize(gameId, -3))
+                        .rejects.toThrow('Error updating game size');
+                });
+    
+                it('should thrown error as supirior to 4', async () => {
+                    const gameId = await queries.createGame('Game 9', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    await expect(queries.updateGameSize(gameId, 5))
+                        .rejects.toThrow('Error updating game size');
+                });
+            });
+    
+            describe('updateGameStatus', () => {
+                it('should update a game\'s status successfully', async () => {
+                    const gameId = await queries.createGame('Game 7', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    const changes = await queries.updateGameStatus(gameId, 'in progress');
+                    expect(changes).toBeGreaterThan(0);
+    
+                    const updatedGame = await queries.getGameById(gameId);
+                    expect(updatedGame).toEqual(expect.objectContaining({ status: 'in progress' }));
+                });
+    
+                it('should throw an error for an invalid status', async () => {
+                    const gameId = await queries.createGame('Game 8', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    await expect(queries.updateGameStatus(gameId, 'invalid'))
+                        .rejects.toThrow('Error updating game status');
+                });
+    
+                it('should throw an error if the game ID does not exist', async () => {
+                    await expect(queries.updateGameStatus(999, 'active'))
+                        .rejects.toThrow('Error updating game status');
+                });
+            });
+    
+            describe('updateGameWinner', () => {
+                it('should update a game\'s winner successfully', async () => {
+                    const gameId = await queries.createGame('Game 9', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+            
+                    const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
+                    expect(playerId).toBeGreaterThan(0);
+            
+                    const changes = await queries.updateGameWinner(gameId, playerId);
+                    expect(changes).toBeGreaterThan(0); // Only one row should be updated
+            
+                    const updatedGame = await queries.getGameById(gameId);
+                    expect(updatedGame).toHaveProperty('winner_id', playerId); // Verify winner_id matches playerId
+                });
+            
+                it('should throw an error if the game ID does not exist', async () => {
+                    const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
+                    expect(playerId).toBeGreaterThan(0);
+            
+                    await expect(queries.updateGameWinner(999, playerId))
+                        .rejects.toThrow('Error updating game winner');
+                });
+            });  
+            
+            describe('updateGameSprint', () => {
+                it('should update a game\'s sprint successfully', async () => {
+                    const gameId = await queries.createGame('Game 10', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+            
+                    const changes = await queries.updateGameSprint(gameId, true);
+                    expect(changes).toBeGreaterThan(0);
+            
+                    const updatedGame = await queries.getGameById(gameId);
+                    
+                    expect(updatedGame).toEqual(expect.objectContaining({ sprint: 1 }));
+                });
+    
+                it('should throw an error if the game ID does not exist', async () => {
+                    await expect(queries.updateGameSprint(999, true)).rejects.toThrow('Error updating game sprint');
+                });
+            });
+    
+            describe('updateGameParent', () => {
+                it('should update a game\'s parent successfully', async () => {
+                    const parentGameId = await queries.createGame('Parent Game', 'multiplayer', 1, 'pending');
+                    const gameId = await queries.createGame('Child Game', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+                    
+                    const changes = await queries.updateGameParent(gameId, parentGameId);
+                    expect(changes).toBeGreaterThan(0);
+    
+                    const updatedGame = await queries.getGameById(gameId);
+                    expect(updatedGame).toEqual(expect.objectContaining({ parent_id: parentGameId }));
+                });
+    
+                it('should throw an error if the game ID does not exist', async () => {
+                    const parentGameId = await queries.createGame('Parent Game', 'multiplayer', 1, 'pending');
+                    await expect(queries.updateGameParent(999, parentGameId)).rejects.toThrow('Error updating game parent');
+                });
+    
+                it('should throw an error if the parent ID does not exist', async () => {
+                    const gameId = await queries.createGame('Child Game', 'multiplayer', 1, 'pending');
+                    await expect(queries.updateGameParent(gameId, 999)).rejects.toThrow('Error updating game parent');
+                });
+            });
+    
+            describe('updateGameRematcher', () => {
+                it('should update a game\'s rematcher successfully', async () => {
+                    const gameId = await queries.createGame('Game 10', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
+                    expect(playerId).toBeGreaterThan(0);
+    
+                    const changes = await queries.updateGameRematcher(gameId, playerId);
+                    expect(changes).toBeGreaterThan(0);
+    
+                    const updatedGame = await queries.getGameById(gameId);
+                    expect(updatedGame).toEqual(expect.objectContaining({ rematcher_id: playerId }));
+                });
+    
+                it('should throw an error if the game ID does not exist', async () => {
+                    const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
+                    expect(playerId).toBeGreaterThan(0);
+    
+                    await expect(queries.updateGameRematcher(999, playerId)).rejects.toThrow('Error updating game rematcher');
+                });
+    
+                it('should throw an error if the rematcher ID does not exist', async () => {
+                    const gameId = await queries.createGame('Game 11', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    await expect(queries.updateGameRematcher(gameId, 999)).rejects.toThrow('Error updating game rematcher');
+                });
+            });
+    
+            describe('updateGameCreator', () => {
+                it('should update a game\'s creator successfully', async () => {
+                    const gameId = await queries.createGame('Game 10', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
+                    expect(playerId).toBeGreaterThan(0);
+    
+                    const changes = await queries.updateGameCreator(gameId, playerId);
+                    expect(changes).toBeGreaterThan(0);
+                    
+                    const updatedGame = await queries.getGameById(gameId);
+                    expect(updatedGame).toEqual(expect.objectContaining({ creator_id: playerId }));
+                });
+    
+                it('should throw an error if the game ID does not exist', async () => {
+                    const playerId = await playerQueries.createPlayer('testuser', true, 'testuserpassword');
+                    expect(playerId).toBeGreaterThan(0);
+                    
+                    await expect(queries.updateGameCreator(999, playerId)).rejects.toThrow('Error updating game creator');
+                });
+    
+                it('should throw an error if the creator ID does not exist', async () => {
+                    const gameId = await queries.createGame('Game 11', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+    
+                    await expect(queries.updateGameCreator(gameId, 999)).rejects.toThrow('Error updating game creator');
+                });
+            });
+        });    
         
         describe('Game Players', () => {
             let gameId;
@@ -589,6 +476,72 @@ describe('Player Queries', () => {
         });
 
         describe('Game Scores', () => {
+            describe('createGameScore', () => {
+                it('should create a new game score entry', async () => {
+                    const gameId = 1; // assuming a valid game ID
+                    const playerId = 1; // assuming a valid player ID
+                    const score = 100;
+                    const scoreId = await queries.createGameScore(gameId, playerId, score);
+                    expect(scoreId).toBeGreaterThan(0);
+                });
+    
+                it('should create a negative score successfully', async () => {
+                    const gameId = 1;
+                    const playerId = 1;
+                    const score = -100;
+                    const scoreId = await queries.createGameScore(gameId, playerId, score);
+                    expect(scoreId).toBeGreaterThan(0);
+                });
+            
+                it('should create a score of zero successfully', async () => {
+                    const gameId = 1;
+                    const playerId = 1;
+                    const score = 0;
+                    const scoreId = await queries.createGameScore(gameId, playerId, score);
+                    expect(scoreId).toBeGreaterThan(0);
+                });
+    
+                it('should throw an error if gameId is missing', async () => {
+                    const playerId = 1;
+                    const score = 100;
+            
+                    await expect(queries.createGameScore(null, playerId, score)).rejects.toThrow();
+                });
+            
+                it('should throw an error if playerId is missing', async () => {
+                    const gameId = 1;
+                    const score = 100;
+                    await expect(queries.createGameScore(gameId, null, score)).rejects.toThrow();
+                });
+            
+                it('should throw an error if the score is missing', async () => {
+                    const gameId = 1;
+                    const playerId = 1;
+                    await expect(queries.createGameScore(gameId, playerId, null)).rejects.toThrow();
+                });
+            });
+
+            describe('deleteGameScore', () => {
+                it('should delete a game score by gameId and playerId', async () => {
+                    const gameId = 1;
+                    const playerId = 1;
+                    const score = 100;
+                    
+                    const scoreId = await queries.createGameScore(gameId, playerId, score);
+                    expect(scoreId).toBeGreaterThan(0);
+    
+                    const result = await queries.deleteGameScore(gameId, playerId);
+                    expect(result).toBeGreaterThan(0);
+                });
+            
+                it('should throw an error for a non-existent score', async () => {
+                    const nonExistentGameId = 999; // arbitrary game ID that doesn't exist
+                    const nonExistentPlayerId = 999; // arbitrary player ID that doesn't exist
+            
+                    await expect(queries.deleteGameScore(nonExistentGameId, nonExistentPlayerId)).rejects.toThrow('Score not found for this player in the specified game.');
+                });
+            });
+
             describe('getGameScores', () => {
                 it('should get scores for a game', async () => {
                     const game = await queries.createGame('Game 1', 'multiplayer', 1, 'pending');
@@ -717,6 +670,37 @@ describe('Player Queries', () => {
                 });
             });
 
+            describe('updateGameScore', () => {
+                it('should update a player\'s score for a game', async () => {
+                    const gameId = await queries.createGame('Game 1', 'multiplayer', 1, 'pending');
+                    const playerId = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
+                    
+                    await queries.createGameScore(gameId, playerId, 100);
+                    
+                    const changes = await queries.updateGameScore(gameId, playerId, 200); 
+                    expect(changes).toBeGreaterThan(0);
+                    
+                    const score = await queries.getGameScoreByGamePlayer(gameId, playerId);
+                    expect(score).toEqual(expect.objectContaining({ "player_id": playerId, "score": 300 }));
+                });
+                
+
+                it('should throw an error if the player ID does not exist', async () => {
+                    const gameId = await queries.createGame('Game 1', 'multiplayer', 1, 'pending');
+                    const playerId = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
+                    await queries.createGameScore(gameId, playerId, 100);
+            
+                    await expect(queries.updateGameScore(gameId, 999, 200)).rejects.toThrow('Error updating game score');
+                });
+
+                it('should throw an error if the game ID does not exist', async () => {
+                    const gameId = await queries.createGame('Game 1', 'multiplayer', 1, 'pending');
+                    const playerId = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
+                    await queries.createGameScore(gameId, playerId, 100);
+            
+                    await expect(queries.updateGameScore(999, playerId, 200)).rejects.toThrow('Error updating game score');
+                });
+            });
         });
 
         describe('Game Losers', () => {
@@ -762,6 +746,45 @@ describe('Player Queries', () => {
                     await queries.updateGameLosers(gameId, player2Id);
 
                     await expect(queries.getGameLosersByGame(999)).rejects.toThrow('Error getting losers');
+                });
+            });
+
+            describe('updateGameLosers', () => {
+                it('should update a game\'s losers successfully', async () => {
+                    const gameId = await queries.createGame('Game 10', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+            
+                    const playerId1 = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
+                    expect(playerId1).toBeGreaterThan(0);
+            
+                    const playerId2 = await playerQueries.createPlayer('testuser2', true, 'testuser2password');
+                    expect(playerId2).toBeGreaterThan(0);
+            
+                    const lastLoserId1 = await queries.updateGameLosers(gameId, playerId1);
+                    expect(lastLoserId1).toBeGreaterThan(0);
+            
+                    const lastLoserId2 = await queries.updateGameLosers(gameId, playerId2);
+                    expect(lastLoserId2).toBeGreaterThan(0);
+                });
+    
+                it('should throw an error if the game ID does not exist', async () => {
+                    const playerId1 = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
+                    expect(playerId1).toBeGreaterThan(0);
+            
+                    const playerId2 = await playerQueries.createPlayer('testuser2', true, 'testuser2password');
+                    expect(playerId2).toBeGreaterThan(0);
+            
+                    await expect(queries.updateGameLosers(999, playerId1)).rejects.toThrow('Error updating game losers');
+                });
+    
+                it('should throw an error if the player ID does not exist', async () => {
+                    const gameId = await queries.createGame('Game 11', 'multiplayer', 1, 'pending');
+                    expect(gameId).toBeGreaterThan(0);
+            
+                    const playerId1 = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
+                    expect(playerId1).toBeGreaterThan(0);
+            
+                    await expect(queries.updateGameLosers(gameId, [playerId1, 999])).rejects.toThrow('Error updating game losers');
                 });
             });
         });

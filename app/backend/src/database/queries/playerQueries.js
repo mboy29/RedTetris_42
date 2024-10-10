@@ -34,6 +34,22 @@ async function createPlayer(username, connect, password) {
     }
 }
 
+async function deletePlayerById(id) {
+    try {
+        const db = await dbModule.connect();
+        const queryGet = 'SELECT * FROM players WHERE id = ?';
+        if (!await dbModule.get(queryGet, [id])) {
+            throw new Error('Player not found');
+        }
+        const query = 'DELETE FROM players WHERE id = ?';
+        const result = await dbModule.run(query, [id]);
+        return result.changes; 
+    } catch (err) {
+        throw new Error(`Error deleting player by ID: ${err.message}`);
+    }
+}
+
+
 async function getPlayerPassword(username) {
     try {
         const player = await getPlayerByUsername(username);
@@ -148,21 +164,6 @@ async function updatePlayerScore(id, score) {
         return result.changes; 
     } catch (err) {
         throw new Error(`Error updating player score: ${err.message}`);
-    }
-}
-
-async function deletePlayerById(id) {
-    try {
-        const db = await dbModule.connect();
-        const queryGet = 'SELECT * FROM players WHERE id = ?';
-        if (!await dbModule.get(queryGet, [id])) {
-            throw new Error('Player not found');
-        }
-        const query = 'DELETE FROM players WHERE id = ?';
-        const result = await dbModule.run(query, [id]);
-        return result.changes; 
-    } catch (err) {
-        throw new Error(`Error deleting player by ID: ${err.message}`);
     }
 }
 
