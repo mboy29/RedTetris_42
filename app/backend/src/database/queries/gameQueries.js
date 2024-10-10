@@ -7,6 +7,7 @@
     This module is designed to handle operations on 
     the `games`, `game_players`, `game_scores`, and
     `game_losers` tables in the RedTetris database.
+    
     It provides functions to create, update, and delete
     game records, as well as to manage game scores and
     player participation in games.
@@ -98,6 +99,7 @@ async function deleteGameScore(gameId, playerId) {
     }
 }
 
+
 // +------------------- GETTERS --------------------+
 
 async function getGameById(id) {
@@ -121,7 +123,6 @@ async function getGameByName(name) {
         throw new Error(`Error getting game by name: ${err.message}`);
     }
 }
-
 
 async function getGameSprint(id) {
     try {

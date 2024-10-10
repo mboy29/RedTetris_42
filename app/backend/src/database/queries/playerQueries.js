@@ -5,23 +5,19 @@
 // +------------------- SUMMARY --------------------+
 
 /*
-    This module is designed to handle operations on the `players` 
-    table in the SQLite database for the RedTetris project. 
+    This module is designed to handle operations on
+    the `players` table in the SQLite database for
+    the RedTetris project. 
 
-    This includes:
-        - Creating a new player
-        - Getting a player by ID or username
-        - Getting all players
-        - Updating a player's username, connection status, 
-          or room name
-        - Deleting a player by ID
+    It provides functions to create, read, update and
+    delete players in the database.
 */
 
 // +----------------- REQUIREMENTS -----------------+ 
 
 const dbModule = require('../database');
 
-// +------------------- FUNCTIONS ------------------+
+// +------------------- CREATIONS ------------------+
 
 async function createPlayer(username, connect, password) {
     try {
@@ -33,6 +29,9 @@ async function createPlayer(username, connect, password) {
         throw new Error(`Error creating player: ${err.message}`);
     }
 }
+
+
+// +------------------- DELETIONS ------------------+
 
 async function deletePlayerById(id) {
     try {
@@ -49,6 +48,8 @@ async function deletePlayerById(id) {
     }
 }
 
+
+// +------------------- GETTERS --------------------+
 
 async function getPlayerPassword(username) {
     try {
@@ -106,6 +107,9 @@ async function getPlayersScore() {
         throw new Error(`Error getting all players: ${err.message}`);
     }
 }
+
+
+// +------------------- UPDATORS -------------------+
 
 async function updatePlayerUsername(id, username) {
     try {

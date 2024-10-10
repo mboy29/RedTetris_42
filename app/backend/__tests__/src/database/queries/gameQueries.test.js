@@ -10,7 +10,8 @@
     It includes tests for creating, retrieving, updating, 
     and deleting games in the SQLite database.
 
-    Test Suites: Create, Delete, Updates & Getters.
+    Test Suites includes: Create, Delete, Getters, 
+    Updators, Game Players, Game Scores & Game Losers.
 */
 
 // +----------------- REQUIREMENTS -----------------+
@@ -178,7 +179,7 @@ describe('Game Queries', () => {
 
         });
 
-        describe('Updator', () => {
+        describe('Updators', () => {
             describe('updateGameName', () => {
                 it('should update a game\'s name successfully', async () => {
                     const gameId = await queries.createGame('TestGame', 'multiplayer', 1, 'pending');
