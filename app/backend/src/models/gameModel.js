@@ -369,6 +369,8 @@ class Game {
         await this.updateStatus('finished');
     }
 
+    // +------------------- STATIC --------------------+
+
     static async create(name, mode, creator, sprint = false, parent = null) {
         const id = await queries.createGame(name, mode, creator.id, 'pending', sprint, parent ? parent.id : null);
         const new_game = new Game(id, name, mode, creator, sprint, 'pending', parent);
