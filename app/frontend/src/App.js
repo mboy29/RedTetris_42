@@ -52,6 +52,8 @@ const App = () => {
                     <Route path="/game/create" element={<routeHooks.ProtectedRoute element={<CreateGame />} />} />
                     <Route path="/game/join" element={<routeHooks.ProtectedRoute element={<JoinGame />} />} />
                     <Route path="/:room/:playerName" element={<routeHooks.ProtectedRoute element={<routeHooks.GameRoute setGlobalError={setGlobalError} />} />} />
+
+                    <Route path="*" element={<routeHooks.NotFound/>} />
                 </Routes>
             </Container>
         </div>

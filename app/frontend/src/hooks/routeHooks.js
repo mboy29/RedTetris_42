@@ -8,7 +8,7 @@
     This module defines custom route hooks for the 
     RedTetris frontend. The hooks are used to protect 
     routes that require authentication, redirect users 
-    if they are already logged in,and handle game 
+    if they are already logged in, and handle game 
     access.
 */
 
@@ -25,6 +25,22 @@ import { SessionContext } from './../contexts/sessionContext';
 import config from './../configs/config';
 
 // +-------------------- HOOKS ---------------------+
+
+const NotFound = () => {
+    const navigate = useNavigate();
+    const { session } = useContext(SessionContext);
+
+    React.useEffect(() => {
+        
+        const isAuthenticated = session;
+        if (isAuthenticated) {
+            navigate('/home');
+        } else {
+            navigate('/login');
+        }
+    }, [session, navigate]);
+    return null;
+};
 
 const ProtectedRoute = ({ element }) => {
     const { session } = useContext(SessionContext);
@@ -92,6 +108,7 @@ const GameRoute = ({ setGlobalError }) => {
 // +------------------- EXPORTS --------------------+
 
 export default {
+    NotFound,
     ProtectedRoute,
     RedirectIfLoggedIn,
     LogoutRoute,
