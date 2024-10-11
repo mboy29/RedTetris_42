@@ -20,9 +20,10 @@
 
 const queries = require('../database/queries/gameQueries');
 
-// +--------------------- CLASS ---------------------+
+// +--------------------- DATA ----------------------+
 
 const tetrominos = {
+
     L: [
         [null, null, 'L'],
         ['L', 'L', 'L'],
@@ -60,9 +61,12 @@ const tetrominos = {
     ],
 };
 
+// +--------------------- CLASS ---------------------+
 
 class Piece {
     
+    // +----------------- CONSTRUCTOR -----------------+
+
     constructor(type = null) {
         if (type) {
             this.setPiece(tetrominos[type], type);
@@ -72,6 +76,20 @@ class Piece {
         }
     }
 
+    // +------------------- SETTERS -------------------+
+
+    setPiece(piece, type) { 
+        this.piece = piece;
+        this.type = type;
+    }
+
+    // +------------------- GETTERS -------------------+
+
+    getPiece() { return this.piece; }
+    getType() { return this.type; }
+
+    // +------------------- METHODS -------------------+
+    
     randomPiece() {
         const pieces = Object.keys(tetrominos);
         const type = pieces[Math.floor(Math.random() * pieces.length)];
@@ -79,13 +97,7 @@ class Piece {
         return [piece, type];
     }
 
-    setPiece(piece, type) { 
-        this.piece = piece;
-        this.type = type;
-    }
-
-    getPiece() { return this.piece; }
-    getType() { return this.type; }
+    // +------------------- STATIC --------------------+
 
     static async getPieces(gameId) {
         const rows = await queries.getGamePieces(gameId);

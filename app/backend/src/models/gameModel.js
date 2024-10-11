@@ -25,8 +25,6 @@ const Player = require('./playerModel');
 
 class Game {
 
-// +--------------------- CLASS ---------------------+
-
     // +---------------- PROPRETIES -----------------+
 
     static TETRIS_SCORES = {
