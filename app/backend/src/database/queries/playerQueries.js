@@ -30,7 +30,6 @@ async function createPlayer(username, connect, password) {
     }
 }
 
-
 // +------------------- DELETIONS ------------------+
 
 async function deletePlayerById(id) {

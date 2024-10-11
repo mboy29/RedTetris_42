@@ -68,7 +68,7 @@ test: stop
 	@echo "$(GREEN)Running the tests...$(RESET)"
 	@echo "--------------------$(RESET)"
 	@cd $(BACKEND_DIR) && npm install > /dev/null 2>&1 || true
-	cd $(BACKEND_DIR) && npm run test
+	cd $(BACKEND_DIR) && npm run coverage
 
 test-clean:
 	@echo "$(GREEN)Removing all files relative to the tests...$(RESET)"

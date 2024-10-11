@@ -94,7 +94,7 @@ class Piece {
 
     static async updatPieces(gameId, type, position) {
         const result = await queries.updateGamePieces(gameId, type, position);
-        return result.lastID; 
+        return result;
     }
 }
 

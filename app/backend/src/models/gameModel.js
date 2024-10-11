@@ -4,21 +4,14 @@
 
 // +------------------- SUMMARY --------------------+
 /*
-    This module defines a `Game` class that models game objects 
-    and provides methods for interacting with game data. 
+    This module defines a `Game` class that models game 
+    objects and provides methods for interacting with 
+    game data. 
 
-    Methods include:
-        - `getByName`: retrieves a game by name
-        - `getById`: retrieves a game by ID
-        - `isGamePlayer`: checks if a player is in the game
-        - `isGameCreator`: checks if a player is the game creator
-        - `updateName`: updates the game name
-        - `updateMode`: updates the game mode
-        - `updateStatus`: updates the game status
-        - `addPlayers`: adds players to the game
-        - `removePlayers`: removes players from the game
-        - `create`: creates a new game
-        - `remove`: removes the game
+    This includes methods like constructors, getters, 
+    setters,and async functions to handle game operations 
+    such as updating game status, scores, and players, 
+    as well as creating and deleting games.
 */
 
 // +----------------- REQUIREMENTS -----------------+ 
@@ -31,6 +24,11 @@ const Player = require('./playerModel');
 // +--------------------- CLASS ---------------------+
 
 class Game {
+
+// +--------------------- CLASS ---------------------+
+
+    // +---------------- PROPRETIES -----------------+
+
     static TETRIS_SCORES = {
         1: 40,
         2: 100,
@@ -40,6 +38,8 @@ class Game {
 
     static SURRENDER_PENALTY = -1200; 
     static LOSER_BONUS_MULTIPLIER = 1.5;
+
+    // +----------------- CONSTRUCTOR -----------------+
 
     constructor(id, name, mode, creator, sprint = false, status = "pending", parent = null, winner = null, rematcher = null) {
         this.setId(id);
@@ -59,13 +59,13 @@ class Game {
         this.pieces = [];
     }
     
-    setId(id) {
-        this.id = id;
-    }
+    // +------------------- SETTERS -------------------+
+
+    setId(id) { this.id = id; }
 
     setName(name) {
         if (name.length < 4 || name.length > 14) {
-            throw new Error('Name must be between 4 and 14 characters.');
+            throw new Error('Invalid name, must be between 4 and 14 characters.');
         }
         this.name = name;
     }
@@ -73,7 +73,7 @@ class Game {
     setStatus(status) {
         const validStatuses = ["pending", "in progress", "finished"];
         if (!validStatuses.includes(status)) {
-            throw new Error(`Invalid status. Should be one of: ${validStatuses.join(', ')}`);
+            throw new Error(`Invalid status, should be one of: ${validStatuses.join(', ')}`);
         }
         this.status = status;
     }
@@ -81,7 +81,7 @@ class Game {
     setMode(mode) {
         const validModes = ["solo", "multiplayer", "training"];
         if (!validModes.includes(mode)) {
-            throw new Error('Invalid mode.');
+            throw new Error('Invalid mode, should be one of: solo, multiplayer, training');
         }
         this.mode = mode;
     }
@@ -98,117 +98,39 @@ class Game {
 
     setRematcher(rematcher) { this.rematcher = rematcher; }
 
-    getId() {
-        return this.id;
-    }
+    // +------------------- GETTERS -------------------+
 
-    getName() {
-        return this.name;
-    }
+    getId() { return this.id; }
 
-    getPlayers() {
-        return this.players;
-    }
+    getName() { return this.name; }
 
-    getStatus() {
-        return this.status;
-    }
+    getPlayers() { return this.players; }
 
-    getMode() {
-        return this.mode;
-    }
+    getStatus() { return this.status; }
 
-    getCreator() {
-        return this.creator;
-    }
+    getMode() { return this.mode; }
 
-    getSize() {
-        return this.size;
-    }
+    getCreator() { return this.creator; }
 
-    getSprint() {
-        return this.sprint;
-    }
+    getSize() { return this.size; }
 
-    getPieces() {
-        return this.pieces;
-    }
+    getSprint() { return this.sprint; }
 
-    getWinner() {
-        return this.winner;
-    }
+    getPieces() { return this.pieces; }
 
-    getLosers() {
-        return this.losers;
-    }
+    getWinner() { return this.winner; }
 
-    getScores() {
-        return this.scores;
-    }
+    getLosers() { return this.losers; }
 
-    getParent() {
-        return this.parent;
-    }
+    getScores() { return this.scores; }
 
-    getRematcher() {
-        return this.rematcher;
-    }
+    getParent() { return this.parent; }
 
-    static async getByName(name) {
-        const game = await queries.getGameByName(name);
-        if (!game) {
-            return null;
-        }
-        const creator = await Player.getById(game.creator_id);
-        const parent = game.parent_id ? await Game.getById(game.parent_id) : null;
-        const winner = game.winner_id ? await Player.getById(game.winner_id) : null;
-        const rematcher = game.rematcher_id ? await Player.getById(game.rematcher_id) : null;
-        const newGame = new Game(game.id, game.name, game.mode, creator, game.sprint, game.status, parent, winner, rematcher);
-        const players = await queries.getGamePlayers(game.id);
-        for (const player of players) {
-            newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName, player.score));
-        }
-        for (const piece of await Piece.getPieces(game.id)) {
-            newGame.pieces.push(new Piece(piece.type));
-        }
-        for (const score of await queries.getGameScoresByGame(game.id)) {
-            newGame.scores[score.player_id] = score.score;
-        }
-        for (const loser of await queries.getGameLosersByGame(game.id)) {
-            newGame.losers.push(loser.player_id);
-        }
-        return newGame;
-    }
+    getRematcher() { return this.rematcher; }
 
-    static async getById(id) {
-        const game = await queries.getGameById(id);
-        
-        if (!game) {
-            return null;
-        }
-        const creator = await Player.getById(game.creator_id);
-        const parent = game.parent_id ? await Game.getById(game.parent_id) : null;
-        const winner = game.winner_id ? await Player.getById(game.winner_id) : null;
-        const rematcher = game.rematcher_id ? await Player.getById(game.rematcher_id) : null;
-        const newGame = new Game(game.id, game.name, game.mode, creator, game.sprint, game.status, parent, winner, rematcher);
-        for (const player of await queries.getGamePlayers(id)) {
-            newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName, player.score));
-        }
-        for (const piece of await Piece.getPieces(game.id)) {
-            newGame.pieces.push(new Piece(piece.type));
-        }
-        for (const score of await queries.getGameScoresByGame(id)) {
-            newGame.scores[score.player_id] = score.score;
-        }
-        for (const loser of await queries.getGameLosersByGame(id)) {
-            newGame.losers.push(loser.player_id);
-        }
-        return newGame;
-    }
+    getPlayerScore(player) { return this.scores[player.id]; }
 
-    async getPlayerScore(player) {
-        return this.scores[player.id];
-    }
+    // +------------------- BOOLEANS ------------------+
 
     isGamePlayer(player) {
         const index = this.players.findIndex(p => p.id === player.id);
@@ -283,7 +205,22 @@ class Game {
         }
         return false;
     }
-    
+
+    isEndGame() {
+        const losers = this.getLosers();
+        const players = this.getPlayers();
+        if ((this.getMode() === 'solo' || this.getMode() === "training") && losers.length > 0) {
+            return true;
+        }
+        if (losers.length === players.length - 1) {
+            return true;
+        }
+        return false;
+
+    }
+
+    // +-------------------- ASYNC --------------------+
+
     async updateName(name) {
         try {
             this.setName(name);
@@ -368,18 +305,6 @@ class Game {
             }
         }
     }
-    
-    async removePlayers(socket, score, ...players) {
-        for (const player of players) {
-            if (this.isGamePlayer(player) === true) {
-                const index = this.players.findIndex(p => p.id === player.id);
-                this.players.splice(index, 1);
-                await queries.removePlayerFromGame(this.id, player.id);
-                await player.leaveGame(socket, score);
-                delete this.scores[player.id];
-            }
-        }
-    }
 
     async addPiece() {
         const existingPieces = await Piece.getPieces(this.id);
@@ -392,11 +317,16 @@ class Game {
         }
     }
     
-    
-    static async create(name, mode, creator, sprint = false, parent = null) {
-        const id = await queries.createGame(name, mode, creator.id, 'pending', sprint, parent ? parent.id : null);
-        const new_game = new Game(id, name, mode, creator, sprint, 'pending', parent);
-        return new_game
+    async removePlayers(socket, score, ...players) {
+        for (const player of players) {
+            if (this.isGamePlayer(player) === true) {
+                const index = this.players.findIndex(p => p.id === player.id);
+                this.players.splice(index, 1);
+                await queries.removePlayerFromGame(this.id, player.id);
+                await player.leaveGame(socket, score);
+                delete this.scores[player.id];
+            }
+        }
     }
 
     async remove() {
@@ -413,19 +343,6 @@ class Game {
             await queries.createGameScore(this.id, player.id, 0);
             this.scores[player.id] = 0;
         }
-    }
-
-    isEndGame() {
-        const losers = this.getLosers();
-        const players = this.getPlayers();
-        if ((this.getMode() === 'solo' || this.getMode() === "training") && losers.length > 0) {
-            return true;
-        }
-        if (losers.length === players.length - 1) {
-            return true;
-        }
-        return false;
-
     }
 
     async endGame() {
@@ -450,6 +367,88 @@ class Game {
             }
         }
         await this.updateStatus('finished');
+    }
+
+    static async create(name, mode, creator, sprint = false, parent = null) {
+        const id = await queries.createGame(name, mode, creator.id, 'pending', sprint, parent ? parent.id : null);
+        const new_game = new Game(id, name, mode, creator, sprint, 'pending', parent);
+        return new_game
+    }
+
+    static async getByName(name) {
+        const game = await queries.getGameByName(name);
+        if (!game) {
+            return null;
+        }
+        const creator = await Player.getById(game.creator_id);
+        const parent = game.parent_id ? await Game.getById(game.parent_id) : null;
+        const winner = game.winner_id ? await Player.getById(game.winner_id) : null;
+        const rematcher = game.rematcher_id ? await Player.getById(game.rematcher_id) : null;
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.sprint, game.status, parent, winner, rematcher);
+        const players = await queries.getGamePlayers(game.id);
+        if (players && players.length > 0) {
+            for (const player of players) {
+                newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName, player.score));
+            }
+        }
+       const pieces = await Piece.getPieces(game.id);
+        if (pieces && pieces.length > 0) {
+            for (const piece of await Piece.getPieces(game.id)) {
+                newGame.pieces.push(new Piece(piece.type));
+            }
+        }
+        const scores = await queries.getGameScoresByGame(game.id);
+        if (scores && scores.length > 0) {
+            for (const score of await queries.getGameScoresByGame(game.id)) {
+                newGame.scores[score.player_id] = score.score;
+            }
+        }
+        const losers = await queries.getGameLosersByGame(game.id);
+        if (losers && losers.length > 0) {
+            for (const loser of await queries.getGameLosersByGame(game.id)) {
+                newGame.losers.push(loser.player_id);
+            }
+        }
+        return newGame;
+    }
+
+
+    static async getById(id) {
+        const game = await queries.getGameById(id);
+        
+        if (!game) {
+            return null;
+        }
+        const creator = await Player.getById(game.creator_id);
+        const parent = game.parent_id ? await Game.getById(game.parent_id) : null;
+        const winner = game.winner_id ? await Player.getById(game.winner_id) : null;
+        const rematcher = game.rematcher_id ? await Player.getById(game.rematcher_id) : null;
+        const newGame = new Game(game.id, game.name, game.mode, creator, game.sprint, game.status, parent, winner, rematcher);
+        const players = await queries.getGamePlayers(game.id);
+        if (players && players.length > 0) {
+            for (const player of players) {
+                newGame.players.push(new Player(player.id, player.username, player.connect, player.roomName, player.score));
+            }
+        }
+       const pieces = await Piece.getPieces(game.id);
+        if (pieces && pieces.length > 0) {
+            for (const piece of await Piece.getPieces(game.id)) {
+                newGame.pieces.push(new Piece(piece.type));
+            }
+        }
+        const scores = await queries.getGameScoresByGame(game.id);
+        if (scores && scores.length > 0) {
+            for (const score of await queries.getGameScoresByGame(game.id)) {
+                newGame.scores[score.player_id] = score.score;
+            }
+        }
+        const losers = await queries.getGameLosersByGame(game.id);
+        if (losers && losers.length > 0) {
+            for (const loser of await queries.getGameLosersByGame(game.id)) {
+                newGame.losers.push(loser.player_id);
+            }
+        }
+        return newGame;
     }
 }
 
