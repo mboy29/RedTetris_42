@@ -64,7 +64,6 @@ async function initGame() {
     }
 }
 
-
 async function initGamePlayers() {
     try {
         const db = await dbModule.connect();

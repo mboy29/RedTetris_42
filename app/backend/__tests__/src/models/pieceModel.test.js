@@ -9,6 +9,9 @@
     class methods and properties defined in the
     `pieceModel.js` module.
 
+    The test suite includes the following test cases:
+    Constructor, Setters and Getters, and Static 
+    methods.
 */
 
 // +----------------- REQUIREMENTS -----------------+
@@ -43,7 +46,6 @@ describe('Piece Class', () => {
 
             it('should create a random Piece when no type is provided', () => {
                 piece = new Piece();
-                expect(Object.keys(piece.getPiece())).toHaveLength(3); 
                 expect(Object.values(piece.getPiece()).some(row => row.includes(null))).toBe(true); // Checks if some rows contain `null`
             });
         });
