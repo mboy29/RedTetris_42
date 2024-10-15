@@ -811,7 +811,7 @@ describe('Queries', () => {
                         await gameQueries.createGameScore(gameId, player2Id, 200);
     
                         const score = await gameQueries.getGameScoreByGamePlayer(gameId, player1Id);
-                        expect(score).toEqual(expect.objectContaininlocalhostg({ player_id: player1Id, score: 100 }));
+                        expect(score).toEqual(expect.objectContaining({ player_id: player1Id, score: 100 }));
                     });
     
                     it('should return null if the player has no score for the game', async () => {
@@ -832,7 +832,7 @@ describe('Queries', () => {
                 
                         await expect(gameQueries.getGameScoreByGamePlayer(gameId, 999)).rejects.toThrow('Error getting score');
                     });
-                    localhost
+    
                     it('should throw an error if the game ID does not exist', async () => {
                         const gameId = await gameQueries.createGame('Game 1', 'multiplayer', 1, 'pending');
                         const playerId = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
@@ -856,7 +856,7 @@ describe('Queries', () => {
                         expect(score).toEqual(expect.objectContaining({ "player_id": playerId, "score": 300 }));
                     });
                     
-                    localhost
+    
                     it('should throw an error if the player ID does not exist', async () => {
                         const gameId = await gameQueries.createGame('Game 1', 'multiplayer', 1, 'pending');
                         const playerId = await playerQueries.createPlayer('testuser1', true, 'testuser1password');
@@ -874,7 +874,7 @@ describe('Queries', () => {
                     });
                 });
             });
-            localhost
+    
             describe('Game Losers', () => {
                 describe('getGameLosers', () => {
                     it('should get the losers of a game', async () => {
@@ -890,7 +890,9 @@ describe('Queries', () => {
                             expect.objectContaining({ player_id: player1Id }),
                             expect.objectContaining({ player_id: player2Id })
                         ]));
-                    });localhost
+                    });
+                });
+    
                 describe('getGameLosersByGame', () => {
                     it('should get the losers of a game', async () => {
                         const gameId = await gameQueries.createGame('Game 1', 'multiplayer', 1, 'pending');
@@ -914,7 +916,8 @@ describe('Queries', () => {
     
                         await gameQueries.updateGameLosers(gameId, player1Id);
                         await gameQueries.updateGameLosers(gameId, player2Id);
-                        localhost999)).rejects.toThrow('Error getting losers');
+    
+                        await expect(gameQueries.getGameLosersByGame(999)).rejects.toThrow('Error getting losers');
                     });
                 });
     
@@ -974,7 +977,7 @@ describe('Queries', () => {
                             expect.objectContaining({ game_id: gameId, type: 'I', position: 1 }),
                             expect.objectContaining({ game_id: gameId, type: 'T', position: 2 }),
                             expect.objectContaining({ game_id: gameId, type: 'L', position: 3 })
-                        ]));localhost
+                        ]));
                     });
             
                     it('should return an empty array if there are no pieces for the game', async () => {

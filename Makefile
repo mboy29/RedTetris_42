@@ -10,6 +10,7 @@ FRONTEND_DIR := ./app/frontend
 BACKEND_DIR := ./app/backend
 TEST_LOG_FILE := $(BACKEND_DIR)/__tests__/logs.txt
 TEST_REPORT_FILE := $(BACKEND_DIR)/__tests__/report
+ENV_FILE := .env
 
 RESET := \033[0m
 BOLD := \033[1m
@@ -20,30 +21,36 @@ CYAN := \033[36m
 
 .DEFAULT_GOAL := help
 
+check-env:
+	@if [ ! -f $(ENV_FILE) ]; then \
+		echo "$(YELLOW)[WARNING]$(RESET) No .env file found! Please provide an .env file in the current directory to proceed."; \
+		exit 1; \
+	fi
+
 # +------------------- TARGETS --------------------+
 
-start:
+start: check-env
 	@echo "$(GREEN)Building and starting the docker containers...$(RESET)"
 	@echo "-----------------------------------------------$(RESET)"
 	$(DOCKER_COMPOSE) up -d --build
 
-stop:
+stop: check-env
 	@echo "$(GREEN)Stopping the docker containers...$(RESET)"
 	@echo "---------------------------------$(RESET)"
 	$(DOCKER_COMPOSE) down
 
-restart:
+restart: check-env
 	@echo "$(GREEN)Restarting the docker containers...$(RESET)"
 	@echo "-----------------------------------$(RESET)"
 	$(DOCKER_COMPOSE) restart
 	@make logs
 
-logs: 
+logs: check-env
 	@echo "$(GREEN)Checking logs of the docker containers...$(RESET)"
 	@echo "-----------------------------------------$(RESET)"
 	$(DOCKER_COMPOSE) logs -f
 
-clean:
+clean: check-env
 	@echo "$(GREEN)Removing the docker containers...$(RESET)"
 	@echo "---------------------------------$(RESET)"
 	$(DOCKER_COMPOSE) down -v --remove-orphans
@@ -64,7 +71,7 @@ fclean: clean test-clean
 	rm -rf $(BACKEND_DIR)/node_modules
 	rm -rf $(BACKEND_DIR)/redtetris.db
 
-test: stop
+test: stop check-env
 	@echo "$(GREEN)Running the tests...$(RESET)"
 	@echo "--------------------$(RESET)"
 	@cd $(BACKEND_DIR) && npm install > /dev/null 2>&1 || true
@@ -77,10 +84,10 @@ test-clean:
 
 test-re: test-clean test
 
-db:
+db: check-env
 	docker exec -it redtetris-backend sqlite3 /usr/src/app/backend/redtetris.db
 
-all: start logs
+all: check-env start logs
 
 re: fclean all
 
@@ -104,4 +111,4 @@ help:
 	@echo "[ERROR] Unknown target '$@'. Use 'make help' to see available commands."
 	@make help
 
-.PHONY: help start stop restart logs clean fclean all re test test-clean
+.PHONY: help start stop restart logs clean fclean all re test test-clean check-env
