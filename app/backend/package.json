@@ -7,7 +7,7 @@
         "start": "babel-node ./src/server.js",
         "dev": "nodemon --exec babel-node ./src/server.js",
         "test": "jest --detectOpenHandles",
-        "coverage": "jest --coverage --silent"
+        "coverage": "jest --coverage"
     },
     "dependencies": {
         "bcrypt": "^5.1.1",
@@ -57,6 +57,7 @@
         ],
         "moduleNameMapper": {
             "^@root/(.*)$": "<rootDir>/src/$1",
+            "^@routes/(.*)$": "<rootDir>/src/routes/$1",
             "^@models/(.*)$": "<rootDir>/src/models/$1",
             "^@database/(.*)$": "<rootDir>/src/database/$1",
             "^@queries/(.*)$": "<rootDir>/src/database/queries/$1",

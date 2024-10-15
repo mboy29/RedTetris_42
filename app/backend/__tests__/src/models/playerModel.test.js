@@ -47,7 +47,6 @@ describe('Player Class', () => {
     let player;
 
     beforeEach(() => {
-        // Initialize a Player instance before each test
         player = new Player(1, 'testUser', false, 'testRoom', 0);
         jest.clearAllMocks();
     });

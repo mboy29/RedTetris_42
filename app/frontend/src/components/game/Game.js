@@ -246,7 +246,7 @@ const Game = () => {
         setIsSoloGame(true);
         try {
             const response = await fetch(`${config.api_url}/game/solo/set?room=${room}`, {
-                method: 'GET',
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },

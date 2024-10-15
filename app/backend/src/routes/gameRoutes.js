@@ -18,7 +18,7 @@ const router = express.Router();
 const Game = require('./../models/gameModel');
 const Player = require('./../models/playerModel');
 
-// +------------------- FUNCTIONS ------------------+
+// +------------------ POST ROUTES -----------------+
 
 const isValidRoomName = (roomName) => /^[a-zA-Z0-9]+$/.test(roomName);
 
@@ -92,7 +92,7 @@ router.post('/join', async (req, res) => {
     }
 });
 
-router.get('/solo/set', async (req, res) => {
+router.post('/solo/set', async (req, res) => {
     try {
         const { room } = req.query;
         const game = await Game.getByName(room);
@@ -107,6 +107,8 @@ router.get('/solo/set', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+// +------------------ GET ROUTES ------------------+
 
 router.get('/check', async (req, res) => {
     try {

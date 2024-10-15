@@ -16,7 +16,7 @@ const express = require('express');
 const router = express.Router();
 const Player = require('./../models/playerModel');
 
-// +------------------- FUNCTIONS ------------------+
+// +-------------------- ROUTES --------------------+
 
 router.post('/register', async (req, res) => {
     const { username, password, passwordConfirm } = req.body;
