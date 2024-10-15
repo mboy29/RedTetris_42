@@ -210,6 +210,8 @@ class Player {
         let errors = [];
         if (!username || !password || !passwordConfirm) {
             errors.push('Username, password, and password confirmation are required.');
+        } if (username.length < 4 || username.length > 12) {
+            errors.push('Username must be between 4 and 12 characters long.');
         } if (password !== passwordConfirm) {
             errors.push('Passwords do not match.');
         } if (password.length < 6 || password.length > 20) {

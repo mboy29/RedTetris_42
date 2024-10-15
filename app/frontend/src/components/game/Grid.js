@@ -41,7 +41,8 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                 if (piece.piece[row][col] !== null) {
                     const targetRow = newRow + row;
                     const targetCol = newCol + col;
-                    if (targetRow >= numRows || targetCol < 0 || targetCol >= numCols || newPile[targetRow][targetCol] !== null) {
+                    console.log("targetRow", targetRow);
+                    if (targetRow >= numRows || targetCol < 0 || targetCol >= numCols || targetRow < 0 || newPile[targetRow][targetCol] !== null) {
                         return true;
                     }
                 }
@@ -341,7 +342,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
     // Handle scoring from other players
     useEffect(() => {
         socket.on('gameScored', ({ scoredPlayerGame, lines }) => {
-            if (scoredPlayerGame !== playerName && lines > 1) {
+            if (scoredPlayerGame !== playerName && lines > 0) {
                 const newPile = [...pile]; // Create a shallow copy of the current pile
                 for (let i = 0; i < lines; i++) {
                     newPile.push(Array(numCols).fill('M')); // Add new malus line
