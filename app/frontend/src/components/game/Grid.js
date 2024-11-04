@@ -119,30 +119,6 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
     const mergePieceToPile = useCallback((position) => {
         const newPile = updatePile(pile, position);
         
-        const checkMalusLines = (pile, position, piece) => {
-            console.log(pile);
-            for (let row = 0; row < piece.piece.length; row++) {
-                for (let col = 0; col < piece.piece[row].length; col++) {
-                    if (piece.piece[row][col] !== null) {
-                        const targetRow = position.row + row;
-                        const targetCol = position.col + col;
-                        // Check if the target cell is a malus line
-                        if (pile[targetRow] && pile[targetRow][targetCol] === 'M') {
-                            return true; // Collision with malus line
-                        }
-                    }
-                }
-            }
-            return false; // No collision with malus lines
-        };
-    
-        if (checkMalusLines(newPile, position, currentPiece)) {
-            // If the piece lands on a malus line, handle game over logic here
-            setIsGameLost(true);
-            socket.emit('lostGame', { roomName: room, playerName });
-            return;
-        }
-    
         const clearFullRows = (pile) => {
             const fullRows = [];
             const updatedPile = pile.filter((row, rowIndex) => {
