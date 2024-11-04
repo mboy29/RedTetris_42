@@ -41,8 +41,14 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                 if (piece.piece[row][col] !== null) {
                     const targetRow = newRow + row;
                     const targetCol = newCol + col;
-                    console.log("targetRow", targetRow);
-                    if (targetRow >= numRows || targetCol < 0 || targetCol >= numCols || targetRow < 0 || newPile[targetRow][targetCol] !== null) {
+                    if (
+                        targetRow >= numRows || // Check if we are out of the grid's rows
+                        targetCol < 0 || // Check if we are less than 0
+                        targetCol >= numCols || // Check if we are more than or equal to the columns
+                        targetRow < 0 || // Check if we are less than 0
+                        newPile[targetRow] === undefined || // Added check for undefined
+                        newPile[targetRow][targetCol] !== null
+                    ) {
                         return true;
                     }
                 }
@@ -50,6 +56,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
         }
         return false;
     }, [numRows, numCols]);
+    
     
 
     const updatePile = useCallback((pile, position, piece = null) => {
@@ -112,6 +119,30 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
     const mergePieceToPile = useCallback((position) => {
         const newPile = updatePile(pile, position);
         
+        const checkMalusLines = (pile, position, piece) => {
+            console.log(pile);
+            for (let row = 0; row < piece.piece.length; row++) {
+                for (let col = 0; col < piece.piece[row].length; col++) {
+                    if (piece.piece[row][col] !== null) {
+                        const targetRow = position.row + row;
+                        const targetCol = position.col + col;
+                        // Check if the target cell is a malus line
+                        if (pile[targetRow] && pile[targetRow][targetCol] === 'M') {
+                            return true; // Collision with malus line
+                        }
+                    }
+                }
+            }
+            return false; // No collision with malus lines
+        };
+    
+        if (checkMalusLines(newPile, position, currentPiece)) {
+            // If the piece lands on a malus line, handle game over logic here
+            setIsGameLost(true);
+            socket.emit('lostGame', { roomName: room, playerName });
+            return;
+        }
+    
         const clearFullRows = (pile) => {
             const fullRows = [];
             const updatedPile = pile.filter((row, rowIndex) => {
@@ -345,14 +376,12 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
             if (scoredPlayerGame !== playerName && lines > 0) {
                 const newPile = [...pile]; // Create a shallow copy of the current pile
                 for (let i = 0; i < lines; i++) {
-                    newPile.push(Array(numCols).fill('M')); // Add new malus line
-                }
-                for (let i = 0; i < lines; i++) {
                     newPile.shift(); // Remove the top row
+                    newPile.push(Array(numCols).fill('M'));
                 }
                 setPile(newPile);
                 if (newPile[currentPosition.row + 1].some(cell => cell === 'M')) {
-                    setCurrentPosition({ row: currentPosition.row - lines + 1, col: currentPosition.col });
+                    setCurrentPosition({ row: currentPosition.row - lines, col: currentPosition.col });
                 }
                 socket.emit('updatedGame', { roomName: room, playerName, grid: newPile }); // Emit the updated grid
             }

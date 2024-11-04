@@ -21,7 +21,7 @@
 
 const bcrypt = require('bcrypt');
 const Player = require('@models/playerModel');
-const queries = require('@queries/playerQueries');
+const playerQueries = require('@queries/playerQueries');
 
 // +------------------- MOCKS ----------------------+
 
@@ -105,12 +105,12 @@ describe('Player Class', () => {
             describe('Updators', () => {
                 describe('updateUsername', () => {
                     it('should update the username and call the query', async () => {
-                        queries.updatePlayerUsername.mockResolvedValueOnce(); // Mock the query to resolve
+                        playerQueries.updatePlayerUsername.mockResolvedValueOnce(); // Mock the query to resolve
         
                         await player.updateUsername('newUser');
         
                         expect(player.getUsername()).toBe('newUser');
-                        expect(queries.updatePlayerUsername).toHaveBeenCalledWith(player.getId(), 'newUser');
+                        expect(playerQueries.updatePlayerUsername).toHaveBeenCalledWith(player.getId(), 'newUser');
                     });
         
                     it('should throw an error if setUsername fails', async () => {
@@ -118,7 +118,7 @@ describe('Player Class', () => {
                     });
         
                     it('should throw an error if query fails', async () => {
-                        queries.updatePlayerUsername.mockRejectedValueOnce(new Error('Database error'));
+                        playerQueries.updatePlayerUsername.mockRejectedValueOnce(new Error('Database error'));
         
                         await expect(player.updateUsername('newUser')).rejects.toThrow('Error updating player username: Database error');
                     });
@@ -126,16 +126,16 @@ describe('Player Class', () => {
         
                 describe('updateConnect', () => {
                     it('should update the connect status and call the query', async () => {
-                        queries.updatePlayerConnect.mockResolvedValueOnce(); // Mock the query to resolve
+                        playerQueries.updatePlayerConnect.mockResolvedValueOnce(); // Mock the query to resolve
         
                         await player.updateConnect(true);
         
                         expect(player.getConnect()).toBe(true);
-                        expect(queries.updatePlayerConnect).toHaveBeenCalledWith(player.getId(), true);
+                        expect(playerQueries.updatePlayerConnect).toHaveBeenCalledWith(player.getId(), true);
                     });
         
                     it('should throw an error if query fails', async () => {
-                        queries.updatePlayerConnect.mockRejectedValueOnce(new Error('Database error'));
+                        playerQueries.updatePlayerConnect.mockRejectedValueOnce(new Error('Database error'));
         
                         await expect(player.updateConnect(true)).rejects.toThrow('Error updating player connection status: Database error');
                     });
@@ -143,16 +143,16 @@ describe('Player Class', () => {
         
                 describe('updateRoomName', () => {
                     it('should update the room name and call the query', async () => {
-                        queries.updatePlayerRoomName.mockResolvedValueOnce(); // Mock the query to resolve
+                        playerQueries.updatePlayerRoomName.mockResolvedValueOnce(); // Mock the query to resolve
         
                         await player.updateRoomName('newRoom');
         
                         expect(player.getRoomName()).toBe('newRoom');
-                        expect(queries.updatePlayerRoomName).toHaveBeenCalledWith(player.getId(), 'newRoom');
+                        expect(playerQueries.updatePlayerRoomName).toHaveBeenCalledWith(player.getId(), 'newRoom');
                     });
         
                     it('should throw an error if query fails', async () => {
-                        queries.updatePlayerRoomName.mockRejectedValueOnce(new Error('Database error'));
+                        playerQueries.updatePlayerRoomName.mockRejectedValueOnce(new Error('Database error'));
         
                         await expect(player.updateRoomName('newRoom')).rejects.toThrow('Error updating player room name: Database error');
                     });
@@ -160,16 +160,16 @@ describe('Player Class', () => {
         
                 describe('updateScore', () => {
                     it('should update the score and call the query', async () => {
-                        queries.updatePlayerScore.mockResolvedValueOnce(); // Mock the query to resolve
+                        playerQueries.updatePlayerScore.mockResolvedValueOnce(); // Mock the query to resolve
         
                         await player.updateScore(100);
         
                         expect(player.getScore()).toBe(100);
-                        expect(queries.updatePlayerScore).toHaveBeenCalledWith(player.getId(), 100);
+                        expect(playerQueries.updatePlayerScore).toHaveBeenCalledWith(player.getId(), 100);
                     });
         
                     it('should throw an error if query fails', async () => {
-                        queries.updatePlayerScore.mockRejectedValueOnce(new Error('Database error'));
+                        playerQueries.updatePlayerScore.mockRejectedValueOnce(new Error('Database error'));
         
                         await expect(player.updateScore(100)).rejects.toThrow('Error updating player score: Database error');
                     });
@@ -181,7 +181,7 @@ describe('Player Class', () => {
                     it('should authenticate the player with a valid password', async () => {
                         const validPasswordHash = 'hashedPassword'; // Mocked hashed password
                         player.getUsername = jest.fn().mockReturnValue('testUser'); // Mock getUsername
-                        queries.getPlayerPassword = jest.fn().mockResolvedValue(validPasswordHash); // Mock the query
+                        playerQueries.getPlayerPassword = jest.fn().mockResolvedValue(validPasswordHash); // Mock the query
                         bcrypt.compareSync.mockReturnValue(true); // Mock bcrypt comparison
         
                         await player.authenticate('correctPassword');
@@ -193,7 +193,7 @@ describe('Player Class', () => {
                     it('should throw an error if the password is invalid', async () => {
                         const invalidPasswordHash = 'hashedPassword';
                         player.getUsername = jest.fn().mockReturnValue('testUser'); // Mock getUsername
-                        queries.getPlayerPassword = jest.fn().mockResolvedValue(invalidPasswordHash); // Mock the query
+                        playerQueries.getPlayerPassword = jest.fn().mockResolvedValue(invalidPasswordHash); // Mock the query
                         bcrypt.compareSync.mockReturnValue(false); // Mock bcrypt comparison to return false
         
                         await expect(player.authenticate('wrongPassword')).rejects.toThrow('Invalid password.');
@@ -201,7 +201,7 @@ describe('Player Class', () => {
         
                     it('should throw an error if the getPlayerPassword query fails', async () => {
                         player.getUsername = jest.fn().mockReturnValue('testUser'); // Mock getUsername
-                        queries.getPlayerPassword.mockRejectedValueOnce(new Error('Database error'));
+                        playerQueries.getPlayerPassword.mockRejectedValueOnce(new Error('Database error'));
         
                         await expect(player.authenticate('password')).rejects.toThrow('Database error');
                     });
@@ -266,15 +266,15 @@ describe('Player Class', () => {
                 describe('remove', () => {
                     it('should call the deletePlayer query with the correct username', async () => {
                         // Ensure deletePlayer is mocked properly
-                        queries.deletePlayer.mockResolvedValueOnce(); // Mock the query to resolve
+                        playerQueries.deletePlayer.mockResolvedValueOnce(); // Mock the query to resolve
             
                         await player.remove(); // Call the remove method
             
-                        expect(queries.deletePlayer).toHaveBeenCalledWith(player.getUsername()); // Check that deletePlayer was called with the correct username
+                        expect(playerQueries.deletePlayer).toHaveBeenCalledWith(player.getUsername()); // Check that deletePlayer was called with the correct username
                     });
             
                     it('should throw an error if the query fails', async () => {
-                        queries.deletePlayer.mockRejectedValueOnce(new Error('Database error')); // Simulate query failure
+                        playerQueries.deletePlayer.mockRejectedValueOnce(new Error('Database error')); // Simulate query failure
             
                         await expect(player.remove()).rejects.toThrow('Database error'); // Ensure the error is thrown
                     });
@@ -286,17 +286,17 @@ describe('Player Class', () => {
             describe('getByUsername', () => {
                 it('should return a Player instance for a valid username', async () => {
                     const mockPlayerData = { id: 1, username: 'testUser', connect: false, roomName: 'testRoom', score: 0 };
-                    queries.getPlayerByUsername.mockResolvedValue(mockPlayerData);
+                    playerQueries.getPlayerByUsername.mockResolvedValue(mockPlayerData);
                     
                     const result = await Player.getByUsername('testUser');
                     
                     expect(result).toBeInstanceOf(Player);
                     expect(result.getUsername()).toBe('testUser');
-                    expect(queries.getPlayerByUsername).toHaveBeenCalledWith('testUser');
+                    expect(playerQueries.getPlayerByUsername).toHaveBeenCalledWith('testUser');
                 });
     
                 it('should return null for an invalid username', async () => {
-                    queries.getPlayerByUsername.mockResolvedValue(null);
+                    playerQueries.getPlayerByUsername.mockResolvedValue(null);
     
                     const result = await Player.getByUsername('invalidUser');
     
@@ -304,7 +304,7 @@ describe('Player Class', () => {
                 });
     
                 it('should throw an error if the query fails', async () => {
-                    queries.getPlayerByUsername.mockRejectedValue(new Error('Database error'));
+                    playerQueries.getPlayerByUsername.mockRejectedValue(new Error('Database error'));
     
                     await expect(Player.getByUsername('testUser')).rejects.toThrow('Database error');
                 });
@@ -313,17 +313,17 @@ describe('Player Class', () => {
             describe('getById', () => {
                 it('should return a Player instance for a valid ID', async () => {
                     const mockPlayerData = { id: 1, username: 'testUser', connect: false, roomName: 'testRoom', score: 0 };
-                    queries.getPlayerById.mockResolvedValue(mockPlayerData);
+                    playerQueries.getPlayerById.mockResolvedValue(mockPlayerData);
     
                     const result = await Player.getById(1);
     
                     expect(result).toBeInstanceOf(Player);
                     expect(result.getId()).toBe(1);
-                    expect(queries.getPlayerById).toHaveBeenCalledWith(1);
+                    expect(playerQueries.getPlayerById).toHaveBeenCalledWith(1);
                 });
     
                 it('should return null for an invalid ID', async () => {
-                    queries.getPlayerById.mockResolvedValue(null);
+                    playerQueries.getPlayerById.mockResolvedValue(null);
     
                     const result = await Player.getById(999);
     
@@ -331,7 +331,7 @@ describe('Player Class', () => {
                 });
     
                 it('should throw an error if the query fails', async () => {
-                    queries.getPlayerById.mockRejectedValue(new Error('Database error'));
+                    playerQueries.getPlayerById.mockRejectedValue(new Error('Database error'));
     
                     await expect(Player.getById(1)).rejects.toThrow('Database error');
                 });
@@ -340,16 +340,16 @@ describe('Player Class', () => {
             describe('getPlayerPassword', () => {
                 it('should return the password for a valid username', async () => {
                     const mockPassword = 'hashedPassword';
-                    queries.getPlayerPassword.mockResolvedValue(mockPassword);
+                    playerQueries.getPlayerPassword.mockResolvedValue(mockPassword);
     
                     const result = await Player.getPlayerPassword('testUser');
     
                     expect(result).toBe(mockPassword);
-                    expect(queries.getPlayerPassword).toHaveBeenCalledWith('testUser');
+                    expect(playerQueries.getPlayerPassword).toHaveBeenCalledWith('testUser');
                 });
     
                 it('should return null for an invalid username', async () => {
-                    queries.getPlayerPassword.mockResolvedValue(null);
+                    playerQueries.getPlayerPassword.mockResolvedValue(null);
     
                     const result = await Player.getPlayerPassword('invalidUser');
     
@@ -357,7 +357,7 @@ describe('Player Class', () => {
                 });
     
                 it('should throw an error if the query fails', async () => {
-                    queries.getPlayerPassword.mockRejectedValue(new Error('Database error'));
+                    playerQueries.getPlayerPassword.mockRejectedValue(new Error('Database error'));
     
                     await expect(Player.getPlayerPassword('testUser')).rejects.toThrow('Database error');
                 });
@@ -369,7 +369,7 @@ describe('Player Class', () => {
                         { id: 1, username: 'testUser1', connect: false, roomName: 'testRoom1', score: 0 },
                         { id: 2, username: 'testUser2', connect: true, roomName: 'testRoom2', score: 100 }
                     ];
-                    queries.getAllPlayers.mockResolvedValue(mockPlayersData);
+                    playerQueries.getAllPlayers.mockResolvedValue(mockPlayersData);
     
                     const result = await Player.getAll();
     
@@ -378,11 +378,11 @@ describe('Player Class', () => {
                     expect(result[0].getUsername()).toBe('testUser1');
                     expect(result[1]).toBeInstanceOf(Player);
                     expect(result[1].getUsername()).toBe('testUser2');
-                    expect(queries.getAllPlayers).toHaveBeenCalled();
+                    expect(playerQueries.getAllPlayers).toHaveBeenCalled();
                 });
     
                 it('should return null if no players are found', async () => {
-                    queries.getAllPlayers.mockResolvedValue(null);
+                    playerQueries.getAllPlayers.mockResolvedValue(null);
     
                     const result = await Player.getAll();
     
@@ -390,7 +390,7 @@ describe('Player Class', () => {
                 });
     
                 it('should throw an error if the query fails', async () => {
-                    queries.getAllPlayers.mockRejectedValue(new Error('Database error'));
+                    playerQueries.getAllPlayers.mockRejectedValue(new Error('Database error'));
     
                     await expect(Player.getAll()).rejects.toThrow('Database error');
                 });
@@ -402,7 +402,7 @@ describe('Player Class', () => {
                         { id: 1, username: 'testUser1', connect: false, roomName: 'testRoom1', score: 0 },
                         { id: 2, username: 'testUser2', connect: true, roomName: 'testRoom2', score: 100 }
                     ];
-                    queries.getPlayersScore.mockResolvedValue(mockPlayersData);
+                    playerQueries.getPlayersScore.mockResolvedValue(mockPlayersData);
     
                     const result = await Player.getAllScores();
     
@@ -411,11 +411,11 @@ describe('Player Class', () => {
                     expect(result[0].getUsername()).toBe('testUser1');
                     expect(result[1]).toBeInstanceOf(Player);
                     expect(result[1].getUsername()).toBe('testUser2');
-                    expect(queries.getPlayersScore).toHaveBeenCalled();
+                    expect(playerQueries.getPlayersScore).toHaveBeenCalled();
                 });
     
                 it('should return null if no scores are found', async () => {
-                    queries.getPlayersScore.mockResolvedValue(null);
+                    playerQueries.getPlayersScore.mockResolvedValue(null);
     
                     const result = await Player.getAllScores();
     
@@ -423,7 +423,7 @@ describe('Player Class', () => {
                 });
     
                 it('should throw an error if the query fails', async () => {
-                    queries.getPlayersScore.mockRejectedValue(new Error('Database error'));
+                    playerQueries.getPlayersScore.mockRejectedValue(new Error('Database error'));
     
                     await expect(Player.getAllScores()).rejects.toThrow('Database error');
                 });
@@ -434,28 +434,28 @@ describe('Player Class', () => {
                     const username = 'testUser';
                     const password = 'securePassword';
                     const playerInstance = new Player(1, username, false, null, 0);
-                    queries.getPlayerByUsername.mockResolvedValue(playerInstance);
-                    queries.getPlayerPassword.mockResolvedValue('hashedPassword');
+                    playerQueries.getPlayerByUsername.mockResolvedValue(playerInstance);
+                    playerQueries.getPlayerPassword.mockResolvedValue('hashedPassword');
                     bcrypt.compareSync.mockReturnValue(true);
     
                     const result = await Player.authenticate(username, password);
     
                     expect(result).toBeInstanceOf(Player);
                     expect(result.getUsername()).toBe(username);
-                    expect(queries.getPlayerByUsername).toHaveBeenCalledWith(username);
-                    expect(queries.getPlayerPassword).toHaveBeenCalledWith(username);
+                    expect(playerQueries.getPlayerByUsername).toHaveBeenCalledWith(username);
+                    expect(playerQueries.getPlayerPassword).toHaveBeenCalledWith(username);
                 });
     
                 it('should throw an error if player is not found', async () => {
-                    queries.getPlayerByUsername.mockResolvedValue(null);
+                    playerQueries.getPlayerByUsername.mockResolvedValue(null);
     
                     await expect(Player.authenticate('invalidUser', 'password')).rejects.toThrow('Player not found.');
                 });
     
                 it('should throw an error if password is invalid', async () => {
                     const playerInstance = new Player(1, 'testUser', false, null, 0);
-                    queries.getPlayerByUsername.mockResolvedValue(playerInstance);
-                    queries.getPlayerPassword.mockResolvedValue('hashedPassword');
+                    playerQueries.getPlayerByUsername.mockResolvedValue(playerInstance);
+                    playerQueries.getPlayerPassword.mockResolvedValue('hashedPassword');
                     bcrypt.compareSync.mockReturnValue(false);
     
                     await expect(Player.authenticate('testUser', 'wrongPassword')).rejects.toThrow('Invalid password.');
@@ -463,8 +463,8 @@ describe('Player Class', () => {
     
                 it('should throw an error if getting password fails', async () => {
                     const playerInstance = new Player(1, 'testUser', false, null, 0);
-                    queries.getPlayerByUsername.mockResolvedValue(playerInstance);
-                    queries.getPlayerPassword.mockRejectedValue(new Error('Database error'));
+                    playerQueries.getPlayerByUsername.mockResolvedValue(playerInstance);
+                    playerQueries.getPlayerPassword.mockRejectedValue(new Error('Database error'));
     
                     await expect(Player.authenticate('testUser', 'password')).rejects.toThrow('Database error');
                 });
@@ -473,15 +473,15 @@ describe('Player Class', () => {
             describe('disconnect', () => {
                 it('should disconnect a player', async () => {
                     const playerInstance = new Player(1, 'testUser', true, 'testRoom', 0);
-                    queries.getPlayerByUsername.mockResolvedValue(playerInstance);
+                    playerQueries.getPlayerByUsername.mockResolvedValue(playerInstance);
     
                     await Player.disconnect('testUser');
     
-                    expect(queries.getPlayerByUsername).toHaveBeenCalledWith('testUser');
+                    expect(playerQueries.getPlayerByUsername).toHaveBeenCalledWith('testUser');
                 });
     
                 it('should throw an error if player is not found', async () => {
-                    queries.getPlayerByUsername.mockResolvedValue(null);
+                    playerQueries.getPlayerByUsername.mockResolvedValue(null);
     
                     await expect(Player.disconnect('invalidUser')).rejects.toThrow('Player not found.');
                 });

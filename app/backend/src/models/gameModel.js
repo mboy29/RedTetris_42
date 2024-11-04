@@ -210,7 +210,7 @@ class Game {
         if ((this.getMode() === 'solo' || this.getMode() === "training") && losers.length > 0) {
             return true;
         }
-        if (losers.length === players.length - 1) {
+        if (losers.length === players.length - 1 || losers.length === players.length) {
             return true;
         }
         return false;
@@ -243,7 +243,7 @@ class Game {
         await queries.updateGameWinner(this.id, player.id);
     }
 
-    async updateLosers(loser, surrendered = false) {
+    async updateLosers(loser, surrendered = false) {;
         this.losers.push(loser.id);
         await queries.updateGameLosers(this.id, loser.id);
         if (surrendered) {

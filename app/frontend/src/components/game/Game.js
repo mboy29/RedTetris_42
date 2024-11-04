@@ -93,121 +93,158 @@ const Game = () => {
     };
 
     useEffect(() => {
+        let isMounted = true; // Add a flag to track the mounted state
+    
         if (room && session.username) {
             socket.emit('joinGame', { roomName: room, playerName: session.username });
         }
     
-        socket.on('error', ({ message }) => {
-            setErrors((prevErrors) => [...prevErrors, message]);
-            navigate('/home');
-        });
+        const handleError = ({ message }) => {
+            if (isMounted) {
+                setErrors((prevErrors) => [...prevErrors, message]);
+                navigate('/home');
+            }
+        };
     
-        socket.on('gamePlayers', (players) => {
-            setPlayers(players);
-            if (isGameFull) {
-                setIsGameFull(false);
-            }
-        });
-
-        socket.on('gameCreator', ({creator}) => {
-            if (creator.username === session.username) {
-                setIsCreator(true);
-            } else {
-                setIsCreator(false);
-            }
-        });
-
-        socket.on('gameFull', (bool) => {
-            setIsGameFull(bool);
-        });
-
-        socket.on('gameStarted', () => {
-            startCountdown();
-        });
-
-        socket.on('gameDeleted', () => {
-            setErrors(['Game creator left, game deleted. Redirecting to home...']);
-            setTimeout(() => navigate('/home'), 2500);
-        });
-
-        socket.on('gameSurrendered', () => {
-            setErrors(['A player has surrendered. Redirecting to home...']);
-            setTimeout(() => navigate('/home'), 2500);
-        });
-
-        socket.on('gameUpdated', ({ playerName, grid, score }) => {
-            setPlayerGrids((prevGrids) => ({
-                ...prevGrids,
-                [playerName]: grid,
-
-            }));
-
-            setPlayerScores((prevScores) => ({
-                ...prevScores,
-                [playerName]: score, // Assuming `score` is the new score received
-            }));
-        });
-
-        socket.on('gameLost', ({ playerName, scores }) => {
-            setPlayerLost((prevLost) => [...prevLost, playerName]);
-            setPlayerScores(scores);
-        });
-
-        socket.on('gameEnded', ({ winner, scores, rematcher }) => {
-            setIsGameOver(true);
-            setWinner(winner);
-            setPlayerScores(scores);
-            if (rematcher.username === session.username) {
-                setIsRematcher(true);
-            }
-        });
-
-        socket.on('gameRematched', ({ creator, roomName }) => {
-            if (roomName === null) {
-                setRematchRoom(null);
-            } else {
-                setRematchRoom(roomName);
-                if (creator.username === session.username) {
-                    resetGameState();
-                    navigate(`/${roomName}/${session.username}`);
+        const handleGamePlayers = (players) => {
+            if (isMounted) {
+                setPlayers(players);
+                if (isGameFull) {
+                    setIsGameFull(false);
                 }
             }
-        });
-
-        socket.on('gameRematcher', ({ rematcher }) => {
-            if (rematcher.username === session.username) {
-                setIsRematcher(true);
-            } else {
-                setIsRematcher(false);
+        };
+    
+        const handleGameCreator = ({ creator }) => {
+            if (isMounted) {
+                setIsCreator(creator.username === session.username);
             }
-        });
-
-        socket.on('gameTraining', ({ training }) => {
-            setIsTrainingMode(training);
-            console.log('Training mode:', training);
-        });
-
-        socket.on('gameSprint', ({ sprint }) => {
-            setIsSprintMode(sprint);
-            console.log('Sprint mode:', sprint);
-        });
-
+        };
+    
+        const handleGameFull = (bool) => {
+            if (isMounted) {
+                setIsGameFull(bool);
+            }
+        };
+    
+        const handleGameStarted = () => {
+            if (isMounted) {
+                startCountdown();
+            }
+        };
+    
+        const handleGameDeleted = () => {
+            if (isMounted) {
+                setErrors(['Game creator left, game deleted. Redirecting to home...']);
+                setTimeout(() => navigate('/home'), 2500);
+            }
+        };
+    
+        const handleGameSurrendered = () => {
+            if (isMounted) {
+                setErrors(['A player has surrendered. Redirecting to home...']);
+                setTimeout(() => navigate('/home'), 2500);
+            }
+        };
+    
+        const handleGameUpdated = ({ playerName, grid, score }) => {
+            if (isMounted) {
+                setPlayerGrids((prevGrids) => ({
+                    ...prevGrids,
+                    [playerName]: grid,
+                }));
+    
+                setPlayerScores((prevScores) => ({
+                    ...prevScores,
+                    [playerName]: score,
+                }));
+            }
+        };
+    
+        const handleGameLost = ({ playerName, scores }) => {
+            if (isMounted) {
+                setPlayerLost((prevLost) => [...prevLost, playerName]);
+                setPlayerScores(scores);
+            }
+        };
+    
+        const handleGameEnded = ({ winner, scores, rematcher }) => {
+            if (isMounted) {
+                setIsGameOver(true);
+                setWinner(winner);
+                setPlayerScores(scores);
+                if (rematcher.username === session.username) {
+                    setIsRematcher(true);
+                }
+            }
+        };
+    
+        const handleGameRematched = ({ creator, roomName }) => {
+            if (isMounted) {
+                if (roomName === null) {
+                    setRematchRoom(null);
+                } else {
+                    setRematchRoom(roomName);
+                    if (creator.username === session.username) {
+                        resetGameState();
+                        navigate(`/${roomName}/${session.username}`);
+                    }
+                }
+            }
+        };
+    
+        const handleGameRematcher = ({ rematcher }) => {
+            if (isMounted) {
+                setIsRematcher(rematcher.username === session.username);
+            }
+        };
+    
+        const handleGameTraining = ({ training }) => {
+            if (isMounted) {
+                setIsTrainingMode(training);
+            }
+        };
+    
+        const handleGameSprint = ({ sprint }) => {
+            if (isMounted) {
+                setIsSprintMode(sprint);
+            }
+        };
+    
+        socket.on('error', handleError);
+        socket.on('gamePlayers', handleGamePlayers);
+        socket.on('gameCreator', handleGameCreator);
+        socket.on('gameFull', handleGameFull);
+        socket.on('gameStarted', handleGameStarted);
+        socket.on('gameDeleted', handleGameDeleted);
+        socket.on('gameSurrendered', handleGameSurrendered);
+        socket.on('gameUpdated', handleGameUpdated);
+        socket.on('gameLost', handleGameLost);
+        socket.on('gameEnded', handleGameEnded);
+        socket.on('gameRematched', handleGameRematched);
+        socket.on('gameRematcher', handleGameRematcher);
+        socket.on('gameTraining', handleGameTraining);
+        socket.on('gameSprint', handleGameSprint);
+    
         return () => {
-            socket.off('error');
-            socket.off('gamePlayers');
-            socket.off('gameCreator');
-            socket.off('gameTraining');
-            socket.off('gameSprint');
-            socket.off('gameStarted');
-            socket.off('gameDeleted');
-            socket.off('gameUpdated');
-            socket.off('gameLost');
-            socket.off('gameEnded');
-            socket.off('gameRematched');
-            socket.off('gameRematcher');
-            socket.off('gameSurrendered');
+            isMounted = false; // Set the flag to false on cleanup
+            socket.off('error', handleError);
+            socket.off('gamePlayers', handleGamePlayers);
+            socket.off('gameCreator', handleGameCreator);
+            socket.off('gameFull', handleGameFull);
+            socket.off('gameStarted', handleGameStarted);
+            socket.off('gameDeleted', handleGameDeleted);
+            socket.off('gameSurrendered', handleGameSurrendered);
+            socket.off('gameUpdated', handleGameUpdated);
+            socket.off('gameLost', handleGameLost);
+            socket.off('gameEnded', handleGameEnded);
+            socket.off('gameRematched', handleGameRematched);
+            socket.off('gameRematcher', handleGameRematcher);
+            socket.off('gameTraining', handleGameTraining);
+            socket.off('gameSprint', handleGameSprint);
         };
     }, [room, session, navigate, isGameFull, startCountdown]);
+    
 
     const handleLeaveGame = (e) => {
         e.preventDefault();

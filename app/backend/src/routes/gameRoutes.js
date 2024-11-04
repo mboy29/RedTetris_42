@@ -132,9 +132,6 @@ router.get('/check', async (req, res) => {
             console.log(`[GAME] Game ${room} not found`);
             return res.status(404).json({ success: false, message: 'Game not found' });
         } else if (!game.isGameJoinable(player)) {
-            console.log(`[GAME] Game ${room} is not joinable`);
-            return res.status(403).json({ success: false, message: 'Game is no longer joinable' });
-        } else if (!game.isGameJoinable(player)) {
             console.log(`[GAME] Player ${playerName} cannot join game ${room}`);
             return res.status(403).json({ success: false, message: 'Access denied' });
         } else if (game.isGameLoser(player)) {

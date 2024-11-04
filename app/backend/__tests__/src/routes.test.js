@@ -21,7 +21,7 @@ const express = require('express');
 const session = require('express-session');
 const request = require('supertest');
 
-const { app, startServer, closeServer } = require('@root/server');
+const { app } = require('@root/server');
 const Player = require('@models/playerModel');
 const Game = require('@models/gameModel');
 const sessionRoutes = require('@routes/sessionRoutes');
@@ -37,16 +37,11 @@ describe('Routes', () => {
     let agent;
 
     beforeAll(async () => {
-        await startServer();
         agent = request.agent(app);
     });
 
-    afterAll(async () => {
-        await closeServer();
-    });
-
     afterEach(() => {
-        jest.clearAllMocks(); // Clear mocks after each test to avoid state leakage
+        jest.clearAllMocks(); 
     });
     
     // +--------------- AUTH ROUTES ---------------+

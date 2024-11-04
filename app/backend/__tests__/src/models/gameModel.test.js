@@ -20,7 +20,7 @@ const Player = require('@models/playerModel');
 const Game = require('@models/gameModel');
 const Piece = require('@models/pieceModel');
 
-const queries = require('@queries/gameQueries');
+const gameQueries = require('@queries/gameQueries');
 
 // +------------------- MOCKS ----------------------+
 
@@ -330,35 +330,35 @@ describe('Game Model', () => {
                     const newName = 'updatedName';
                     await game.updateName(newName);
                     expect(game.name).toBe(newName);
-                    expect(queries.updateGameName).toHaveBeenCalledWith(game.id, newName);
+                    expect(gameQueries.updateGameName).toHaveBeenCalledWith(game.id, newName);
                 });
             
                 it('should update the game mode and call the correct query', async () => {
                     const newMode = 'multiplayer';
                     await game.updateMode(newMode);
                     expect(game.mode).toBe(newMode);
-                    expect(queries.updateGameMode).toHaveBeenCalledWith(game.id, newMode);
+                    expect(gameQueries.updateGameMode).toHaveBeenCalledWith(game.id, newMode);
                 });
             
                 it('should update the game status and call the correct query', async () => {
                     const newStatus = 'in progress';
                     await game.updateStatus(newStatus);
                     expect(game.status).toBe(newStatus);
-                    expect(queries.updateGameStatus).toHaveBeenCalledWith(game.id, newStatus);
+                    expect(gameQueries.updateGameStatus).toHaveBeenCalledWith(game.id, newStatus);
                 });
             
                 it('should update the game winner and call the correct query', async () => {
                     const player = { id: 2, name: 'player2' };
                     await game.updateWinner(player);
                     expect(game.winner).toEqual(player);
-                    expect(queries.updateGameWinner).toHaveBeenCalledWith(game.id, player.id);
+                    expect(gameQueries.updateGameWinner).toHaveBeenCalledWith(game.id, player.id);
                 });
             
                 it('should update the game sprint status and call the correct query', async () => {
                     const newSprint = true;
                     await game.updateSprint(newSprint);
                     expect(game.sprint).toBe(newSprint);
-                    expect(queries.updateGameSprint).toHaveBeenCalledWith(game.id, newSprint);
+                    expect(gameQueries.updateGameSprint).toHaveBeenCalledWith(game.id, newSprint);
                 });
             });
             
@@ -376,7 +376,7 @@ describe('Game Model', () => {
                     const player = { id: 2, name: 'player2', joinGame: jest.fn() };
                     await game.addPlayers(socketMock, player);
                     expect(game.players).toContain(player);
-                    expect(queries.addPlayerToGame).toHaveBeenCalledWith(game.id, player.id);
+                    expect(gameQueries.addPlayerToGame).toHaveBeenCalledWith(game.id, player.id);
                     expect(player.joinGame).toHaveBeenCalledWith(socketMock, game.name);
                 });
             
@@ -385,7 +385,7 @@ describe('Game Model', () => {
                     game.players.push(player);
                     await game.removePlayers(socketMock, 100, player);
                     expect(game.players).not.toContain(player);
-                    expect(queries.removePlayerFromGame).toHaveBeenCalledWith(game.id, player.id);
+                    expect(gameQueries.removePlayerFromGame).toHaveBeenCalledWith(game.id, player.id);
                     expect(player.leaveGame).toHaveBeenCalledWith(socketMock, 100);
                 });
             });
@@ -408,17 +408,17 @@ describe('Game Model', () => {
                     await game.startGame();
                     expect(game.status).toBe('in progress');
                     expect(game.pieces.length).toBeGreaterThan(0);
-                    expect(queries.updateGameStatus).toHaveBeenCalledWith(game.id, 'in progress');
-                    expect(queries.createGameScore).toHaveBeenCalledWith(game.id, player1.id, 0);
-                    expect(queries.createGameScore).toHaveBeenCalledWith(game.id, player2.id, 0);
+                    expect(gameQueries.updateGameStatus).toHaveBeenCalledWith(game.id, 'in progress');
+                    expect(gameQueries.createGameScore).toHaveBeenCalledWith(game.id, player1.id, 0);
+                    expect(gameQueries.createGameScore).toHaveBeenCalledWith(game.id, player2.id, 0);
                 });
             
                 it('should end the game, update winner and rematcher, and set status to finished', async () => {
                     await game.endGame();
                     expect(game.status).toBe('finished');
-                    expect(queries.updateGameStatus).toHaveBeenCalledWith(game.id, 'finished');
-                    expect(queries.updateGameWinner).toHaveBeenCalledWith(game.id, expect.any(Number));
-                    expect(queries.updateGameRematcher).toHaveBeenCalledWith(game.id, expect.any(Number));
+                    expect(gameQueries.updateGameStatus).toHaveBeenCalledWith(game.id, 'finished');
+                    expect(gameQueries.updateGameWinner).toHaveBeenCalledWith(game.id, expect.any(Number));
+                    expect(gameQueries.updateGameRematcher).toHaveBeenCalledWith(game.id, expect.any(Number));
                     expect(player1.updateScore).toHaveBeenCalledWith(expect.any(Number));
                     expect(player2.updateScore).toHaveBeenCalledWith(expect.any(Number));
                 });
@@ -449,10 +449,10 @@ describe('Game Model', () => {
             describe('getByName', () => {
             
                 it('should return a game by name', async () => {
-                    queries.getGameByName.mockResolvedValue({ id: 1, name: 'testgame', creator_id: 1, mode: 'solo', status: 'pending' });
+                    gameQueries.getGameByName.mockResolvedValue({ id: 1, name: 'testgame', creator_id: 1, mode: 'solo', status: 'pending' });
                     Player.getById.mockResolvedValue({ id: 1, username: 'creator' });
         
-                    queries.getGamePlayers.mockResolvedValue([
+                    gameQueries.getGamePlayers.mockResolvedValue([
                         { id: 2, username: 'player1', connect: true, roomName: 'testgame' }
                     ]);
         
@@ -463,7 +463,7 @@ describe('Game Model', () => {
         
                 it('should return null if game not found', async () => {
                     // Mock the response to return null if no game is found
-                    queries.getGameByName.mockResolvedValue(null);
+                    gameQueries.getGameByName.mockResolvedValue(null);
         
                     const game = await Game.getByName('unknown');
                     expect(game).toBeNull();
@@ -473,10 +473,10 @@ describe('Game Model', () => {
             describe('getById', () => {
                 
                 it('should return a game by ID', async () => {
-                    queries.getGameById.mockResolvedValue({ id: 1, name: 'testgame', creator_id: 1, mode: 'solo', status: 'pending' });
+                    gameQueries.getGameById.mockResolvedValue({ id: 1, name: 'testgame', creator_id: 1, mode: 'solo', status: 'pending' });
                     Player.getById.mockResolvedValue({ id: 1, username: 'creator' });
         
-                    queries.getGamePlayers.mockResolvedValue([
+                    gameQueries.getGamePlayers.mockResolvedValue([
                         { id: 2, username: 'player1', connect: true, roomName: 'testgame' }
                     ]);
         
@@ -487,7 +487,7 @@ describe('Game Model', () => {
         
                 it('should return null if game not found', async () => {
                     // Mock the response to return null if no game is found
-                    queries.getGameById.mockResolvedValue(null);
+                    gameQueries.getGameById.mockResolvedValue(null);
         
                     const game = await Game.getById(1);
                     expect(game).toBeNull();
