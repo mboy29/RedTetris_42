@@ -64,12 +64,17 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
             piece = currentPiece;
         }
         const newPile = pile.map((row) => [...row]); // Clone pile
+        
         for (let row = 0; row < piece.piece.length; row++) {
             for (let col = 0; col < piece.piece[row].length; col++) {
                 if (piece.piece[row][col] !== null) {
                     const targetRow = position.row + row;
                     const targetCol = position.col + col;
-                    newPile[targetRow][targetCol] = piece.type;
+    
+                    // Check if the targetRow and targetCol are within bounds
+                    if (targetRow >= 0 && targetRow < numRows && targetCol >= 0 && targetCol < numCols) {
+                        newPile[targetRow][targetCol] = piece.type;
+                    }
                 }
             }
         }
@@ -87,7 +92,8 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
         }
         setCurrentPosition(initialPosition);
     
-        if (checkCollision(newPile, 0, Math.floor(numCols / 2) - Math.floor(piece.piece[0].length / 2), piece)) {
+        // Check for collision at the starting position
+        if (checkCollision(newPile, 0, initialPosition.col, piece)) {
             let lastLine = 0;
             for (let i = piece.piece.length - 1; i >= 0; i--) {
                 if (piece.piece[i].some(cell => cell !== null)) {
@@ -95,12 +101,12 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                     break;
                 }
             }
-
+    
             const lastPiece = {
                 piece: [lastLine],
                 type: piece.type
             };
-            if (!checkCollision(newPile, 0, Math.floor(numCols / 2) - Math.floor(lastPiece.piece[0].length / 2), lastPiece)) {
+            if (!checkCollision(newPile, 0, initialPosition.col, lastPiece)) {
                 const finalPile = updatePile(newPile, initialPosition, lastPiece);
                 setPile(finalPile);
                 socket.emit('updatedGame', { roomName: room, playerName, grid: finalPile });
@@ -114,7 +120,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
         }
         return true;
     }, [socket, isGameOver, isGameLost, numCols, checkCollision, updatePile, playerName, room]);
-
+    
     // Function to merge current piece into the pile when it can no longer move
     const mergePieceToPile = useCallback((position) => {
         const newPile = updatePile(pile, position);
@@ -287,16 +293,20 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
         };
     
         const instantDrop = (pile) => {
-            if (isGameLost || isGameOver) return; // Do nothing if the game is over
-    
+            if (isGameLost || isGameOver) return;
+        
             let newRow = currentPosition.row;
-    
+        
+            // Move down until a collision is detected
             while (!checkCollision(pile, newRow + 1, currentPosition.col, currentPiece)) {
                 newRow++;
             }
             setCurrentPosition({ row: newRow, col: currentPosition.col });
-            mergePieceToPile({ row: newRow, col: currentPosition.col }); // Pass final position
+            
+            // Merge piece to pile at the final position after instant drop
+            mergePieceToPile({ row: newRow, col: currentPosition.col });
         };
+        
     
         const handleKeyDown = (event) => {
             if (!currentPiece || keyPressed[event.key]) return;
@@ -356,9 +366,8 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                     newPile.push(Array(numCols).fill('M'));
                 }
                 setPile(newPile);
-                if (newPile[currentPosition.row + 1].some(cell => cell === 'M')) {
-                    setCurrentPosition({ row: currentPosition.row - lines, col: currentPosition.col });
-                }
+                if (currentPosition.row - lines >= 0)
+                    setCurrentPosition({ row: currentPosition.row - lines, col: currentPosition.col })
                 socket.emit('updatedGame', { roomName: room, playerName, grid: newPile }); // Emit the updated grid
             }
         });

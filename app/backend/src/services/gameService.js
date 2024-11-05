@@ -293,7 +293,7 @@ const lostGame = async (io, socket, { roomName, playerName, surrendered = false 
             io.to(roomName).emit('gameEnded', { winner, scores, rematcher });
         }
     } catch (error) {
-        console.error('[GAME] Error handling loss:', error.message);
+        throw error;
     } finally {
         isLosing = false; // Reset the flag once the processing is complete
     }
@@ -355,7 +355,7 @@ const disconnect = async (io, socket) => {
         }
         console.log(`[GAME] Player ${playerName} disconnected from game ${roomName}`);
     } else {
-        console.log('[GAME] Player disconnected from unknown room');
+        throw new Error('Player not in game');
     }
 };
 

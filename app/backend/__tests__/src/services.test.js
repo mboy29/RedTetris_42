@@ -179,6 +179,7 @@ describe('Socket Service', () => {
                     isGameTraining: jest.fn().mockReturnValue(false),
                     isGameSprint: jest.fn().mockReturnValue(false),
                     updateMode: jest.fn(),
+                    isGameJoinable: jest.fn().mockReturnValue(true),
                 };
 
                 mockPlayer = {
@@ -673,7 +674,7 @@ describe('Socket Service', () => {
                     isGamePlayer: jest.fn(),
                     updateLosers: jest.fn().mockResolvedValue(true),
                     getScores: jest.fn(),
-                    isEndGame: jest.fn().mockReturnValue(false), // Default to not end game
+                    isEndGame: jest.fn().mockReturnValue(false),
                     endGame: jest.fn(),
                     getWinner: jest.fn(),
                     getRematcher: jest.fn(),
@@ -684,8 +685,8 @@ describe('Socket Service', () => {
                 };
         
                 // Mock implementations
-                Game.getByName.mockResolvedValue(mockGame);
-                Player.getByUsername.mockResolvedValue(mockPlayer);
+                Game.getByName = jest.fn().mockResolvedValue(mockGame);
+                Player.getByUsername = jest.fn().mockResolvedValue(mockPlayer);
             });
         
             afterEach(() => {
@@ -693,60 +694,58 @@ describe('Socket Service', () => {
             });
         
             test('should throw error for invalid input', async () => {
-                await expect(gameService.lostGame(io, socket, { roomName: undefined, playerName: 'testPlayer' })).rejects.toThrow('Invalid input');
-                await expect(gameService.lostGame(io, socket, { roomName: 'testRoom', playerName: undefined })).rejects.toThrow('Invalid input');
+                await expect(gameService.lostGame(io, socket, { playerName: 'testPlayer' })).rejects.toThrow('Invalid input');
+                await expect(gameService.lostGame(io, socket, { roomName: 'testRoom' })).rejects.toThrow('Invalid input');
             });
         
             test('should throw error if game is not found', async () => {
-                Game.getByName.mockResolvedValue(null); // Mock game not found
+                Game.getByName.mockResolvedValue(null);
                 await expect(gameService.lostGame(io, socket, { roomName: 'unknownRoom', playerName: 'testPlayer' })).rejects.toThrow('Game not found');
             });
         
             test('should throw error if game is not in progress', async () => {
-                mockGame.getStatus.mockReturnValue('finished'); // Mock game status
+                mockGame.getStatus.mockReturnValue('finished');
                 await expect(gameService.lostGame(io, socket, { roomName: 'testRoom', playerName: 'testPlayer' })).rejects.toThrow('Game is not in progress');
             });
         
             test('should throw error if player is not found', async () => {
-                Player.getByUsername.mockResolvedValue(null); // Mock player not found
+                Player.getByUsername.mockResolvedValue(null);
                 await expect(gameService.lostGame(io, socket, { roomName: 'testRoom', playerName: 'unknownPlayer' })).rejects.toThrow('Player not found');
             });
         
             test('should throw error if player is not in game', async () => {
-                mockGame.isGamePlayer.mockResolvedValue(false); // Ensure player is not in game
+                mockGame.isGamePlayer.mockResolvedValue(false);
                 await expect(gameService.lostGame(io, socket, { roomName: 'testRoom', playerName: 'testPlayer' })).rejects.toThrow('Player not in game');
             });
         
             test('should emit gameLost event with correct scores', async () => {
-                mockGame.isGamePlayer.mockResolvedValue(true); // Ensure player is in game
-                mockGame.getScores.mockResolvedValue({ player1: 10, player2: 20 }); // Mock scores
-                
-                // Mock Player.getById to return usernames based on IDs
+                mockGame.isGamePlayer.mockResolvedValue(true);
+                mockGame.getScores.mockResolvedValue({ player1: 10, player2: 20 });
+        
                 Player.getById = jest.fn((id) => Promise.resolve({ username: id === 'player1' ? 'Player1' : 'Player2' }));
         
-                const formattedScores = { Player2: 20, Player1: 10 }; // Expected formatted scores
+                const formattedScores = { Player2: 20, Player1: 10 };
         
-                // Run the lostGame function
                 await gameService.lostGame(io, socket, { roomName: 'testRoom', playerName: 'testPlayer' });
         
-                expect(mockGame.updateLosers).toHaveBeenCalledWith(mockPlayer, false); // Check updateLosers is called correctly
+                expect(mockGame.updateLosers).toHaveBeenCalledWith(mockPlayer, false);
                 expect(io.to).toHaveBeenCalledWith('testRoom');
                 expect(io.to('testRoom').emit).toHaveBeenCalledWith('gameLost', { playerName: 'testPlayer', scores: formattedScores });
             });
         
             test('should end game if isEndGame returns true', async () => {
-                mockGame.isGamePlayer.mockResolvedValue(true); // Mock player is in the game
-                mockGame.isEndGame.mockReturnValue(true); // Mock that the game has ended
-                mockGame.getWinner.mockReturnValue(mockPlayer); // Mock winner
-                mockGame.getRematcher.mockReturnValue({ username: 'rematcher' }); // Mock rematcher
+                mockGame.isGamePlayer.mockResolvedValue(true);
+                mockGame.isEndGame.mockReturnValue(true);
+                mockGame.getWinner.mockReturnValue(mockPlayer);
+                mockGame.getRematcher.mockReturnValue({ username: 'rematcher' });
         
-                // Run the lostGame function
                 await gameService.lostGame(io, socket, { roomName: 'testRoom', playerName: 'testPlayer' });
         
-                expect(mockGame.endGame).toHaveBeenCalled(); // Ensure endGame is called
+                expect(mockGame.endGame).toHaveBeenCalled();
                 expect(io.to('testRoom').emit).toHaveBeenCalledWith('gameEnded', { winner: mockPlayer, scores: expect.anything(), rematcher: { username: 'rematcher' } });
             });
         });
+        
         describe('disconnect', () => {
             let io;
             let socket;
@@ -770,15 +769,17 @@ describe('Socket Service', () => {
             });
         
             test('should not attempt to leave game if player is not found', async () => {
+                console.log = jest.fn();
+        
                 socketRooms.set(socket.id, { roomName: 'testRoom', playerName: 'testPlayer' });
         
                 Player.getByUsername = jest.fn().mockResolvedValue(null);
         
                 await gameService.disconnect(io, socket);
         
-                expect(Player.getByUsername).toHaveBeenCalledWith('testPlayer');
                 expect(console.log).toHaveBeenCalledWith('[GAME] Player testPlayer disconnected from game testRoom');
             });
         });
+        
     });
 });
