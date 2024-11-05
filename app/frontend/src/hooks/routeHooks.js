@@ -89,7 +89,7 @@ const GameRoute = ({ setGlobalError }) => {
 
                 setLoading(false);
             } catch (err) {
-                console.error('[GAME]', err);
+                console.log('[GAME]', err);
                 setGlobalError(err.message);
                 navigate('/home');
             }

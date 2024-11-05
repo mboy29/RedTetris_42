@@ -160,7 +160,7 @@ class Game {
         return false;
     }
 
-    isGameJoinable(player = null) {
+    isGameJoinable(player) {
         if (this.getMode() === "training" && this.getCreator().id !== player.id) {
             return false;
         } else if (this.getStatus() == 'pending') {

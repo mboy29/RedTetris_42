@@ -41,7 +41,7 @@ const Logout = () => {
                 setSession(null);
                 navigate('/login');
             } catch (error) {
-                console.error('[LOGOUT] Failed:', error.response?.data?.message || error.message);
+                console.log('[LOGOUT] Failed:', error.response?.data?.message || error.message);
             }
         };
 

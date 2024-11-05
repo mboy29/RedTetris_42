@@ -36,7 +36,7 @@ async function initPlayer() {
         )`);
         console.log('[DATABASE] Players table created or already exists.');
     } catch (err) {
-        console.error('[DATABASE] Error creating players table:', err.message);
+        console.log('[DATABASE] Error creating players table:', err.message);
     }
 }
 
@@ -60,7 +60,7 @@ async function initGame() {
 
         console.log('[DATABASE] Games table created or already exists.');
     } catch (err) {
-        console.error('[DATABASE] Error creating games table:', err.message);
+        console.log('[DATABASE] Error creating games table:', err.message);
     }
 }
 
@@ -78,7 +78,7 @@ async function initGamePlayers() {
 
         console.log('[DATABASE] Game Players table created or already exists.');
     } catch (err) {
-        console.error('[DATABASE] Error creating game_players table:', err.message);
+        console.log('[DATABASE] Error creating game_players table:', err.message);
     }
 }
 
@@ -96,7 +96,7 @@ async function initGamePieces() {
 
         console.log('[DATABASE] Game Pieces table created or already exists.');
     } catch (err) {
-        console.error('[DATABASE] Error creating game_pieces table:', err.message);
+        console.log('[DATABASE] Error creating game_pieces table:', err.message);
     }
 }
 
@@ -115,7 +115,7 @@ async function initGameScores() {
 
         console.log('[DATABASE] Game Scores table created or already exists.');
     } catch (err) {
-        console.error('[DATABASE] Error creating scores table:', err.message);
+        console.log('[DATABASE] Error creating scores table:', err.message);
     }
 }
 
@@ -133,7 +133,7 @@ async function initGameLosers() {
 
         console.log('[DATABASE] Game Losers table created or already exists.');
     } catch (err) {
-        console.error('[DATABASE] Error creating game_losers table:', err.message);
+        console.log('[DATABASE] Error creating game_losers table:', err.message);
     }
 }
 
@@ -147,7 +147,7 @@ async function init() {
         await initGameScores();
         await initGameLosers();
     } catch (err) {
-        console.error('[DATABASE] Error initializing database:', err.message);
+        console.log('[DATABASE] Error initializing database:', err.message);
     }
 }
 

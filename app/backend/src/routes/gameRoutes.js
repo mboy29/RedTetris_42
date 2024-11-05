@@ -141,7 +141,7 @@ router.get('/check', async (req, res) => {
         return res.status(200).json({ success: true });
 
     } catch (error) {
-        console.error('[GAME] Error checking game access:', error.message);
+        console.log('[GAME] Error checking game access:', error.message);
         return res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });

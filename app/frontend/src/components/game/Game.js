@@ -392,10 +392,14 @@ const Game = () => {
                                             <>
                                                 <h5>Take on the Challenge with Sprint Mode!</h5>
                                                 <p>Test your speed and endurance in Sprint Mode! Here, the pieces fall faster as you progress through each level, increasing the challenge over time. With every passing interval, the pace ramps up, pushing you to react quicker and think faster. It’s the ultimate way to enhance your skills and prepare for high-stakes matches!</p>
-                                                <h5>Ready for a Sprint?</h5>
+                                                <h5>Waiting for players to join...</h5>
                                             </>
                                             ) : (
-                                                <h5>Waiting for players to join...</h5>
+                                            <>
+                                            <h5>Welcome to Red Tetris!</h5>
+                                            <p>In this competitive mode, clearing lines doesn’t just boost your score — it sends extra lines to your opponents! The more lines you clear at once, the tougher it gets for them. Strategize carefully, keep your stack low, and aim to outlast your rivals. Only the best can stay on top!</p>
+                                            <h5>Waiting for players to join...</h5>
+                                            </>
                                             )
                                         )}
                                         </>

@@ -20,7 +20,7 @@ module.exports = {
     devServer: {
         contentBase: path.join(__dirname, 'public'),
         compress: true,
-        port: 3000,
+        port: process.env.REACT_APP_FRONTEND_PORT,
         setupMiddlewares: (middlewares, devServer) => {
             return middlewares;
         },

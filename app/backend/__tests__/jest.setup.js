@@ -37,3 +37,8 @@ afterAll(() => {
     console.log.mockRestore();
     logStream.end();
 });
+
+global.console = {
+  ...console,
+  log: jest.fn(),
+};

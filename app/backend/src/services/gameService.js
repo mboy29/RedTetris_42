@@ -29,16 +29,14 @@ const joinGame = async (io, socket, { roomName, playerName }) => {
     if (!roomName || !playerName) {
         throw new Error('Invalid input');
     }
-
     const player = await Player.getByUsername(playerName);
     if (!player) {
         throw new Error('Player not found');
     }
-
     const game = await Game.getByName(roomName);
     if (!game) {
         throw new Error('Game not found or does not exist');
-    } else if (!game.isGameJoinable()) {
+    } else if (!game.isGameJoinable(player)) {
         throw new Error('Game is not joinable');
     } else if (await game.isGamePlayer(player)) {
         throw new Error('Player already in game');
@@ -232,6 +230,7 @@ const scoreGame = async (io, socket, { roomName, playerName, lines, level }) => 
     await game.updateScore(player, 0, lines, level);
     io.to(roomName).emit('gameScored', { scoredPlayerGame: playerName, lines: lines - 1 });
 }
+
 const lostGame = async (io, socket, { roomName, playerName, surrendered = false }) => {
     // Function to wait until isLosing becomes false
     const waitForLosing = () => new Promise(resolve => {
@@ -293,7 +292,7 @@ const lostGame = async (io, socket, { roomName, playerName, surrendered = false 
             io.to(roomName).emit('gameEnded', { winner, scores, rematcher });
         }
     } catch (error) {
-        throw error;
+        throw new Error(error);
     } finally {
         isLosing = false; // Reset the flag once the processing is complete
     }
@@ -354,8 +353,6 @@ const disconnect = async (io, socket) => {
             await leaveGame(io, socket, { roomName, playerName });
         }
         console.log(`[GAME] Player ${playerName} disconnected from game ${roomName}`);
-    } else {
-        throw new Error('Player not in game');
     }
 };
 

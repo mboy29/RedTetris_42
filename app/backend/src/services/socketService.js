@@ -30,7 +30,7 @@ function setupSocket(io) {
         socket.on('startGame', async ({ roomName, playerName }) => {
             try {
                 await gameService.startGame(io, socket, { roomName, playerName });
-            } catch {
+            } catch (error) {
                 console.log('[GAME] Error starting game:', error.message);
             }
         });
@@ -38,7 +38,7 @@ function setupSocket(io) {
         socket.on('triggerGame', async ({ roomName }) => {
             try {
                 await gameService.triggerGame(io, socket, { roomName });
-            } catch {
+            } catch (error) {
                 console.log('[GAME] Error triggering game:', error.message);
             }
         });
@@ -46,7 +46,7 @@ function setupSocket(io) {
         socket.on('leaveGame', async ({ roomName, playerName }) => {
             try {
                 await gameService.leaveGame(io, socket, { roomName, playerName });
-            } catch {
+            } catch (error) {
                 console.log('[GAME] Error handling player leaving game:', error.message);
             }
         });

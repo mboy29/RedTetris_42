@@ -25,6 +25,7 @@ const { app } = require('@root/server');
 const Player = require('@models/playerModel');
 const Game = require('@models/gameModel');
 const sessionRoutes = require('@routes/sessionRoutes');
+const { init } = require('@database/initDatabase'); 
 
 // +------------------- MOCKS ---------------------+
 
@@ -38,10 +39,6 @@ describe('Routes', () => {
 
     beforeAll(async () => {
         agent = request.agent(app);
-    });
-
-    afterEach(() => {
-        jest.clearAllMocks(); 
     });
     
     // +--------------- AUTH ROUTES ---------------+
@@ -134,7 +131,7 @@ describe('Routes', () => {
                 });
 
                 it('should fail to logout if no user is logged in', async () => {
-                    agent = request.agent(app); // Reinitialize to not have a session
+                    agent = await request.agent(app); // Reinitialize to not have a session
 
                     const res = await agent.post('/auth/logout');
 

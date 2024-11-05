@@ -37,11 +37,11 @@ const Home = ({ globalError }) => {
                 } else {
                     const errorData = await response.json();
                     setScores([]);
-                    console.error(errorData.message);
+                    console.log(errorData.message);
                 }
             } catch (error) {
                 setScores([]);
-                console.error('Error fetching scores:', error);
+                console.log('Error fetching scores:', error);
             }
         };
 

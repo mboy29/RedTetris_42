@@ -45,7 +45,7 @@ const Login = () => {
             setSession(response.data.user);
             navigate('/home');
         } catch (error) {
-            console.error('[LOGIN] Failed:', error.response?.data?.message || error.message);
+            console.log('[LOGIN] Failed:', error.response?.data?.message || error.message);
             setErrors([error.response?.data?.message || 'Login failed.']);
         }
     };

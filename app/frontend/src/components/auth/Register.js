@@ -50,7 +50,7 @@ const Register = () => {
             setSession(response.data.user);
             navigate('/home');
         } catch (error) {
-            console.error('[REGISTER] Failed:', error.response?.data?.message || error.message);
+            console.log('[REGISTER] Failed:', error.response?.data?.message || error.message);
             setErrors([error.response?.data?.message || 'Registration failed.']);
         }
     };

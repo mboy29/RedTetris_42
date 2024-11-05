@@ -30,7 +30,7 @@ const SessionProvider = ({ children }) => {
                 const response = await axios.get('/session/get');
                 setSession(response.data.user);
             } catch (error) {
-                console.error('Error fetching session:', error);
+                console.log('Error fetching session:', error);
             } finally {
                 setLoading(false);
             }

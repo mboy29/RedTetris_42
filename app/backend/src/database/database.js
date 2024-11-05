@@ -26,7 +26,7 @@ function connect() {
         if (!db) {
             db = new sqlite3.Database('./redtetris.db', (err) => {
                 if (err) {
-                    console.error('[DATABASE] Could not connect to database:', err.message);
+                    console.log('[DATABASE] Could not connect to database:', err.message);
                     reject(err);
                 } else {
                     console.log('[DATABASE] Connected to SQLite database');
@@ -44,7 +44,7 @@ function close() {
         if (db) {
             db.close((err) => {
                 if (err) {
-                    console.error('[DATABASE] Error closing the database:', err.message);
+                    console.log('[DATABASE] Error closing the database:', err.message);
                     reject(err);
                 } else {
                     console.log('[DATABASE] Closed the database connection.');
