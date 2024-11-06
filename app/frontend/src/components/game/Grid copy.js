@@ -18,12 +18,6 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
     const [pile, setPile] = useState(Array(numRows).fill().map(() => Array(numCols).fill(null)));
     const [isGameLost, setIsGameLost] = useState(false);
     const [dropInterval, setDropInterval] = useState(initialDropInterval); 
-
-    const [lastGravityTick, setLastGravityTick] = useState(Date.now());
-    const [lastRotateTick, setLastRotateTick] = useState(0);
-    const rotateDebounceDelay = 50; // Debounce delay in milliseconds
-
-
     
 
     const calculateLevel = useCallback((interval) => {
@@ -187,27 +181,21 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
     useEffect(() => {
         const dropPiece = () => {
             if (!currentPiece || isGameLost || isGameOver) return;
-    
-            const now = Date.now();
-            if (now - lastGravityTick >= dropInterval) {
-                const newRow = currentPosition.row + 1;
-                const newCol = currentPosition.col;
-    
-                if (checkCollision(pile, newRow, newCol, currentPiece)) {
-                    mergePieceToPile(currentPosition);
-                } else {
-                    setCurrentPosition({ row: newRow, col: newCol });
-                }
-    
-                // Update the last gravity tick
-                setLastGravityTick(now);
+
+            const newRow = currentPosition.row + 1;
+            const newCol = currentPosition.col;
+
+            if (checkCollision(pile, newRow, newCol, currentPiece)) {
+                mergePieceToPile(currentPosition);
+            } else {
+                setCurrentPosition({ row: newRow, col: newCol });
             }
         };
-    
-        const interval = setInterval(dropPiece, 10); // Check frequently, but only act when needed
+
+        const interval = setInterval(dropPiece, dropInterval);
         return () => clearInterval(interval);
-    }, [currentPosition, currentPiece, isGameOver, isGameLost, dropInterval, lastGravityTick, checkCollision, mergePieceToPile, pile]);
-    
+    }, [currentPosition, currentPiece, isGameOver, isGameLost, dropInterval, checkCollision, mergePieceToPile, pile]);
+
     // Update shadow position of the piece
     useEffect(() => {
         if (!currentPiece) return;
@@ -224,7 +212,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
     // Handle keyboard input for piece movement
     useEffect(() => {
         let keyPressed = {}; // Track keys pressed down
-        
+        let animationFrameId;
     
         const moveLeft = (pile) => {
             if (!isGameLost && !isGameOver && !checkCollision(pile, currentPosition.row, currentPosition.col - 1, currentPiece)) {
@@ -239,12 +227,9 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
         };
     
         const rotatePiece = (pile) => {
-            const now = Date.now();
-            if (!currentPiece || now - lastRotateTick < rotateDebounceDelay) return;
-
-            setLastRotateTick(now); // Update the last rotation tick
-            
-            // Handle I-piece special rotation logic (as you've implemented before)
+            console.log("here");    
+            if (!currentPiece || !currentPiece.type === 'O') return;
+    
             if (currentPiece.type === 'I') {
                 if (currentPosition.row === -1) {
                     currentPosition.row = 0;
@@ -324,7 +309,7 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
         
     
         const handleKeyDown = (event) => {
-            if (!currentPiece || keyPressed[event.key]) return; // Prevent re-triggering when holding down the key
+            if (!currentPiece || keyPressed[event.key]) return;
             keyPressed[event.key] = true;
     
             switch (event.key) {
@@ -334,9 +319,8 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
                 case 'ArrowRight':
                     moveRight(pile);
                     break;
-                case 'ArrowUp': // Trigger rotation only once on key press
+                case 'ArrowUp': // Handle rotation
                     rotatePiece(pile);
-                    keyPressed[event.key] = false;
                     break;
                 case 'ArrowDown': // Handle fast drop
                     fastDrop(pile);
@@ -350,18 +334,27 @@ const Grid = ({ socket, isSprintMode, isGameOver, isInteractable, room, playerNa
         };
     
         const handleKeyUp = (event) => {
-            keyPressed[event.key] = false; // Reset key press state when key is released
+            keyPressed[event.key] = false;
+        };
+    
+        const gameLoop = () => {
+            // Add custom logic here if you want to implement additional
+            // animations or behaviors in your game loop
+    
+            animationFrameId = requestAnimationFrame(gameLoop);
         };
     
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
     
-        // Cleanup on unmount
+        animationFrameId = requestAnimationFrame(gameLoop);
+    
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
+            cancelAnimationFrame(animationFrameId);
         };
-    }, [currentPosition, currentPiece, isGameOver, isGameLost, checkCollision, mergePieceToPile, pile, lastRotateTick]);
+    }, [currentPosition, currentPiece, isGameOver, isGameLost, checkCollision, mergePieceToPile, pile]);
     
     // Handle scoring from other players
     useEffect(() => {

@@ -205,8 +205,17 @@ const updateGame = async (io, socket, { roomName, playerName, grid }) => {
             break;
         }
     }
-    for (let i = firstNonEmptyRow + 1; i < grid.length; i++) {
-        grid[i] = grid[i].map(() => 'H');
+    grid = grid.map(row => row.map(cell => cell !== null ? 'H' : cell));
+    for (let col = 0; col < grid[0].length; col++) {
+        let foundH = false;
+        for (let row = 0; row < grid.length; row++) {
+            if (grid[row][col] === 'H') {
+                foundH = true;
+            }
+            if (foundH) {
+                grid[row][col] = 'H';
+            }
+        }
     }
     io.to(roomName).emit('gameUpdated', { playerName, grid, score });
 }
