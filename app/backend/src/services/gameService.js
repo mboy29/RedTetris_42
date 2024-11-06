@@ -137,7 +137,9 @@ const leaveGame = async (io, socket, { roomName, playerName }) => {
                     const parentPlayers = await parentGame.getPlayers();
                     const otherParentPlayers = parentPlayers.filter(p => p.username !== player.getUsername());
                     const randomParentPlayer = otherParentPlayers[Math.floor(Math.random() * otherParentPlayers.length)];
-                    await parentGame.updateRematcher(randomParentPlayer);
+                    if (randomParentPlayer)  {
+                        await parentGame.updateRematcher(randomParentPlayer);
+                    }
                     io.to(parentGame.getName()).emit('gameRematcher', { rematcher: randomParentPlayer });
                     io.to(parentGame.getName()).emit('gameRematched', { creator: randomParentPlayer, roomName: null });
                 }

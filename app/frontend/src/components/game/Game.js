@@ -148,7 +148,6 @@ const Game = () => {
         };
     
         const handleGameUpdated = ({ playerName, grid, score }) => {
-            console.log("->", playerName, score)
             if (isMounted) {
                 setPlayerGrids((prevGrids) => ({
                     ...prevGrids,
@@ -248,13 +247,6 @@ const Game = () => {
         };
     }, [room, session, navigate, isGameFull, startCountdown]);
     
-    useEffect(() => {
-        // Loop through and print each player's score
-        for (const [playerName, score] of Object.entries(playerScores)) {
-            console.log(`${playerName}: ${score}`);
-        }
-    }, [playerScores]); // This will re-run each time playerScores updates
-
     const handleLeaveGame = (e) => {
         e.preventDefault();
         if (session.username) {
