@@ -24,6 +24,7 @@ const Player = require('../models/playerModel');
 const socketRooms = new Map(); 
 let isLosing = false; // Global or module-level variable to track loss state
 let pendingLossPromises = [];
+let isGameScore = false
 
 const joinGame = async (io, socket, { roomName, playerName }) => {
     if (!roomName || !playerName) {
@@ -180,6 +181,18 @@ const triggerGame = async (io, socket, { roomName }) => {
 }
 
 const updateGame = async (io, socket, { roomName, playerName, grid }) => {
+    const waitForGameScore = () => new Promise(resolve => {
+        const checkInterval = setInterval(() => {
+            if (!isGameScore) {
+                clearInterval(checkInterval);
+                resolve(); 
+            }
+        }, 50); 
+    });
+
+    if (isGameScore) {
+        await waitForGameScore(); 
+    }
     if (!roomName || !playerName || !grid) {
         throw new Error('Invalid input');
     }
@@ -196,7 +209,6 @@ const updateGame = async (io, socket, { roomName, playerName, grid }) => {
     } else if (!await game.isGamePlayer(player)) {
         throw new Error('Player not in game');
     }
-    console.log(`[GAME] Player ${playerName} updated game ${roomName}`);
     const score = await game.getPlayerScore(player);
     let firstNonEmptyRow = -1;
     for (let i = 0; i < grid.length; i++) {
@@ -217,27 +229,38 @@ const updateGame = async (io, socket, { roomName, playerName, grid }) => {
             }
         }
     }
+
+    console.log(`[GAME] Player ${playerName} updated game ${roomName}`, score);
     io.to(roomName).emit('gameUpdated', { playerName, grid, score });
 }
 
 const scoreGame = async (io, socket, { roomName, playerName, lines, level }) => {
+    isGameScore = true
     if (!roomName || !playerName || !lines) {
+        isGameScore = false
         throw new Error('Invalid input');
     }
     const game = await Game.getByName(roomName);
     if (!game) {
+        isGameScore = false
         throw new Error('Game not found');
     } else if (game.getStatus() !== 'in progress') {
+        isGameScore = false
         throw new Error('Game is not in progress');
     }
     const player = await Player.getByUsername(playerName);
     if (!player) {
+        isGameScore = false
         throw new Error('Player not found');
     } else if (!await game.isGamePlayer(player)) {
+        isGameScore = false
         throw new Error('Player not in game');
     }
     await game.updateScore(player, 0, lines, level);
+    const score = game.getPlayerScore(player);
+    console.log(`[GAME] Player ${playerName} score updated to ${score}`)
     io.to(roomName).emit('gameScored', { scoredPlayerGame: playerName, lines: lines - 1 });
+    isGameScore = false
 }
 
 const lostGame = async (io, socket, { roomName, playerName, surrendered = false }) => {

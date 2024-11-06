@@ -30,7 +30,7 @@ router.post('/create', async (req, res) => {
             return res.status(400).json({ message: 'Invalid input' });
         }
         if (roomName.length < 4 || roomName.length > 12) {
-            return res.status(400).json({ message: 'Room name must be between 3 and 20 characters' });
+            return res.status(400).json({ message: 'Room name must be between 4 and 20 characters' });
         } else if (!isValidRoomName(roomName)) {
             return res.status(400).json({ message: 'Room name must contain only letters and numbers' });
         }

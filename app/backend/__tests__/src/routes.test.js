@@ -249,7 +249,7 @@ describe('Routes', () => {
                         .send({ roomName, playerName });
                     
                     expect(res.status).toBe(400); // Bad Request
-                    expect(res.body.message).toBe('Room name must be between 3 and 20 characters');
+                    expect(res.body.message).toBe('Room name must be between 4 and 20 characters');
                 });
 
                 it('should return 400 if room name is invalid (too short)', async () => {
@@ -261,7 +261,7 @@ describe('Routes', () => {
                         .send({ roomName, playerName });
 
                     expect(res.status).toBe(400); // Bad Request
-                    expect(res.body.message).toBe('Room name must be between 3 and 20 characters');
+                    expect(res.body.message).toBe('Room name must be between 4 and 20 characters');
                 });
 
                 it('should return 404 if player is not found', async () => {
